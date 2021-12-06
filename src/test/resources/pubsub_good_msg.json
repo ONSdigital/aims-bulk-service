@@ -1,0 +1,39 @@
+{
+  "event": {
+    "type": "NEW_ADDRESS_ENHANCED",
+    "source": "CASE_PROCESSOR",
+    "channel": "RM",
+    "dateTime": "2020-08-05T12:11:54.008964Z",
+    "transactionId": "d9126d67-2830-4aac-8e52-47fb8f84d3b9"
+  },
+  "payload": {
+    "newAddress": {
+      "sourceCaseId": null,
+      "collectionCase": {
+        "id": "1d63aacf-a89e-4d9f-96e4-9b31fdb6f5ec",
+        "caseType": "SPG",
+        "survey": "CENSUS",
+        "address": {
+          "addressLine1": "123",
+          "addressLine2": "Fake caravan park",
+          "addressLine3": "The long road",
+          "townName": "Trumpton",
+          "postcode": "SO190PG",
+          "region": "E00001234",
+          "latitude": "50.917428",
+          "longitude": "-1.238193",
+          "uprn": "9998397697247",
+          "estabUprn": null,
+          "abpCode": null,
+          "addressType": "SPG",
+          "addressLevel": "U",
+          "estabType": null,
+          "organisationName": null
+        },
+        "handDelivery": false,
+        "skeleton": false,
+        "surveyLaunched": false
+      }
+    }
+  }
+}

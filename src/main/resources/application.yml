@@ -1,0 +1,81 @@
+server:
+  error:
+    whitelabel:
+      enabled: false
+  tomcat:
+    connection-timeout: 300s
+  netty:
+    connection-timeout: 300s
+spring:
+  application:
+    name: create-address
+  elasticsearch:
+    rest:
+      uris: localhost:9200
+  data:
+    elasticsearch:
+      client:
+        reactive:
+          endpoints: localhost:9200
+  cloud:
+    gcp:
+      project-id: YOUR_GCP_PROJECT_ID_HERE
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 25MB
+  thymeleaf:
+    reactive:
+      max-chunk-size: 8192
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+    enabled-by-default: false
+  endpoint:
+    info:
+      enabled: true
+    health:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+logging:
+  level:
+    root: INFO
+    uk:
+      gov:
+        ons: INFO
+    org:
+      springframework:
+        data:
+          elasticsearch:
+            client:
+              WIRE: TRACE
+    reactor:
+      netty: INFO
+aims:
+  pubsub:
+    subscription: new-address-subscription
+  gcp:
+    bucket: YOUR_GCP_BUCKET_ID_HERE
+  elasticsearch:
+    cluster:
+      fat-enabled: true
+    index:
+      aux:
+        name: new-addresses
+      fat:
+        name: index_full_nohist_current
+      skinny:
+        name: index_skinny_nohist_current
+    client:
+      socket-timeout: 10000
+      connect-timeout: 10000
+  tokeniser:
+    uri: http://localhost:8081
+    path: /tokens?address={address}
+  display:
+    limit: 5
