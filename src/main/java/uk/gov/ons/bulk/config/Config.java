@@ -40,7 +40,7 @@ public class Config {
 	ReactiveElasticsearchClient client() {
 
 		ClientConfiguration clientConfiguration = ClientConfiguration.builder().connectedTo(elasticSearchEndpoint)
-				.withConnectTimeout(elasticConnectTimeout).withSocketTimeout(elasticSocketTimeout)
+				.withConnectTimeout(elasticConnectTimeout).withSocketTimeout(elasticSocketTimeout).withBasicAuth("elastic","elastic")
 				.withWebClientConfigurer(webClient -> {
 					ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
 							.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(-1)).build();
