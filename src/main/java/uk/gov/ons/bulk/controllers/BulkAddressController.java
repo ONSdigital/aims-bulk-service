@@ -9,6 +9,10 @@ import java.io.Reader;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.FieldValue;
+import com.google.cloud.bigquery.FieldValueList;
+import com.google.cloud.bigquery.QueryJobConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -36,6 +40,10 @@ public class BulkAddressController {
 //	@Autowired
 //	private AddressService addressService;
 
+	// BigQuery client object provided by our autoconfiguration.
+	@Autowired
+	BigQuery bigquery;
+
 	@Value("${aims.gcp.bucket}")
 	private String gcsBucket;
 	
@@ -62,7 +70,7 @@ public class BulkAddressController {
 
 	@PostMapping(value = "/bulk")
 	public String runBulkRequest(String addressesJson, Model model) {
-		model.addAttribute("status", true);
+	//	model.addAttribute("status", true);
 		// Create dataset UUID
 		// Create results table for UUID
 		// Create one cloud task for each address
@@ -71,10 +79,39 @@ public class BulkAddressController {
 		return "request-id";
 	}
 
+	@GetMapping(value = "/test")
+	public String runTestRequest(Model model) {
+	 //   model.addAttribute("status", false);
+		// Create dataset UUID
+		// Create results table for UUID
+		// Create one cloud task for each address
+		// Execute task with backoff / throttling
+		// Capture results in BigQuery table
+		return "progress";
+	}
+
 	@GetMapping(value = "/bulk-progress")
 	public String getBulkRequestProgress(String requestId,Model model) {
-		model.addAttribute("message", "unexpected error");
-		model.addAttribute("status", false);
+	//	model.addAttribute("message", "unexpected error");
+	//	model.addAttribute("status", false);
+
+		try {
+			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.bulkinfo;";
+			QueryJobConfiguration queryConfig =
+					QueryJobConfiguration.newBuilder(query).build();
+
+			// Run the query using the BigQuery object
+			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+				for (FieldValue val : row) {
+					System.out.println(val);
+				}
+			}
+			} catch (Exception ex) {
+				model.addAttribute("message",
+						String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
+				model.addAttribute("status", true);
+				return "error";
+			}
 	//	model.addAttribute("status", true);
 		// get count of completed queries for given requestId
 		// compare with number of queries requested in order to give progress
@@ -84,7 +121,7 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-result")
 	public String getBulkResults(String requestId,Model model) {
-		model.addAttribute("status", true);
+	//	model.addAttribute("status", false);
 		// fetch contents of results table for requestId
 		// present contents as JSON response
 		return "7 Gate Reach";
