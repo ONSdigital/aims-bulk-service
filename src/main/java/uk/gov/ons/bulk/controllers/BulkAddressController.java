@@ -6,13 +6,11 @@ import static uk.gov.ons.bulk.util.BulkAddressConstants.BAD_UNIT_ADDRESS_FILE_NA
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.FieldValue;
-import com.google.cloud.bigquery.FieldValueList;
-import com.google.cloud.bigquery.QueryJobConfiguration;
+import com.google.cloud.bigquery.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -32,6 +30,7 @@ import uk.gov.ons.bulk.entities.AuxAddress;
 import uk.gov.ons.bulk.entities.UnitAddress;
 //import uk.gov.ons.bulk.service.AddressService;
 import uk.gov.ons.bulk.util.ValidatedAddress;
+import uk.gov.ons.bulk.entities.Job;
 
 @Slf4j
 @Controller
@@ -60,6 +59,47 @@ public class BulkAddressController {
 		model.addAttribute("fatClusterEnabled", fatClusterEnabled);
 		
 		return "index";
+	}
+
+	@GetMapping(value = "/jobs")
+	public String getBulkRequestProgress(Model model) {
+
+			try {
+		String query = "SELECT * FROM ons-aims-initial-test.bulk_status.bulkinfo;";
+		QueryJobConfiguration queryConfig =
+				QueryJobConfiguration.newBuilder(query).build();
+
+		// Run the query using the BigQuery object
+	//	for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+	//		for (FieldValue val : row) {
+	//			System.out.println(val);
+	//		}
+	//	}
+
+	//	TableResult jobs = bigquery.query(queryConfig);
+
+
+		ArrayList<Job> joblist = new ArrayList<Job>();
+		for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			Job nextJob = new Job();
+			nextJob.setRunid(row.get("runid").getStringValue());
+			nextJob.setUserid(row.get("userid").getStringValue());
+			nextJob.setStatus(row.get("status").getStringValue());
+			nextJob.setTotalrecs(row.get("totalrecs").getStringValue());
+			nextJob.setRecssofar(row.get("recssofar").getStringValue());
+			joblist.add(nextJob);
+		}
+
+		model.addAttribute("jobslist",joblist);
+
+	} catch (Exception ex) {
+		model.addAttribute("message",
+				String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
+		model.addAttribute("status", true);
+		return "error";
+	}
+
+		return "jobstable";
 	}
 	
 	@GetMapping(value = "/error")
@@ -95,23 +135,7 @@ public class BulkAddressController {
 	//	model.addAttribute("message", "unexpected error");
 	//	model.addAttribute("status", false);
 
-		try {
-			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-			QueryJobConfiguration queryConfig =
-					QueryJobConfiguration.newBuilder(query).build();
 
-			// Run the query using the BigQuery object
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
-				for (FieldValue val : row) {
-					System.out.println(val);
-				}
-			}
-			} catch (Exception ex) {
-				model.addAttribute("message",
-						String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
-				model.addAttribute("status", true);
-				return "error";
-			}
 	//	model.addAttribute("status", true);
 		// get count of completed queries for given requestId
 		// compare with number of queries requested in order to give progress
