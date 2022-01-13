@@ -8,18 +8,21 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.bigquery.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.opencsv.bean.CsvToBean;
@@ -108,8 +111,55 @@ public class BulkAddressController {
 		return "error";
 	}
 
+//	GetMapping(path = {"/user", "/user/{data}"})
+//	public void user(@PathVariable(required=false,name="data") String data,
+//					 @RequestParam(required=false) Map<String,String> qparams) {
+//		qparams.forEach((a,b) -> {
+//			System.out.println(String.format("%s -> %s",a,b));
+//		}
+//
+//		if (data != null) {
+//			System.out.println(data);
+//		}
+//	}
+
+		@GetMapping(path = {"/single", "/single/{data}"})
+        public String runSingleMatch(@PathVariable(required=false,name="data") String data,
+					  @RequestParam(required=false) Map<String,String> qparams) {
+		qparams.forEach((a,b) -> {
+			System.out.println(String.format("%s -> %s",a,b));
+		});
+
+		if (data != null) {
+			System.out.println(data);
+		}
+
+		return "progress";
+	}
+
+//	@GetMapping(path = "/hello", produces= MediaType.APPLICATION_JSON_VALUE)
+//	public ResponseEntity<Object> sayHello()
+//	{
+//		//Get data from service layer into entityList.
+//
+//		List<JSONObject> entities = new ArrayList<JSONObject>();
+//		for (Entity n : entityList) {
+//			JSONObject entity = new JSONObject();
+//			entity.put("aa", "bb");
+//			entities.add(entity);
+//		}
+//		return new ResponseEntity<Object>(entities, HttpStatus.OK);
+//	}
+
+    @GetMapping(path = "/hello", produces= MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<JsonNode> get() throws JsonProcessingException {
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode json = mapper.readTree("{\"id\": \"132\", \"name\": \"Alice\"}");
+		return ResponseEntity.ok(json);
+	}
+
 	@PostMapping(value = "/bulk")
-	public String runBulkRequest(String addressesJson, Model model) {
+	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
 	//	model.addAttribute("status", true);
 		// Create dataset UUID
 		// Create results table for UUID
