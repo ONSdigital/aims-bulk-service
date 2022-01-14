@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.opencsv.bean.CsvToBean;
@@ -34,6 +35,15 @@ import uk.gov.ons.bulk.entities.UnitAddress;
 //import uk.gov.ons.bulk.service.AddressService;
 import uk.gov.ons.bulk.util.ValidatedAddress;
 import uk.gov.ons.bulk.entities.Job;
+
+import com.google.cloud.tasks.v2.CloudTasksClient;
+import com.google.cloud.tasks.v2.HttpMethod;
+import com.google.cloud.tasks.v2.HttpRequest;
+import com.google.cloud.tasks.v2.QueueName;
+import com.google.cloud.tasks.v2.Task;
+import com.google.protobuf.ByteString;
+import java.io.IOException;
+import java.nio.charset.Charset;
 
 @Slf4j
 @Controller
@@ -216,10 +226,27 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-progress")
 	public String getBulkRequestProgress(String requestId,Model model) {
+
+
+		String projectId = "ons-aims-initial-test";
+		String locationId = "test-queue";
+		String queueId = "europe-west2";
+
+		try {
+		    createTask(projectId, locationId, queueId);
+		} catch (Exception ex) {
+			model.addAttribute("message",
+					String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
+			model.addAttribute("status", true);
+			return "error";
+		}
 	//	model.addAttribute("message", "unexpected error");
 	//	model.addAttribute("status", false);
-
-
+	//	String curi = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/create-cloud-task";
+     //   String curi = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/test-http-func";
+    //    RestTemplate restTemplate = new RestTemplate();
+//		String result = restTemplate.getForObject(curi,String.class);
+	//	System.out.println(result);
 	//	model.addAttribute("status", true);
 		// get count of completed queries for given requestId
 		// compare with number of queries requested in order to give progress
@@ -251,6 +278,43 @@ public class BulkAddressController {
 			System.out.println("Table was not created. \n" + e.toString());
 		}
 	}
+
+
+
+//	public class CreateHttpTask {
+
+
+
+
+
+		// Create a task with a HTTP target using the Cloud Tasks client.
+		public static void createTask(String projectId, String locationId, String queueId)
+				throws IOException {
+
+			// Instantiates a client.
+			try (CloudTasksClient client = CloudTasksClient.create()) {
+				String url = "https://example.com/taskhandler";
+				String payload = "Hello, World!";
+
+				// Construct the fully qualified queue name.
+				String queuePath = QueueName.of(projectId, locationId, queueId).toString();
+
+				// Construct the task body.
+				Task.Builder taskBuilder =
+						Task.newBuilder()
+								.setHttpRequest(
+										HttpRequest.newBuilder()
+												.setBody(ByteString.copyFrom(payload, Charset.defaultCharset()))
+												.setUrl(url)
+												.setHttpMethod(HttpMethod.POST)
+												.build());
+
+				// Send create task request.
+				Task task = client.createTask(queuePath, taskBuilder.build());
+				System.out.println("Task created: " + task.getName());
+			}
+		}
+//	}
 
 //	@PostMapping(value = "/upload-csv-aux-file")
 //	public String uploadCSVAuxFile(@RequestParam(name = "file") MultipartFile file, Model model) {
