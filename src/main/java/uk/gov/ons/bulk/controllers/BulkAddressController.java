@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.bigquery.*;
+import com.google.cloud.tasks.v2.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -36,11 +37,6 @@ import uk.gov.ons.bulk.entities.UnitAddress;
 import uk.gov.ons.bulk.util.ValidatedAddress;
 import uk.gov.ons.bulk.entities.Job;
 
-import com.google.cloud.tasks.v2.CloudTasksClient;
-import com.google.cloud.tasks.v2.HttpMethod;
-import com.google.cloud.tasks.v2.HttpRequest;
-import com.google.cloud.tasks.v2.QueueName;
-import com.google.cloud.tasks.v2.Task;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -82,16 +78,6 @@ public class BulkAddressController {
 		QueryJobConfiguration queryConfig =
 				QueryJobConfiguration.newBuilder(query).build();
 
-		// Run the query using the BigQuery object
-	//	for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
-	//		for (FieldValue val : row) {
-	//			System.out.println(val);
-	//		}
-	//	}
-
-	//	TableResult jobs = bigquery.query(queryConfig);
-
-
 		ArrayList<Job> joblist = new ArrayList<Job>();
 		for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
 			Job nextJob = new Job();
@@ -121,18 +107,6 @@ public class BulkAddressController {
 		return "error";
 	}
 
-//	GetMapping(path = {"/user", "/user/{data}"})
-//	public void user(@PathVariable(required=false,name="data") String data,
-//					 @RequestParam(required=false) Map<String,String> qparams) {
-//		qparams.forEach((a,b) -> {
-//			System.out.println(String.format("%s -> %s",a,b));
-//		}
-//
-//		if (data != null) {
-//			System.out.println(data);
-//		}
-//	}
-
 		@GetMapping(path = {"/paramtest", "/paramtest/{data}"})
         public String testVariables(@PathVariable(required=false,name="data") String data,
 					  @RequestParam(required=false) Map<String,String> qparams) {
@@ -146,22 +120,6 @@ public class BulkAddressController {
 
 		return "progress";
 	}
-
-
-
-//	@GetMapping(path = "/hello", produces= MediaType.APPLICATION_JSON_VALUE)
-//	public ResponseEntity<Object> sayHello()
-//	{
-//		//Get data from service layer into entityList.
-//
-//		List<JSONObject> entities = new ArrayList<JSONObject>();
-//		for (Entity n : entityList) {
-//			JSONObject entity = new JSONObject();
-//			entity.put("aa", "bb");
-//			entities.add(entity);
-//		}
-//		return new ResponseEntity<Object>(entities, HttpStatus.OK);
-//	}
 
     @GetMapping(path = "/jsontest", produces= MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> get() throws JsonProcessingException {
@@ -229,8 +187,8 @@ public class BulkAddressController {
 
 
 		String projectId = "ons-aims-initial-test";
-		String locationId = "test-queue";
-		String queueId = "europe-west2";
+		String locationId = "europe-west2";
+		String queueId = "test-queue";
 
 		try {
 		    createTask(projectId, locationId, queueId);
@@ -240,14 +198,7 @@ public class BulkAddressController {
 			model.addAttribute("status", true);
 			return "error";
 		}
-	//	model.addAttribute("message", "unexpected error");
-	//	model.addAttribute("status", false);
-	//	String curi = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/create-cloud-task";
-     //   String curi = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/test-http-func";
-    //    RestTemplate restTemplate = new RestTemplate();
-//		String result = restTemplate.getForObject(curi,String.class);
-	//	System.out.println(result);
-	//	model.addAttribute("status", true);
+
 		// get count of completed queries for given requestId
 		// compare with number of queries requested in order to give progress
 		// give ETA ?
@@ -280,13 +231,6 @@ public class BulkAddressController {
 	}
 
 
-
-//	public class CreateHttpTask {
-
-
-
-
-
 		// Create a task with a HTTP target using the Cloud Tasks client.
 		public static void createTask(String projectId, String locationId, String queueId)
 				throws IOException {
@@ -295,10 +239,12 @@ public class BulkAddressController {
 			try (CloudTasksClient client = CloudTasksClient.create()) {
 				String url = "https://example.com/taskhandler";
 				String payload = "Hello, World!";
-
+				String serviceAccountEmail =
+						"spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
 				// Construct the fully qualified queue name.
 				String queuePath = QueueName.of(projectId, locationId, queueId).toString();
-
+				OidcToken.Builder oidcTokenBuilder =
+						OidcToken.newBuilder().setServiceAccountEmail(serviceAccountEmail);
 				// Construct the task body.
 				Task.Builder taskBuilder =
 						Task.newBuilder()
@@ -307,6 +253,7 @@ public class BulkAddressController {
 												.setBody(ByteString.copyFrom(payload, Charset.defaultCharset()))
 												.setUrl(url)
 												.setHttpMethod(HttpMethod.POST)
+												.setOidcToken(oidcTokenBuilder)
 												.build());
 
 				// Send create task request.
@@ -314,137 +261,4 @@ public class BulkAddressController {
 				System.out.println("Task created: " + task.getName());
 			}
 		}
-//	}
-
-//	@PostMapping(value = "/upload-csv-aux-file")
-//	public String uploadCSVAuxFile(@RequestParam(name = "file") MultipartFile file, Model model) {
-//
-//		/*
-//		 * TODO: Reactify the web page to stream the results of the add operation.
-//		 */
-//
-//		// validate file
-//		if (file.isEmpty()) {
-//			model.addAttribute("message", "Select a CSV file to upload and an Index to load to.");
-//			model.addAttribute("status", false);
-//		} else {
-//
-//			try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-//
-//				CsvToBean<AuxAddress> csvToBean = new CsvToBeanBuilder<AuxAddress>(reader).withType(AuxAddress.class)
-//						.withIgnoreLeadingWhiteSpace(true).build();
-//
-//				List<ValidatedAddress<AuxAddress>> validatedAddresses = csvToBean.parse().stream()
-//						.map(address -> new ValidatedAddress<AuxAddress>(address)).collect(Collectors.toList());
-//
-//				List<ValidatedAddress<AuxAddress>> invalidAddresses = validatedAddresses.stream()
-//						.filter(address -> !address.isValid()).collect(Collectors.toList());
-//
-//				if (invalidAddresses.size() > 0) {
-//					model.addAttribute("badAddressCSVPath", String.format("Bad addresss file name: %s. In bucket: %s",
-//							addressService.writeBadAddressesCsv(invalidAddresses, BAD_AUX_ADDRESS_FILE_NAME), gcsBucket));
-//					model.addAttribute("badAddresses", invalidAddresses.stream().limit(displayLimit).collect(Collectors.toList()));
-//					model.addAttribute("badAddressSize", String.format("Total invalid aux addresses: %d", invalidAddresses.size()));
-//				}
-//
-//				List<ValidatedAddress<AuxAddress>> validAddresses = validatedAddresses.stream()
-//						.filter(address -> address.isValid()).collect(Collectors.toList());
-//
-//				if (validAddresses.size() > 0) {
-//					model.addAttribute("addresses", validAddresses.stream().limit(displayLimit).collect(Collectors.toList()));
-//					model.addAttribute("addressesSize", String.format("Total valid aux addresses: %d", validAddresses.size()));
-//
-//
-//					// Add the good addresses to Elasticsearch
-//					addressService.createAuxAddressesFromCsv(validAddresses).doOnNext(output -> {
-//						log.debug(String.format("Added: %s", output.toString()));
-//
-//						/*
-//						 * This is very basic at the moment and just returns to the view the addresses
-//						 * that were attempted to load into ES. It won't show any that failed. For
-//						 * example an illegal lat or long will cause the load to fail from that point.
-//						 * Needs very clean input data.
-//						 */
-//					}).subscribe();
-//				}
-//
-//				model.addAttribute("status", true);
-//			} catch (Exception ex) {
-//				model.addAttribute("message",
-//						String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
-//				model.addAttribute("status", false);
-//				return "error";
-//			}
-//		}
-//
-//		return "file-upload-status";
-//	}
-
-//	@PostMapping(value = "/upload-csv-unit-file")
-//	public String uploadCSVUnitFile(@RequestParam("file") MultipartFile file, Model model) {
-//
-//		/*
-//		 * TODO: Reactify the web page to stream the results of the add operation.
-//		 */
-//		// validate file
-//		if (file.isEmpty()) {
-//			model.addAttribute("message", "Select a CSV file to upload and an Index to load to.");
-//			model.addAttribute("status", false);
-//		} else {
-//
-//			try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-//
-//				CsvToBean<UnitAddress> csvToBean = new CsvToBeanBuilder<UnitAddress>(reader).withType(UnitAddress.class)
-//						.withIgnoreLeadingWhiteSpace(true)
-//						.withIgnoreEmptyLine(true)
-//						.withSeparator('|').build();
-//
-//				List<ValidatedAddress<UnitAddress>> validatedAddresses = csvToBean.parse().stream()
-//						.map(address -> new ValidatedAddress<UnitAddress>(address)).collect(Collectors.toList());
-//
-//				List<ValidatedAddress<UnitAddress>> invalidAddresses = validatedAddresses.stream()
-//						.filter(address -> !address.isValid()).collect(Collectors.toList());
-//
-//				if (invalidAddresses.size() > 0) {
-//					model.addAttribute("badAddressCSVPath", String.format("Bad addresss file name: %s. In bucket: %s",
-//							addressService.writeBadAddressesCsv(invalidAddresses, BAD_UNIT_ADDRESS_FILE_NAME), gcsBucket));
-//					model.addAttribute("badAddresses", invalidAddresses.stream().limit(displayLimit).collect(Collectors.toList()));
-//					model.addAttribute("badAddressSize", String.format("Total invalid unit addresses: %d", invalidAddresses.size()));
-//				}
-//
-//				List<ValidatedAddress<UnitAddress>> validAddresses = validatedAddresses.stream()
-//						.filter(address -> address.isValid()).collect(Collectors.toList());
-//
-//				if (validAddresses.size() > 0) {
-//					model.addAttribute("addresses", validAddresses.stream().limit(displayLimit).collect(Collectors.toList()));
-//					model.addAttribute("addressesSize", String.format("Total valid unit addresses: %d", validAddresses.size()));
-//
-//					/* Add the good addresses to Elasticsearch
-//					 * This is very basic at the moment and just returns to the view the addresses
-//					 * that were attempted to load into ES. It won't show any that failed. For
-//					 * example an illegal lat or long will cause the load to fail from that point.
-//					 * Needs very clean input data.
-//					 */
-//					if (fatClusterEnabled) {
-//						addressService.createFatUnitAddressesFromCsv(validAddresses).doOnNext(output -> {
-//							log.debug(String.format("Added: %s", output.toString()));
-//						}).subscribe();
-//					} else {
-//						addressService.createSkinnyUnitAddressesFromCsv(validAddresses).doOnNext(output -> {
-//							log.debug(String.format("Added: %s", output.toString()));
-//						}).subscribe();
-//					}
-//				}
-//
-//				model.addAttribute("status", true);
-//			} catch (Exception ex) {
-//				model.addAttribute("message",
-//						String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
-//				model.addAttribute("status", false);
-//				return "error";
-//			}
-//		}
-//
-//		return "unit-address-upload-status";
-//	}
 }
