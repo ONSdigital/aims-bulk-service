@@ -123,8 +123,8 @@ public class BulkAddressController {
 //		}
 //	}
 
-		@GetMapping(path = {"/single", "/single/{data}"})
-        public String runSingleMatch(@PathVariable(required=false,name="data") String data,
+		@GetMapping(path = {"/paramtest", "/paramtest/{data}"})
+        public String testVariables(@PathVariable(required=false,name="data") String data,
 					  @RequestParam(required=false) Map<String,String> qparams) {
 		qparams.forEach((a,b) -> {
 			System.out.println(String.format("%s -> %s",a,b));
@@ -136,6 +136,8 @@ public class BulkAddressController {
 
 		return "progress";
 	}
+
+
 
 //	@GetMapping(path = "/hello", produces= MediaType.APPLICATION_JSON_VALUE)
 //	public ResponseEntity<Object> sayHello()
@@ -151,7 +153,7 @@ public class BulkAddressController {
 //		return new ResponseEntity<Object>(entities, HttpStatus.OK);
 //	}
 
-    @GetMapping(path = "/hello", produces= MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = "/jsontest", produces= MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<JsonNode> get() throws JsonProcessingException {
 		ObjectMapper mapper = new ObjectMapper();
 		JsonNode json = mapper.readTree("{\"id\": \"132\", \"name\": \"Alice\"}");
@@ -162,6 +164,8 @@ public class BulkAddressController {
 	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
 	//	model.addAttribute("status", true);
 		// Create dataset UUID
+		// get highest ID so far
+
 		// Create results table for UUID
 		// Create one cloud task for each address
 		// Execute task with backoff / throttling
@@ -169,11 +173,41 @@ public class BulkAddressController {
 		return "request-id";
 	}
 
-	@GetMapping(value = "/test")
+	@GetMapping(value = "/single")
 	public String runTestRequest(Model model) {
 	 //   model.addAttribute("status", false);
 		// Create dataset UUID
-		// Create results table for UUID
+		try {
+			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
+			QueryJobConfiguration queryConfig =
+					QueryJobConfiguration.newBuilder(query).build();
+            long newKey = 0;
+				for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+					for (FieldValue val : row) {
+						newKey = val.getLongValue() + 1;
+						System.out.println(newKey);
+					}
+				}
+			// Create results table for UUID
+			String datasetName = "bulk_status";
+			String tableName = "bulkresults" + newKey;
+			Schema schema =
+					Schema.of(
+							Field.of("id", StandardSQLTypeName.INT64),
+							Field.of("inputaddress", StandardSQLTypeName.STRING),
+							Field.of("uprn", StandardSQLTypeName.INT64),
+							Field.of("address", StandardSQLTypeName.STRING),
+							Field.of("score", StandardSQLTypeName.FLOAT64)
+					);
+			createTable(datasetName, tableName, schema);
+		} catch (Exception ex) {
+			model.addAttribute("message",
+					String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
+			model.addAttribute("status", true);
+			return "error";
+		}
+
+
 		// Create one cloud task for each address
 		// Execute task with backoff / throttling
 		// Capture results in BigQuery table
@@ -199,6 +233,23 @@ public class BulkAddressController {
 		// fetch contents of results table for requestId
 		// present contents as JSON response
 		return "7 Gate Reach";
+	}
+
+	public void createTable(String datasetName, String tableName, Schema schema) {
+		try {
+			// Initialize client that will be used to send requests. This client only needs to be created
+			// once, and can be reused for multiple requests.
+		//	BigQuery bigquery = BigQueryOptions.getDefaultInstance().getService();
+
+			TableId tableId = TableId.of(datasetName, tableName);
+			TableDefinition tableDefinition = StandardTableDefinition.of(schema);
+			TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
+
+			bigquery.create(tableInfo);
+			System.out.println("Table created successfully");
+		} catch (BigQueryException e) {
+			System.out.println("Table was not created. \n" + e.toString());
+		}
 	}
 
 //	@PostMapping(value = "/upload-csv-aux-file")
