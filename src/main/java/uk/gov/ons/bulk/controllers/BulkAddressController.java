@@ -16,6 +16,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.bigquery.*;
 import com.google.cloud.tasks.v2.*;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -41,12 +44,17 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
+import org.springframework.core.env.Environment;
+
 @Slf4j
 @Controller
 public class BulkAddressController {
 
 //	@Autowired
 //	private AddressService addressService;
+
+	@Autowired
+	private Environment env;
 
 	// BigQuery client object provided by our autoconfiguration.
 	@Autowired
@@ -210,7 +218,7 @@ public class BulkAddressController {
 	//	model.addAttribute("status", false);
 		// fetch contents of results table for requestId
 		// present contents as JSON response
-		return "7 Gate Reach";
+		return "progress";
 	}
 
 	public void createTable(String datasetName, String tableName, Schema schema) {
@@ -232,13 +240,24 @@ public class BulkAddressController {
 
 
 		// Create a task with a HTTP target using the Cloud Tasks client.
-		public static void createTask(String projectId, String locationId, String queueId)
+		public void createTask(String projectId, String locationId, String queueId)
 				throws IOException {
 
 			// Instantiates a client.
 			try (CloudTasksClient client = CloudTasksClient.create()) {
-				String url = "https://example.com/taskhandler";
-				String payload = "Hello, World!";
+				String creds = env.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
+				String url = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/api-call-http-function";
+				//String url = "https://initial-test-open-api.aims.gcp.onsdigital.uk/addresses/bulk";
+				String jsonString = "{'jobId':'job2','id':'1','address':'7 Gate Reach'}";
+				JsonParser jsonParser = new JsonParser();
+				JsonObject payload = (JsonObject) jsonParser.parse(jsonString);
+
+			//	ObjectMapper mapper = new ObjectMapper();
+			//	JsonNode payload = mapper.readTree("{\"jobId\":\"job2\",\"id\":\"1\",\"address\":\"7 gate reach exeter\"}");
+			//	String payload = "{\"jobId\":\"job2\",\"id\":\"1\",\"address\":\"7 gate reach exeter\"}";
+			//	ArrayList<String> plList =
+			//	String url = "https://example.com/taskhandler";
+			//	String payload = "Hello, World!";
 				String serviceAccountEmail =
 						"spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
 				// Construct the fully qualified queue name.
@@ -250,8 +269,9 @@ public class BulkAddressController {
 						Task.newBuilder()
 								.setHttpRequest(
 										HttpRequest.newBuilder()
-												.setBody(ByteString.copyFrom(payload, Charset.defaultCharset()))
+												.setBody(ByteString.copyFrom(payload.toString(), Charset.defaultCharset()))
 												.setUrl(url)
+												.putHeaders("Content-Type","application/json")
 												.setHttpMethod(HttpMethod.POST)
 												.setOidcToken(oidcTokenBuilder)
 												.build());
