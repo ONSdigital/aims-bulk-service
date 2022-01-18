@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Jobs Status</title>
+
+<!--Bootstrap 4-->
+<link rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 mt-5 mb-5">
+            <table id="example" class="table table-bordered" style="width: 100%">
+                <thead>
+                <tr>
+                    <th>Run Id</th>
+                    <th>User Id</th>
+                    <th>Status</th>
+                    <th>Total Recs</th>
+                    <th>Recs so far</th>
+    <!--                <th>Start Date</th>
+                    <th>End Date</th> -->
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="job : ${jobslist}">
+                    <td th:text="${job.runid}">Jobid</td>
+                    <td th:text="${job.userid}">Userid</td>
+                    <td th:text="${job.status}">Status</td>
+                    <td th:text="${job.totalrecs}">Total</td>
+                    <td th:text="${job.recssofar}">Done</td>
+ <!--                   <td th:text="${#dates.format(job.startDate, 'dd.MM.yyyy')}">Start date</td>
+                    <td th:text="${#dates.format(job.startDate, 'dd.MM.yyyy')}">End date</td> -->
+                </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
