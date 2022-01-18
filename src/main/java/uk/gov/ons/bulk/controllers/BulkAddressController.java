@@ -101,7 +101,7 @@ public class BulkAddressController {
 
 	} catch (Exception ex) {
 		model.addAttribute("message",
-				String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
+				String.format("An error occurred : %s", ex.getMessage()));
 		model.addAttribute("status", true);
 		return "error";
 	}
@@ -166,19 +166,20 @@ public class BulkAddressController {
 				}
 			// Create results table for UUID
 			String datasetName = "bulk_status";
-			String tableName = "bulkresults" + newKey;
+			String tableName = "results" + newKey;
 			Schema schema =
 					Schema.of(
 							Field.of("id", StandardSQLTypeName.INT64),
 							Field.of("inputaddress", StandardSQLTypeName.STRING),
-							Field.of("uprn", StandardSQLTypeName.INT64),
-							Field.of("address", StandardSQLTypeName.STRING),
-							Field.of("score", StandardSQLTypeName.FLOAT64)
+					//		Field.of("uprn", StandardSQLTypeName.INT64),
+					//		Field.of("address", StandardSQLTypeName.STRING),
+					//		Field.of("score", StandardSQLTypeName.FLOAT64)
+							Field.of("response", StandardSQLTypeName.STRING)
 					);
 			createTable(datasetName, tableName, schema);
 		} catch (Exception ex) {
 			model.addAttribute("message",
-					String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
+					String.format("An error occurred : %s", ex.getMessage()));
 			model.addAttribute("status", true);
 			return "error";
 		}
@@ -202,7 +203,7 @@ public class BulkAddressController {
 		    createTask(projectId, locationId, queueId);
 		} catch (Exception ex) {
 			model.addAttribute("message",
-					String.format("An error occurred while processing the CSV file: %s", ex.getMessage()));
+					String.format("An error occurred : %s", ex.getMessage()));
 			model.addAttribute("status", true);
 			return "error";
 		}
@@ -248,7 +249,7 @@ public class BulkAddressController {
 				String creds = env.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
 				String url = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/api-call-http-function";
 				//String url = "https://initial-test-open-api.aims.gcp.onsdigital.uk/addresses/bulk";
-				String jsonString = "{'jobId':'job2','id':'1','address':'7 Gate Reach'}";
+				String jsonString = "{'jobId':'2','id':'1','address':'7 Gate Reach'}";
 				JsonParser jsonParser = new JsonParser();
 				JsonObject payload = (JsonObject) jsonParser.parse(jsonString);
 
