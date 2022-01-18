@@ -11,34 +11,17 @@
 <body>
 
 <div class="container-fluid py-5">
+    <h2>AIMS Bulk Manager</h2>
 
-    <div class="row" th:if="${fatClusterEnabled}">
-        <div class="col-10 mx-auto">
-            <h1>Upload CSV File of Aux Addresses</h1>
-            <form method="POST" th:action="@{/upload-csv-aux-file}" enctype="multipart/form-data">
-            	
-                <div class="form-group mt-3 mb-3">
-                    <label for="file">Select a CSV file</label>
-                    <input type="file" name="file" class="form-control-file" id="file" accept=".csv">
-                </div>
-                <button type="submit" class="btn btn-primary">Import Addresses</button>
-            </form>
-        </div>
-    </div>
-    
-    <div class="row mt-5">
-        <div class="col-10 mx-auto">
-            <h1>Upload CSV File of Unit Addresses</h1>
-            <form method="POST" th:action="@{/upload-csv-unit-file}" enctype="multipart/form-data">
-            	
-                <div class="form-group mt-3 mb-3">
-                    <label for="file">Select a CSV file</label>
-                    <input type="file" name="file" class="form-control-file" id="file" accept=".csv">
-                </div>
-                <button type="submit" class="btn btn-primary">Import Addresses</button>
-            </form>
-        </div>
-    </div>
+    <p>This service has the following endpoints...</p>
+
+    <ul>
+        <li>bulk - not working yet</li>
+        <li>single?input={address} - create and run a new 1-address job</li>
+        <li>jobs - list all jobs</li>
+        <li>bulk-progress/{jobid} - progress of named job</li>
+        <li>bulk-result - not working yet</li>
+    </ul>
 </div>
 </body>
 </html>

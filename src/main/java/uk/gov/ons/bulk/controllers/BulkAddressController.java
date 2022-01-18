@@ -151,9 +151,8 @@ public class BulkAddressController {
 	}
 
 	@GetMapping(value = "/single")
-	public String runTestRequest(Model model) {
-	 //   model.addAttribute("status", false);
-		// Create dataset UUID
+	public String runTestRequest(@RequestParam(required=false) String input, Model model) {
+	   // Create dataset UUID
 		Long jobId = 0L;
 		try {
 			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
@@ -215,8 +214,9 @@ public class BulkAddressController {
 		String queueId = "test-queue";
 		String serviceAccountEmail =
 				"spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
+		String id = "1";
 		try {
-			createTask(projectId, locationId, queueId, jobId.toString(),serviceAccountEmail);
+			createTask(projectId, locationId, queueId, jobId.toString(),serviceAccountEmail,id,input);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
@@ -233,10 +233,36 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-progress/{jobid}")
 	public String getBulkRequestProgress(@PathVariable(required=true,name="jobid") String jobid,Model model) {
+
+		try {
+			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.bulkinfo WHERE runid = " + jobid + ";";
+			QueryJobConfiguration queryConfig =
+					QueryJobConfiguration.newBuilder(query).build();
+
+			ArrayList<Job> joblist = new ArrayList<Job>();
+			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+				Job nextJob = new Job();
+				nextJob.setRunid(row.get("runid").getStringValue());
+				nextJob.setUserid(row.get("userid").getStringValue());
+				nextJob.setStatus(row.get("status").getStringValue());
+				nextJob.setTotalrecs(row.get("totalrecs").getStringValue());
+				nextJob.setRecssofar(row.get("recssofar").getStringValue());
+				joblist.add(nextJob);
+			}
+
+			model.addAttribute("jobslist",joblist);
+
 		// get count of completed queries for given requestId
 		// compare with number of queries requested in order to give progress
 		// give ETA ?
-		return "progress";
+		} catch (Exception ex) {
+			model.addAttribute("message",
+					String.format("An error occurred : %s", ex.getMessage()));
+			model.addAttribute("status", true);
+			return "error";
+		}
+
+		return "jobstable";
 	}
 
 	@GetMapping(value = "/bulk-result")
@@ -265,14 +291,14 @@ public class BulkAddressController {
 
 
 		// Create a task with a HTTP target using the Cloud Tasks client.
-		public void createTask(String projectId, String locationId, String queueId, String jobId, String serviceAccountEmail)
+		public void createTask(String projectId, String locationId, String queueId, String jobId, String serviceAccountEmail, String id, String input)
 				throws IOException {
 
 			// Instantiates a client.
 			try (CloudTasksClient client = CloudTasksClient.create()) {
 				String creds = env.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
 				String url = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/api-call-http-function";
-				String jsonString = "{'jobId':'" + jobId + "','id':'1','address':'7 Gate Reach'}";
+				String jsonString = "{'jobId':'" + jobId + "','id':'"+ id + "','address':'" + input + "'}";
 				JsonParser jsonParser = new JsonParser();
 				JsonObject payload = (JsonObject) jsonParser.parse(jsonString);
 				// Construct the fully qualified queue name.
