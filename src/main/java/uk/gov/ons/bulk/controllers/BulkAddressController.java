@@ -13,10 +13,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.bigquery.*;
 import com.google.cloud.tasks.v2.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -40,6 +43,7 @@ import uk.gov.ons.bulk.entities.UnitAddress;
 //import uk.gov.ons.bulk.service.AddressService;
 import uk.gov.ons.bulk.util.ValidatedAddress;
 import uk.gov.ons.bulk.entities.Job;
+import uk.gov.ons.bulk.entities.Result;
 
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -265,12 +269,43 @@ public class BulkAddressController {
 		return "jobstable";
 	}
 
-	@GetMapping(value = "/bulk-result")
-	public String getBulkResults(@PathVariable(required=true,name="jobid") String jobid,Model model) {
+	@GetMapping(value = "/bulk-result/{jobid}",produces = "application/json")
+	public @ResponseBody String getBulkResults(@PathVariable(required=true,name="jobid") String jobid,Model model) {
 	//	model.addAttribute("status", false);
 		// fetch contents of results table for requestId
 		// present contents as JSON response
-		return "progress";
+		ArrayList<Result> rlist = new ArrayList<Result>();
+		try {
+			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.results" + jobid + ";";
+			QueryJobConfiguration queryConfig =
+					QueryJobConfiguration.newBuilder(query).build();
+
+
+
+			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+				Result nextResult= new Result();
+				nextResult.setId(row.get("id").getStringValue());
+				nextResult.setInputaddress(row.get("inputaddress").getStringValue());
+				String jsonString = row.get("response").getStringValue();
+				ObjectMapper objectMapper = new ObjectMapper();
+				Map<String, Object> jsonMap = objectMapper.readValue(jsonString,
+						new TypeReference<Map<String, Object>>(){});
+				nextResult.setResponse(jsonMap);
+				rlist.add(nextResult);
+			}
+
+			// get count of completed queries for given requestId
+			// compare with number of queries requested in order to give progress
+			// give ETA ?
+		} catch (Exception ex) {
+			model.addAttribute("message",
+					String.format("An error occurred : %s", ex.getMessage()));
+			model.addAttribute("status", true);
+			return "error";
+		}
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		String json2 = gson.toJson(rlist);
+		return json2.replaceAll("\\\\","");
 	}
 
 	public void createTable(String datasetName, String tableName, Schema schema) {
@@ -299,8 +334,7 @@ public class BulkAddressController {
 				String creds = env.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
 				String url = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/api-call-http-function";
 				String jsonString = "{'jobId':'" + jobId + "','id':'"+ id + "','address':'" + input + "'}";
-				JsonParser jsonParser = new JsonParser();
-				JsonObject payload = (JsonObject) jsonParser.parse(jsonString);
+				JsonObject payload = (JsonObject) JsonParser.parseString(jsonString);
 				// Construct the fully qualified queue name.
 				String queuePath = QueueName.of(projectId, locationId, queueId).toString();
 				OidcToken.Builder oidcTokenBuilder =
