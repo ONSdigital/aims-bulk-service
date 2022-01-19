@@ -38,12 +38,10 @@ import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 
 import lombok.extern.slf4j.Slf4j;
-import uk.gov.ons.bulk.entities.AuxAddress;
-import uk.gov.ons.bulk.entities.UnitAddress;
+import uk.gov.ons.bulk.entities.*;
 //import uk.gov.ons.bulk.service.AddressService;
-import uk.gov.ons.bulk.util.ValidatedAddress;
 import uk.gov.ons.bulk.entities.Job;
-import uk.gov.ons.bulk.entities.Result;
+import uk.gov.ons.bulk.util.ValidatedAddress;
 
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -54,9 +52,6 @@ import org.springframework.core.env.Environment;
 @Slf4j
 @Controller
 public class BulkAddressController {
-
-//	@Autowired
-//	private AddressService addressService;
 
 	@Autowired
 	private Environment env;
@@ -143,15 +138,88 @@ public class BulkAddressController {
 
 	@PostMapping(value = "/bulk")
 	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
-	//	model.addAttribute("status", true);
-		// Create dataset UUID
-		// get highest ID so far
 
-		// Create results table for UUID
-		// Create one cloud task for each address
-		// Execute task with backoff / throttling
-		// Capture results in BigQuery table
-		return "request-id";
+		// Create dataset UUID
+		Long jobId = 0L;
+		BulkRequestContainer bcont;
+		try {
+
+			ObjectMapper objectMapper = new ObjectMapper();
+       //     List<BulkRequest> bulkAdds = objectMapper.readValue(addressesJson, objectMapper.getTypeFactory().constructCollectionType(List.class, BulkRequest.class));
+			bcont = objectMapper.readValue(addressesJson, BulkRequestContainer.class);
+            int recs = bcont.getAddresses().length;
+
+			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
+			QueryJobConfiguration queryConfig =
+					QueryJobConfiguration.newBuilder(query).build();
+			long newKey = 0;
+			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+				for (FieldValue val : row) {
+					newKey = val.getLongValue() + 1;
+					System.out.println(newKey);
+				}
+			}
+			String datasetName = "bulk_status";
+			// Create new Job record
+			String tableName = "bulkinfo";
+			Map<String, Object> row1Data = new HashMap<>();
+			row1Data.put("runid", newKey);
+			row1Data.put("userid", "bigqueryboy");
+			row1Data.put("status", "waiting");
+			row1Data.put("totalrecs", recs);
+			row1Data.put("recssofar", 0);
+			TableId tableId = TableId.of(datasetName, tableName);
+			InsertAllResponse response =
+					bigquery.insertAll(
+							InsertAllRequest.newBuilder(tableId)
+									.addRow("runid", row1Data)
+									.build());
+			if (response.hasErrors()) {
+				// If any of the insertions failed, this lets you inspect the errors
+				for (Map.Entry<Long, List<BigQueryError>> entry : response.getInsertErrors().entrySet()) {
+					System.out.println(entry);
+				}
+			}
+
+			tableName = "results" + newKey;
+			jobId = newKey;
+			model.addAttribute("jobid", newKey);
+			Schema schema =
+					Schema.of(
+							Field.of("id", StandardSQLTypeName.INT64),
+							Field.of("inputaddress", StandardSQLTypeName.STRING),
+							Field.of("response", StandardSQLTypeName.STRING)
+					);
+			createTable(datasetName, tableName, schema);
+		} catch (Exception ex) {
+			model.addAttribute("message",
+					String.format("An error occurred creating results table : %s", ex.getMessage()));
+			model.addAttribute("status", true);
+			return "error";
+		}
+
+		String projectId = "ons-aims-initial-test";
+		String locationId = "europe-west2";
+		String queueId = "test-queue";
+		String serviceAccountEmail =
+				"spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
+
+		BulkRequest[] adds = bcont.getAddresses();
+		for (int i=0; i<adds.length; i++) {
+
+			String id = adds[i].getId();
+			String input = adds[i].getAddress();
+			try {
+				createTask(projectId, locationId, queueId, jobId.toString(), serviceAccountEmail, id, input);
+			} catch (Exception ex) {
+				model.addAttribute("message",
+						String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
+				model.addAttribute("status", true);
+				return "error";
+			}
+		}
+
+		return "submitted";
 	}
 
 	@GetMapping(value = "/single")
@@ -200,9 +268,6 @@ public class BulkAddressController {
 					Schema.of(
 							Field.of("id", StandardSQLTypeName.INT64),
 							Field.of("inputaddress", StandardSQLTypeName.STRING),
-					//		Field.of("uprn", StandardSQLTypeName.INT64),
-					//		Field.of("address", StandardSQLTypeName.STRING),
-					//		Field.of("score", StandardSQLTypeName.FLOAT64)
 							Field.of("response", StandardSQLTypeName.STRING)
 					);
 			createTable(datasetName, tableName, schema);
@@ -228,10 +293,6 @@ public class BulkAddressController {
 			return "error";
 		}
 
-		// Create one cloud task for each address
-		// Execute task with backoff / throttling
-		// Capture results in BigQuery table
-
 		return "submitted";
 	}
 
@@ -256,9 +317,6 @@ public class BulkAddressController {
 
 			model.addAttribute("jobslist",joblist);
 
-		// get count of completed queries for given requestId
-		// compare with number of queries requested in order to give progress
-		// give ETA ?
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred : %s", ex.getMessage()));
@@ -271,10 +329,9 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-result/{jobid}",produces = "application/json")
 	public @ResponseBody String getBulkResults(@PathVariable(required=true,name="jobid") String jobid,Model model) {
-	//	model.addAttribute("status", false);
-		// fetch contents of results table for requestId
-		// present contents as JSON response
+
 		ArrayList<Result> rlist = new ArrayList<Result>();
+		ResultContainer rcont = new ResultContainer();
 		try {
 			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.results" + jobid + ";";
 			QueryJobConfiguration queryConfig =
@@ -294,18 +351,18 @@ public class BulkAddressController {
 				rlist.add(nextResult);
 			}
 
-			// get count of completed queries for given requestId
-			// compare with number of queries requested in order to give progress
-			// give ETA ?
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred : %s", ex.getMessage()));
 			model.addAttribute("status", true);
 			return "error";
 		}
+		rcont.setResults(rlist);
+		rcont.setJobid(jobid);
+		rcont.setStatus("200");
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		String json2 = gson.toJson(rlist);
-		return json2.replaceAll("\\\\","");
+		String json2 = gson.toJson(rcont);
+		return json2;
 	}
 
 	public void createTable(String datasetName, String tableName, Schema schema) {
@@ -338,7 +395,7 @@ public class BulkAddressController {
 				// Construct the fully qualified queue name.
 				String queuePath = QueueName.of(projectId, locationId, queueId).toString();
 				OidcToken.Builder oidcTokenBuilder =
-						OidcToken.newBuilder().setServiceAccountEmail(serviceAccountEmail);
+						OidcToken.newBuilder().setServiceAccountEmail(serviceAccountEmail).setAudience(url);
 				// Construct the task body.
 				Task.Builder taskBuilder =
 						Task.newBuilder()
