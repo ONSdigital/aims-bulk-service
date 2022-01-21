@@ -1,79 +1,97 @@
 package uk.gov.ons.bulk.controllers;
 
-import static uk.gov.ons.bulk.util.BulkAddressConstants.BAD_AUX_ADDRESS_FILE_NAME;
-import static uk.gov.ons.bulk.util.BulkAddressConstants.BAD_UNIT_ADDRESS_FILE_NAME;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.cloud.bigquery.*;
-import com.google.cloud.tasks.v2.*;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.BigQueryError;
+import com.google.cloud.bigquery.BigQueryException;
+import com.google.cloud.bigquery.Field;
+import com.google.cloud.bigquery.FieldValue;
+import com.google.cloud.bigquery.FieldValueList;
+import com.google.cloud.bigquery.InsertAllRequest;
+import com.google.cloud.bigquery.InsertAllResponse;
+import com.google.cloud.bigquery.QueryJobConfiguration;
+import com.google.cloud.bigquery.Schema;
+import com.google.cloud.bigquery.StandardSQLTypeName;
+import com.google.cloud.bigquery.StandardTableDefinition;
+import com.google.cloud.bigquery.TableDefinition;
+import com.google.cloud.bigquery.TableId;
+import com.google.cloud.bigquery.TableInfo;
+import com.google.cloud.tasks.v2.CloudTasksClient;
+import com.google.cloud.tasks.v2.HttpMethod;
+import com.google.cloud.tasks.v2.HttpRequest;
+import com.google.cloud.tasks.v2.OidcToken;
+import com.google.cloud.tasks.v2.QueueName;
+import com.google.cloud.tasks.v2.Task;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.protobuf.ByteString;
 
 import lombok.extern.slf4j.Slf4j;
-import uk.gov.ons.bulk.entities.*;
+import uk.gov.ons.bulk.entities.BulkRequest;
+import uk.gov.ons.bulk.entities.BulkRequestContainer;
 //import uk.gov.ons.bulk.service.AddressService;
 import uk.gov.ons.bulk.entities.Job;
-import uk.gov.ons.bulk.util.ValidatedAddress;
-
-import com.google.protobuf.ByteString;
-import java.io.IOException;
-import java.nio.charset.Charset;
-
-import org.springframework.core.env.Environment;
+import uk.gov.ons.bulk.entities.Result;
+import uk.gov.ons.bulk.entities.ResultContainer;
 
 @Slf4j
 @Controller
 public class BulkAddressController {
 
-	@Autowired
-	private Environment env;
+//	@Autowired
+//	private Environment env;
 
 	// BigQuery client object provided by our autoconfiguration.
 	@Autowired
 	BigQuery bigquery;
 
-	@Value("${aims.gcp.bucket}")
-	private String gcsBucket;
+//	@Value("${aims.gcp.bucket}")
+//	private String gcsBucket;
 	
-	@Value("${aims.elasticsearch.cluster.fat-enabled}")
-	private boolean fatClusterEnabled;
+//	@Value("${aims.elasticsearch.cluster.fat-enabled}")
+//	private boolean fatClusterEnabled;
+//	
 	
-	@Value("${aims.display.limit}")
-	private int displayLimit;
+    @Value("${spring.cloud.gcp.project-id}")
+    private String projectId;
+	
+	
+//	@Value("${aims.display.limit}")
+//	private int displayLimit;
 
 	@GetMapping(value = "/")
 	@ResponseStatus(HttpStatus.OK)
 	public String index(Model model) {
 		
-		model.addAttribute("fatClusterEnabled", fatClusterEnabled);
+//		model.addAttribute("fatClusterEnabled", fatClusterEnabled);
 		
 		return "index";
 	}
@@ -156,7 +174,7 @@ public class BulkAddressController {
 			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
 				for (FieldValue val : row) {
 					newKey = val.getLongValue() + 1;
-					System.out.println(newKey);
+					log.info(String.format("newkey:%d", newKey));
 				}
 			}
 			String datasetName = "bulk_status";
@@ -198,7 +216,7 @@ public class BulkAddressController {
 			return "error";
 		}
 
-		String projectId = "ons-aims-initial-test";
+//		String projectId = "ons-aims-initial-test";
 		String locationId = "europe-west2";
 		String queueId = "test-queue";
 		String serviceAccountEmail =
@@ -278,7 +296,7 @@ public class BulkAddressController {
 			return "error";
 		}
 
-		String projectId = "ons-aims-initial-test";
+//		String projectId = "ons-aims-initial-test";
 		String locationId = "europe-west2";
 		String queueId = "test-queue";
 		String serviceAccountEmail =
@@ -388,7 +406,7 @@ public class BulkAddressController {
 
 			// Instantiates a client.
 			try (CloudTasksClient client = CloudTasksClient.create()) {
-				String creds = env.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
+//				String creds = env.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
 				String url = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/api-call-http-function";
 				String jsonString = "{'jobId':'" + jobId + "','id':'"+ id + "','address':'" + input + "'}";
 				JsonObject payload = (JsonObject) JsonParser.parseString(jsonString);
