@@ -56,6 +56,8 @@ import uk.gov.ons.bulk.entities.Job;
 import uk.gov.ons.bulk.entities.Result;
 import uk.gov.ons.bulk.entities.ResultContainer;
 
+import javax.annotation.PostConstruct;
+
 @Slf4j
 @Controller
 public class BulkAddressController {
@@ -74,25 +76,36 @@ public class BulkAddressController {
 	private String infoTable;  
 	
 	@Value("${aims.cloud-functions.api-call-function}")
-	private String apiCallFunction;  
-	
-	private final String BASE_DATASET_QUERY = new StringBuilder()
+	private String apiCallFunction;
+
+	private String BASE_DATASET_QUERY;
+	private String INFO_TABLE_QUERY;
+	private String JOBS_QUERY;
+	private String JOB_QUERY;
+
+	@PostConstruct
+	public void postConstruct() {
+
+	BASE_DATASET_QUERY = new StringBuilder()
 			.append("SELECT * FROM ")
 			.append(projectId)
+			.append(".")
 			.append(datasetName).toString();
 	
-	private final String INFO_TABLE_QUERY = new StringBuilder()
+	INFO_TABLE_QUERY = new StringBuilder()
 			.append(BASE_DATASET_QUERY)
+			.append(".")
 			.append(infoTable).toString(); 
 	
-	private final String JOBS_QUERY = new StringBuilder()
+	JOBS_QUERY = new StringBuilder()
 			.append(INFO_TABLE_QUERY)
 			.append(";").toString();
 	
-	private final String JOB_QUERY = new StringBuilder()
+	JOB_QUERY = new StringBuilder()
 			.append(INFO_TABLE_QUERY)
 			.append(" WHERE runid = %s;").toString();
-	
+	}
+
 	@GetMapping(value = "/")
 	@ResponseStatus(HttpStatus.OK)
 	public String index(Model model) {

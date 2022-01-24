@@ -24,7 +24,7 @@ dependencies {
 	
 	implementation 'com.google.cloud:spring-cloud-gcp-dependencies:2.0.6'
 	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-bigquery:1.2.8.RELEASE'
-	implementation 'com.google.cloud:google-cloud-tasks:1.29.1'
+	implementation 'com.google.cloud:google-cloud-tasks:1.33.2'
 
 	implementation 'org.springframework.integration:spring-integration-core'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
