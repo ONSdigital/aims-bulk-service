@@ -9,10 +9,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,9 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryError;
@@ -57,7 +52,6 @@ import com.google.protobuf.ByteString;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
-//import uk.gov.ons.bulk.service.AddressService;
 import uk.gov.ons.bulk.entities.Job;
 import uk.gov.ons.bulk.entities.Result;
 import uk.gov.ons.bulk.entities.ResultContainer;
@@ -66,110 +60,128 @@ import uk.gov.ons.bulk.entities.ResultContainer;
 @Controller
 public class BulkAddressController {
 
-//	@Autowired
-//	private Environment env;
-
 	// BigQuery client object provided by our autoconfiguration.
 	@Autowired
 	BigQuery bigquery;
 
-//	@Value("${aims.gcp.bucket}")
-//	private String gcsBucket;
+	@Value("${spring.cloud.gcp.project-id}")
+	private String projectId;
 	
-//	@Value("${aims.elasticsearch.cluster.fat-enabled}")
-//	private boolean fatClusterEnabled;
-//	
+	@Value("${spring.cloud.gcp.bigquery.dataset-name}")
+	private String datasetName;  
 	
-    @Value("${spring.cloud.gcp.project-id}")
-    private String projectId;
+	@Value("${aims.bigquery.info-table}")
+	private String infoTable;  
 	
+	@Value("${aims.cloud-functions.api-call-function}")
+	private String apiCallFunction;  
 	
-//	@Value("${aims.display.limit}")
-//	private int displayLimit;
-
+	private final String BASE_DATASET_QUERY = new StringBuilder()
+			.append("SELECT * FROM ")
+			.append(projectId)
+			.append(datasetName).toString();
+	
+	private final String INFO_TABLE_QUERY = new StringBuilder()
+			.append(BASE_DATASET_QUERY)
+			.append(infoTable).toString(); 
+	
+	private final String JOBS_QUERY = new StringBuilder()
+			.append(INFO_TABLE_QUERY)
+			.append(";").toString();
+	
+	private final String JOB_QUERY = new StringBuilder()
+			.append(INFO_TABLE_QUERY)
+			.append(" WHERE runid = %s;").toString();
+	
 	@GetMapping(value = "/")
 	@ResponseStatus(HttpStatus.OK)
 	public String index(Model model) {
-		
-//		model.addAttribute("fatClusterEnabled", fatClusterEnabled);
-		
 		return "index";
 	}
 
 	@GetMapping(value = "/jobs")
 	public String getBulkRequestProgress(Model model) {
 
-			try {
-		String query = "SELECT * FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-		QueryJobConfiguration queryConfig =
-				QueryJobConfiguration.newBuilder(query).build();
+		try {
+			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(JOBS_QUERY).build();
 
-		ArrayList<Job> joblist = new ArrayList<Job>();
-		for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
-			Job nextJob = new Job();
-			nextJob.setRunid(row.get("runid").getStringValue());
-			nextJob.setUserid(row.get("userid").getStringValue());
-			nextJob.setStatus(row.get("status").getStringValue());
-			nextJob.setTotalrecs(row.get("totalrecs").getStringValue());
-			nextJob.setRecssofar(row.get("recssofar").getStringValue());
-			joblist.add(nextJob);
+			ArrayList<Job> joblist = new ArrayList<Job>();
+			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+				Job nextJob = new Job();
+				nextJob.setRunid(row.get("runid").getStringValue());
+				nextJob.setUserid(row.get("userid").getStringValue());
+				nextJob.setStatus(row.get("status").getStringValue());
+				nextJob.setTotalrecs(row.get("totalrecs").getStringValue());
+				nextJob.setRecssofar(row.get("recssofar").getStringValue());
+				joblist.add(nextJob);
+			}
+
+			model.addAttribute("jobslist", joblist);
+
+		} catch (Exception ex) {
+			model.addAttribute("message", String.format("An error occurred : %s", ex.getMessage()));
+			model.addAttribute("status", true);
+			return "error";
 		}
-
-		model.addAttribute("jobslist",joblist);
-
-	} catch (Exception ex) {
-		model.addAttribute("message",
-				String.format("An error occurred : %s", ex.getMessage()));
-		model.addAttribute("status", true);
-		return "error";
-	}
 
 		return "jobstable";
 	}
-	
+
 	@GetMapping(value = "/error")
 	@ResponseStatus(HttpStatus.OK)
 	public String error(Model model) {
 		return "error";
 	}
 
-		@GetMapping(path = {"/paramtest", "/paramtest/{data}"})
-        public String testVariables(@PathVariable(required=false,name="data") String data,
-					  @RequestParam(required=false) Map<String,String> qparams) {
-		qparams.forEach((a,b) -> {
-			System.out.println(String.format("%s -> %s",a,b));
-		});
-
-		if (data != null) {
-			System.out.println(data);
-		}
-
-		return "progress";
-	}
-
-    @GetMapping(path = "/jsontest", produces= MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<JsonNode> get() throws JsonProcessingException {
-		ObjectMapper mapper = new ObjectMapper();
-		JsonNode json = mapper.readTree("{\"id\": \"132\", \"name\": \"Alice\"}");
-		return ResponseEntity.ok(json);
-	}
+	/*
+	 * Testing methods?
+	 */
+	
+//	@GetMapping(path = { "/paramtest", "/paramtest/{data}" })
+//	public String testVariables(@PathVariable(required = false, name = "data") String data,
+//			@RequestParam(required = false) Map<String, String> qparams) {
+//		qparams.forEach((a, b) -> {
+//			System.out.println(String.format("%s -> %s", a, b));
+//		});
+//
+//		if (data != null) {
+//			System.out.println(data);
+//		}
+//
+//		return "progress";
+//	}
+//
+//	@GetMapping(path = "/jsontest", produces = MediaType.APPLICATION_JSON_VALUE)
+//	public ResponseEntity<JsonNode> get() throws JsonProcessingException {
+//		ObjectMapper mapper = new ObjectMapper();
+//		JsonNode json = mapper.readTree("{\"id\": \"132\", \"name\": \"Alice\"}");
+//		return ResponseEntity.ok(json);
+//	}
 
 	@PostMapping(value = "/bulk")
 	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
 
+		/*
+		 * We are using a single Dataset for the bulk service which makes gathering info on each bulk run easier.
+		 * We need a more robust method of naming the tables for each bulk run.
+		 * Should probably use UUID.randomUUID() or similar.
+		 * Don't need to look up the latest ID used if using UUID. 
+		 */
+		
 		// Create dataset UUID
 		Long jobId = 0L;
 		BulkRequestContainer bcont;
 		try {
 
 			ObjectMapper objectMapper = new ObjectMapper();
-       //     List<BulkRequest> bulkAdds = objectMapper.readValue(addressesJson, objectMapper.getTypeFactory().constructCollectionType(List.class, BulkRequest.class));
+			// List<BulkRequest> bulkAdds = objectMapper.readValue(addressesJson,
+			// objectMapper.getTypeFactory().constructCollectionType(List.class,
+			// BulkRequest.class));
 			bcont = objectMapper.readValue(addressesJson, BulkRequestContainer.class);
-            int recs = bcont.getAddresses().length;
+			int recs = bcont.getAddresses().length;
 
 			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-			QueryJobConfiguration queryConfig =
-					QueryJobConfiguration.newBuilder(query).build();
+			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
 			long newKey = 0;
 			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
 				for (FieldValue val : row) {
@@ -177,7 +189,6 @@ public class BulkAddressController {
 					log.info(String.format("newkey:%d", newKey));
 				}
 			}
-			String datasetName = "bulk_status";
 			// Create new Job record
 			String tableName = "bulkinfo";
 			Map<String, Object> row1Data = new HashMap<>();
@@ -187,27 +198,22 @@ public class BulkAddressController {
 			row1Data.put("totalrecs", recs);
 			row1Data.put("recssofar", 0);
 			TableId tableId = TableId.of(datasetName, tableName);
-			InsertAllResponse response =
-					bigquery.insertAll(
-							InsertAllRequest.newBuilder(tableId)
-									.addRow("runid", row1Data)
-									.build());
+			InsertAllResponse response = bigquery
+					.insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
 			if (response.hasErrors()) {
 				// If any of the insertions failed, this lets you inspect the errors
 				for (Map.Entry<Long, List<BigQueryError>> entry : response.getInsertErrors().entrySet()) {
-					System.out.println(entry);
+					log.error(String.format("entry: %s", entry.toString()));
 				}
 			}
 
 			tableName = "results" + newKey;
 			jobId = newKey;
 			model.addAttribute("jobid", newKey);
-			Schema schema =
-					Schema.of(
-							Field.of("id", StandardSQLTypeName.INT64),
-							Field.of("inputaddress", StandardSQLTypeName.STRING),
-							Field.of("response", StandardSQLTypeName.STRING)
-					);
+			Schema schema = Schema.of(
+					Field.of("id", StandardSQLTypeName.INT64),
+					Field.of("inputaddress", StandardSQLTypeName.STRING),
+					Field.of("response", StandardSQLTypeName.STRING));
 			createTable(datasetName, tableName, schema);
 		} catch (Exception ex) {
 			model.addAttribute("message",
@@ -216,14 +222,15 @@ public class BulkAddressController {
 			return "error";
 		}
 
-//		String projectId = "ons-aims-initial-test";
 		String locationId = "europe-west2";
 		String queueId = "test-queue";
-		String serviceAccountEmail =
-				"spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
+		/*
+		 * Should set this from a config value. But will be unnecessary when we create the task in a Cloud Function.
+		 */
+		String serviceAccountEmail = "spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
 
 		BulkRequest[] adds = bcont.getAddresses();
-		for (int i=0; i<adds.length; i++) {
+		for (int i = 0; i < adds.length; i++) {
 
 			String id = adds[i].getId();
 			String input = adds[i].getAddress();
@@ -240,22 +247,23 @@ public class BulkAddressController {
 		return "submitted";
 	}
 
+	/*
+	 * Can this method go? Is it just for testing?
+	 */
 	@GetMapping(value = "/single")
-	public String runTestRequest(@RequestParam(required=false) String input, Model model) {
-	   // Create dataset UUID
+	public String runTestRequest(@RequestParam(required = false) String input, Model model) {
+		// Create dataset UUID
 		Long jobId = 0L;
 		try {
 			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-			QueryJobConfiguration queryConfig =
-					QueryJobConfiguration.newBuilder(query).build();
-            long newKey = 0;
+			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
+			long newKey = 0;
 			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
 				for (FieldValue val : row) {
 					newKey = val.getLongValue() + 1;
-					System.out.println(newKey);
+					log.info(String.format("newkey:%d", newKey));
 				}
 			}
-			String datasetName = "bulk_status";
 			// Create new Job record
 			String tableName = "bulkinfo";
 			Map<String, Object> row1Data = new HashMap<>();
@@ -265,15 +273,12 @@ public class BulkAddressController {
 			row1Data.put("totalrecs", 99);
 			row1Data.put("recssofar", 0);
 			TableId tableId = TableId.of(datasetName, tableName);
-			InsertAllResponse response =
-					bigquery.insertAll(
-							InsertAllRequest.newBuilder(tableId)
-									.addRow("runid", row1Data)
-									.build());
+			InsertAllResponse response = bigquery
+					.insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
 			if (response.hasErrors()) {
 				// If any of the insertions failed, this lets you inspect the errors
 				for (Map.Entry<Long, List<BigQueryError>> entry : response.getInsertErrors().entrySet()) {
-					System.out.println(entry);
+					log.error(String.format("entry: %s", entry.toString()));
 				}
 			}
 
@@ -282,12 +287,10 @@ public class BulkAddressController {
 			tableName = "results" + newKey;
 			jobId = newKey;
 			model.addAttribute("jobid", newKey);
-			Schema schema =
-					Schema.of(
-							Field.of("id", StandardSQLTypeName.INT64),
-							Field.of("inputaddress", StandardSQLTypeName.STRING),
-							Field.of("response", StandardSQLTypeName.STRING)
-					);
+			Schema schema = Schema.of(
+					Field.of("id", StandardSQLTypeName.INT64),
+					Field.of("inputaddress", StandardSQLTypeName.STRING),
+					Field.of("response", StandardSQLTypeName.STRING));
 			createTable(datasetName, tableName, schema);
 		} catch (Exception ex) {
 			model.addAttribute("message",
@@ -296,14 +299,15 @@ public class BulkAddressController {
 			return "error";
 		}
 
-//		String projectId = "ons-aims-initial-test";
 		String locationId = "europe-west2";
 		String queueId = "test-queue";
-		String serviceAccountEmail =
-				"spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
+		/*
+		 * Should set this from a config value. But will be unnecessary when we create the task in a Cloud Function.
+		 */
+		String serviceAccountEmail = "spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
 		String id = "1";
 		try {
-			createTask(projectId, locationId, queueId, jobId.toString(),serviceAccountEmail,id,input);
+			createTask(projectId, locationId, queueId, jobId.toString(), serviceAccountEmail, id, input);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
@@ -315,12 +319,11 @@ public class BulkAddressController {
 	}
 
 	@GetMapping(value = "/bulk-progress/{jobid}")
-	public String getBulkRequestProgress(@PathVariable(required=true,name="jobid") String jobid,Model model) {
+	public String getBulkRequestProgress(@PathVariable(required = true, name = "jobid") String jobid, Model model) {
 
 		try {
-			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.bulkinfo WHERE runid = " + jobid + ";";
-			QueryJobConfiguration queryConfig =
-					QueryJobConfiguration.newBuilder(query).build();
+			
+			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(String.format(JOB_QUERY, jobid)).build();
 
 			ArrayList<Job> joblist = new ArrayList<Job>();
 			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
@@ -333,11 +336,10 @@ public class BulkAddressController {
 				joblist.add(nextJob);
 			}
 
-			model.addAttribute("jobslist",joblist);
+			model.addAttribute("jobslist", joblist);
 
 		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred : %s", ex.getMessage()));
+			model.addAttribute("message", String.format("An error occurred : %s", ex.getMessage()));
 			model.addAttribute("status", true);
 			return "error";
 		}
@@ -345,33 +347,31 @@ public class BulkAddressController {
 		return "jobstable";
 	}
 
-	@GetMapping(value = "/bulk-result/{jobid}",produces = "application/json")
-	public @ResponseBody String getBulkResults(@PathVariable(required=true,name="jobid") String jobid,Model model) {
+	@GetMapping(value = "/bulk-result/{jobid}", produces = "application/json")
+	public @ResponseBody String getBulkResults(@PathVariable(required = true, name = "jobid") String jobid,
+			Model model) {
 
 		ArrayList<Result> rlist = new ArrayList<Result>();
 		ResultContainer rcont = new ResultContainer();
 		try {
 			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.results" + jobid + ";";
-			QueryJobConfiguration queryConfig =
-					QueryJobConfiguration.newBuilder(query).build();
-
-
+			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
 
 			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
-				Result nextResult= new Result();
+				Result nextResult = new Result();
 				nextResult.setId(row.get("id").getStringValue());
 				nextResult.setInputaddress(row.get("inputaddress").getStringValue());
 				String jsonString = row.get("response").getStringValue();
 				ObjectMapper objectMapper = new ObjectMapper();
 				Map<String, Object> jsonMap = objectMapper.readValue(jsonString,
-						new TypeReference<Map<String, Object>>(){});
+						new TypeReference<Map<String, Object>>() {
+						});
 				nextResult.setResponse(jsonMap);
 				rlist.add(nextResult);
 			}
 
 		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred : %s", ex.getMessage()));
+			model.addAttribute("message", String.format("An error occurred : %s", ex.getMessage()));
 			model.addAttribute("status", true);
 			return "error";
 		}
@@ -385,7 +385,8 @@ public class BulkAddressController {
 
 	public void createTable(String datasetName, String tableName, Schema schema) {
 		try {
-			// Initialize client that will be used to send requests. This client only needs to be created
+			// Initialize client that will be used to send requests. This client only needs
+			// to be created
 			// once, and can be reused for multiple requests.
 
 			TableId tableId = TableId.of(datasetName, tableName);
@@ -393,42 +394,39 @@ public class BulkAddressController {
 			TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
 
 			bigquery.create(tableInfo);
-			System.out.println("Table created successfully");
+			log.info(String.format("Table %s created successfully", tableId));
 		} catch (BigQueryException e) {
-			System.out.println("Table was not created. \n" + e.toString());
+			log.error(String.format("Table was not created. \n %s", e.toString()));
 		}
 	}
 
+	/*
+	 * This method can go when we move it to a Cloud Function
+	 */
+	// Create a task with a HTTP target using the Cloud Tasks client.
+	public void createTask(String projectId, String locationId, String queueId, String jobId,
+			String serviceAccountEmail, String id, String input) throws IOException {
 
-		// Create a task with a HTTP target using the Cloud Tasks client.
-		public void createTask(String projectId, String locationId, String queueId, String jobId, String serviceAccountEmail, String id, String input)
-				throws IOException {
+		// Instantiates a client.
+		try (CloudTasksClient client = CloudTasksClient.create()) {
+			
+			String jsonString = "{'jobId':'" + jobId + "','id':'" + id + "','address':'" + input + "'}";
+			JsonObject payload = (JsonObject) JsonParser.parseString(jsonString);
+			// Construct the fully qualified queue name.
+			String queuePath = QueueName.of(projectId, locationId, queueId).toString();
+			OidcToken.Builder oidcTokenBuilder = OidcToken.newBuilder().setServiceAccountEmail(serviceAccountEmail)
+					.setAudience(apiCallFunction);
+			// Construct the task body.
+			Task.Builder taskBuilder = Task.newBuilder()
+					.setHttpRequest(HttpRequest.newBuilder()
+							.setBody(ByteString.copyFrom(payload.toString(), Charset.defaultCharset())).setUrl(apiCallFunction)
+							.putHeaders("Content-Type", "application/json").setHttpMethod(HttpMethod.POST)
+							.setOidcToken(oidcTokenBuilder).build());
 
-			// Instantiates a client.
-			try (CloudTasksClient client = CloudTasksClient.create()) {
-//				String creds = env.getProperty("GOOGLE_APPLICATION_CREDENTIALS");
-				String url = "https://europe-west2-ons-aims-initial-test.cloudfunctions.net/api-call-http-function";
-				String jsonString = "{'jobId':'" + jobId + "','id':'"+ id + "','address':'" + input + "'}";
-				JsonObject payload = (JsonObject) JsonParser.parseString(jsonString);
-				// Construct the fully qualified queue name.
-				String queuePath = QueueName.of(projectId, locationId, queueId).toString();
-				OidcToken.Builder oidcTokenBuilder =
-						OidcToken.newBuilder().setServiceAccountEmail(serviceAccountEmail).setAudience(url);
-				// Construct the task body.
-				Task.Builder taskBuilder =
-						Task.newBuilder()
-								.setHttpRequest(
-										HttpRequest.newBuilder()
-												.setBody(ByteString.copyFrom(payload.toString(), Charset.defaultCharset()))
-												.setUrl(url)
-												.putHeaders("Content-Type","application/json")
-												.setHttpMethod(HttpMethod.POST)
-												.setOidcToken(oidcTokenBuilder)
-												.build());
-
-				// Send create task request.
-				Task task = client.createTask(queuePath, taskBuilder.build());
-				System.out.println("Task created: " + task.getName());
-			}
+			// Send create task request.
+			Task task = client.createTask(queuePath, taskBuilder.build());
+			log.info(String.format("Task created: %s", task.getName()));
+			
 		}
+	}
 }
