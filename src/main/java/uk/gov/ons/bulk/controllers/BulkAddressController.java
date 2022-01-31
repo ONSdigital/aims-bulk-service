@@ -113,7 +113,7 @@ public class BulkAddressController {
 	}
 
 	@GetMapping(value = "/jobs")
-	public String getBulkRequestProgress(Model model) {
+	public String getAllBulkRequestProgress(Model model) {
 
 		try {
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(JOBS_QUERY).build();
@@ -146,30 +146,7 @@ public class BulkAddressController {
 		return "error";
 	}
 
-	/*
-	 * Testing methods?
-	 */
-	
-//	@GetMapping(path = { "/paramtest", "/paramtest/{data}" })
-//	public String testVariables(@PathVariable(required = false, name = "data") String data,
-//			@RequestParam(required = false) Map<String, String> qparams) {
-//		qparams.forEach((a, b) -> {
-//			System.out.println(String.format("%s -> %s", a, b));
-//		});
-//
-//		if (data != null) {
-//			System.out.println(data);
-//		}
-//
-//		return "progress";
-//	}
-//
-//	@GetMapping(path = "/jsontest", produces = MediaType.APPLICATION_JSON_VALUE)
-//	public ResponseEntity<JsonNode> get() throws JsonProcessingException {
-//		ObjectMapper mapper = new ObjectMapper();
-//		JsonNode json = mapper.readTree("{\"id\": \"132\", \"name\": \"Alice\"}");
-//		return ResponseEntity.ok(json);
-//	}
+
 
 	@PostMapping(value = "/bulk")
 	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
@@ -255,77 +232,6 @@ public class BulkAddressController {
 				model.addAttribute("status", true);
 				return "error";
 			}
-		}
-
-		return "submitted";
-	}
-
-	/*
-	 * Can this method go? Is it just for testing?
-	 */
-	@GetMapping(value = "/single")
-	public String runTestRequest(@RequestParam(required = false) String input, Model model) {
-		// Create dataset UUID
-		Long jobId = 0L;
-		try {
-			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
-			long newKey = 0;
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
-				for (FieldValue val : row) {
-					newKey = val.getLongValue() + 1;
-					log.info(String.format("newkey:%d", newKey));
-				}
-			}
-			// Create new Job record
-			String tableName = "bulkinfo";
-			Map<String, Object> row1Data = new HashMap<>();
-			row1Data.put("runid", newKey);
-			row1Data.put("userid", "bigqueryboy");
-			row1Data.put("status", "waiting");
-			row1Data.put("totalrecs", 99);
-			row1Data.put("recssofar", 0);
-			TableId tableId = TableId.of(datasetName, tableName);
-			InsertAllResponse response = bigquery
-					.insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
-			if (response.hasErrors()) {
-				// If any of the insertions failed, this lets you inspect the errors
-				for (Map.Entry<Long, List<BigQueryError>> entry : response.getInsertErrors().entrySet()) {
-					log.error(String.format("entry: %s", entry.toString()));
-				}
-			}
-
-			// Create results table for UUID
-
-			tableName = "results" + newKey;
-			jobId = newKey;
-			model.addAttribute("jobid", newKey);
-			Schema schema = Schema.of(
-					Field.of("id", StandardSQLTypeName.INT64),
-					Field.of("inputaddress", StandardSQLTypeName.STRING),
-					Field.of("response", StandardSQLTypeName.STRING));
-			createTable(datasetName, tableName, schema);
-		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred creating results table : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
-		}
-
-		String locationId = "europe-west2";
-		String queueId = "test-queue";
-		/*
-		 * Should set this from a config value. But will be unnecessary when we create the task in a Cloud Function.
-		 */
-		String serviceAccountEmail = "spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
-		String id = "1";
-		try {
-			createTask(projectId, locationId, queueId, jobId.toString(), serviceAccountEmail, id, input);
-		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
 		}
 
 		return "submitted";

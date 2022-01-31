@@ -54,5 +54,12 @@ public class BulkAddressControllerTest {
 		.consumeWith(response -> {
 			assertTrue(response.toString().contains("Whoops"));
 		});
-	}	
+	}
+
+	@Test
+	void testGetAllBulkRequestProgress () {
+		client.get().uri("/jobs")
+				.exchange()
+				.expectStatus().isOk();
+	}
 }
