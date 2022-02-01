@@ -2,16 +2,12 @@ package uk.gov.ons.bulk.util;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Properties;
 
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.FieldValueList;
-import org.apache.commons.codec.binary.Hex;
 
 import com.google.cloud.bigquery.TableResult;
 import org.junit.jupiter.api.Test;
@@ -36,7 +32,8 @@ public class SampleQueryTest {
 	@Value("${aims.bigquery.info-table}")
 	private String infoTable;
 
-@Test
+	// Uncomment Test annotation to regenerate query.properties file
+//@Test
 	public void SampleQueryTest() throws InterruptedException, IOException, NoSuchAlgorithmException {
 
 		String BASE_DATASET_QUERY = new StringBuilder()

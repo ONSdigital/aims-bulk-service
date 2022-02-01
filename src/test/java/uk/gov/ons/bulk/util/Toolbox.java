@@ -13,18 +13,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import com.google.cloud.bigquery.*;
-import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Hex;
 
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.junit4.SpringRunner;
-
-//@RunWith(SpringRunner.class)
 public class Toolbox {
 
-//	private static BigQuery bigquery = BigQueryOptions.getDefaultInstance().getService();
-	
 	private static Toolbox _instance = new Toolbox();
 	
 	private Toolbox() {
@@ -39,7 +31,7 @@ public class Toolbox {
 	
 	 /**
 	   * The method runBqQuery is a generic method to call any BigQuery Sql. It will return the result
-	   * of BigQuery Sql as an object of TableResult.
+	   * of BigQuery Sql as a collection of FieldValueList objects obtained from the TableResult.
 	   *
 	   * @param query : sql query to execute in bigquery
 	   * @return

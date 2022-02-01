@@ -80,8 +80,6 @@ public class BigqueryTesting {
 		      
 		    	Object[] args = invocation.getArguments();
 
-		    //	TableResult tresult = mock(TableResult.class);
-
 		    	return getResponse((String) args[0]);
 		    }
 		  });
@@ -110,8 +108,6 @@ public class BigqueryTesting {
 
 		ArrayList<FieldValueList> tableResults = utils.runQuery(JOBS_QUERY,bigquery);
 		
-	//	Iterable<FieldValueList> results = tableResults.getValues();
-		
 		String resultCount = "";
 		
 		for (FieldValueList x : tableResults){
@@ -137,10 +133,7 @@ public class BigqueryTesting {
 
 		ArrayList<FieldValueList> fields = (ArrayList<FieldValueList>) Toolbox.getInstance().deserializeFromBase64(result);
 
-		//TableResult tresult = new TableResult(null,result.length(),(Page<FieldValueList>)fields);
-		
 		if(query != null)
-		//	return (TableResult) Toolbox.getInstance().deserializeFromBase64(result);
 		    return fields;
 		return null;
 		
