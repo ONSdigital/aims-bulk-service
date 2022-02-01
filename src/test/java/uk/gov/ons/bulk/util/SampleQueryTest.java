@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.Properties;
 
 import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.FieldValueList;
 import org.apache.commons.codec.binary.Hex;
 
 import com.google.cloud.bigquery.TableResult;
@@ -35,7 +36,6 @@ public class SampleQueryTest {
 	@Value("${aims.bigquery.info-table}")
 	private String infoTable;
 
-//	public void main(String[] args) throws InterruptedException, IOException, NoSuchAlgorithmException {
 @Test
 	public void SampleQueryTest() throws InterruptedException, IOException, NoSuchAlgorithmException {
 
@@ -58,26 +58,15 @@ public class SampleQueryTest {
 				.append(INFO_TABLE_QUERY)
 				.append(" WHERE runid = %s;").toString();
 
-		//String[] queries = {"SELECT count(*) FROM `bigquery-public-data.baseball.games_post_wide` LIMIT 1000",
-		//		"SELECT count(*) FROM `bigquery-public-data.austin_crime.crime` LIMIT 1000"};
-
 		String[] queries = {JOBS_QUERY};
 
 		Properties prop = Toolbox.getInstance().getPropertyFile();
 		
-		
+	// get field results part of TableResults object (problem with serializing whole object)
 		for( String query : queries) {
 			
-			TableResult tableResults = Toolbox.getInstance().runQuery(query, bigquery);
+			ArrayList<FieldValueList> fieldResults = Toolbox.getInstance().runQuery(query, bigquery);
 
-			Iterator iter = tableResults.getValues().iterator();
-
-			ArrayList<Object> fieldResults = new ArrayList<Object>();
-			while (iter.hasNext())
-			{
-				fieldResults.add(iter.next());
-			}
-			
 			String key = Toolbox.getInstance().convertToMd5(query);
 			
 			prop.setProperty(key, Toolbox.getInstance().serializeToBase64((fieldResults)));

@@ -12,16 +12,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
+import com.google.cloud.bigquery.*;
 import com.google.gson.Gson;
 import org.apache.commons.codec.binary.Hex;
 
-import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.BigQueryOptions;
-import com.google.cloud.bigquery.Job;
-import com.google.cloud.bigquery.JobId;
-import com.google.cloud.bigquery.JobInfo;
-import com.google.cloud.bigquery.QueryJobConfiguration;
-import com.google.cloud.bigquery.TableResult;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -51,7 +45,7 @@ public class Toolbox {
 	   * @return
 	   * @throws InterruptedException
 	   */
-	  public TableResult runQuery(String query, BigQuery bigquery) throws InterruptedException {
+	  public ArrayList<FieldValueList> runQuery(String query, BigQuery bigquery) throws InterruptedException {
 	    QueryJobConfiguration queryConfig =
 	        QueryJobConfiguration.newBuilder(query).setUseLegacySql(false).build();
 
@@ -60,8 +54,16 @@ public class Toolbox {
 	    Job queryJob = bigquery.create(JobInfo.newBuilder(queryConfig).setJobId(jobId).build());
 	    
 	    TableResult result = queryJob.getQueryResults();
+
+		  Iterator iter = result.getValues().iterator();
+
+		  ArrayList<FieldValueList> fieldResults = new ArrayList<FieldValueList>();
+		  while (iter.hasNext())
+		  {
+			  fieldResults.add((FieldValueList) iter.next());
+		  }
 	    
-	    return result;
+	    return fieldResults;
 	  }
 	  
 	  

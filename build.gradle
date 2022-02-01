@@ -51,4 +51,5 @@ dependencyManagement {
 
 test {
 	useJUnitPlatform()
+	jvmArgs '--enable-preview'
 }

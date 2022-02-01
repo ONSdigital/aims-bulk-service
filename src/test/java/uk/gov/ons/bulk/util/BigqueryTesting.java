@@ -1,6 +1,8 @@
 package uk.gov.ons.bulk.util;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.FileNotFoundException;
@@ -10,13 +12,16 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Properties;
 
+import com.google.api.gax.paging.Page;
 import com.google.cloud.bigquery.BigQuery;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.Md5Crypt;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
@@ -26,7 +31,12 @@ import com.google.cloud.bigquery.FieldValueList;
 import com.google.cloud.bigquery.TableResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootTest;
 
+// This class exists to check the big query test framework is working
+// The actual unit tests are in the appropriate classes
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BigqueryTesting {
 
 	@Autowired
@@ -49,7 +59,7 @@ public class BigqueryTesting {
 	String queryReponseRef = "query.properties";
 	
 
-	@Before
+	@BeforeAll
 	public void setUp() throws Exception {
 		
 		
@@ -65,11 +75,13 @@ public class BigqueryTesting {
 		MockitoAnnotations.initMocks(this);
 		
 		
-		when(utils.runQuery(anyString(),bigquery)).thenAnswer(new Answer<TableResult>() {
-		    public TableResult answer(InvocationOnMock invocation) throws Throwable {
+		when(utils.runQuery(anyString(),eq(bigquery))).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
+		    public ArrayList<FieldValueList> answer(InvocationOnMock invocation) throws Throwable {
 		      
 		    	Object[] args = invocation.getArguments();
-		      
+
+		    //	TableResult tresult = mock(TableResult.class);
+
 		    	return getResponse((String) args[0]);
 		    }
 		  });
@@ -79,47 +91,42 @@ public class BigqueryTesting {
 
 	
 	@Test
-	public void testBaseballCount() throws InterruptedException {
+	public void testJobsOutput() throws InterruptedException {
+
+		String BASE_DATASET_QUERY = new StringBuilder()
+				.append("SELECT * FROM ")
+				.append(projectId)
+				.append(".")
+				.append(datasetName).toString();
+
+		String INFO_TABLE_QUERY = new StringBuilder()
+				.append(BASE_DATASET_QUERY)
+				.append(".")
+				.append(infoTable).toString();
+
+		String JOBS_QUERY = new StringBuilder()
+				.append(INFO_TABLE_QUERY)
+				.append(";").toString();
+
+		ArrayList<FieldValueList> tableResults = utils.runQuery(JOBS_QUERY,bigquery);
 		
-		TableResult tableResults = utils.runQuery("SELECT count(*) FROM `bigquery-public-data.baseball.games_post_wide` LIMIT 1000",bigquery);
-		
-		Iterable<FieldValueList> results = tableResults.getValues();
+	//	Iterable<FieldValueList> results = tableResults.getValues();
 		
 		String resultCount = "";
 		
-		for (FieldValueList x : results){
+		for (FieldValueList x : tableResults){
 			
 			resultCount = x.get(0).getStringValue();
 			
 		}
 		
-		assert resultCount.equalsIgnoreCase("8676");
+		assert resultCount.equalsIgnoreCase("57");
 		
 	}
 	
 	
-	@Test
-	public void testAustinBikeCount() throws InterruptedException {
-		
-		TableResult tableResults = utils.runQuery("SELECT count(*) FROM `bigquery-public-data.austin_crime.crime` LIMIT 1000",bigquery);
-		
-		Iterable<FieldValueList> results = tableResults.getValues();
-		
-		String resultCount = "";
-		
-		for (FieldValueList x : results){
-			
-			resultCount = x.get(0).getStringValue();
-			
-		}
-		
-		assert resultCount.equalsIgnoreCase("116675");
-		
-	}
-	
-	
-	
-	public TableResult getResponse(String query) throws ClassNotFoundException, IOException, NoSuchAlgorithmException {
+
+	public ArrayList<FieldValueList> getResponse(String query) throws ClassNotFoundException, IOException, NoSuchAlgorithmException {
 		
 		
 		String key = Toolbox.getInstance().convertToMd5(query);
@@ -127,10 +134,14 @@ public class BigqueryTesting {
 		String result = (String) queryReponse.get(key);
 		
 		System.out.println(result);
+
+		ArrayList<FieldValueList> fields = (ArrayList<FieldValueList>) Toolbox.getInstance().deserializeFromBase64(result);
+
+		//TableResult tresult = new TableResult(null,result.length(),(Page<FieldValueList>)fields);
 		
 		if(query != null)
-			return (TableResult) Toolbox.getInstance().deserializeFromBase64(result);
-		
+		//	return (TableResult) Toolbox.getInstance().deserializeFromBase64(result);
+		    return fields;
 		return null;
 		
 	}
