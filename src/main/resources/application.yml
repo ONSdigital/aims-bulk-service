@@ -40,4 +40,4 @@ aims:
   bigquery:
     info-table: bulkinfo
   cloud-functions:
-    api-call-function: https://europe-west2-ons-aims-initial-test.cloudfunctions.net/api-call-http-function  
+    create-cloud-task-function: https://europe-west2-ons-aims-initial-test.cloudfunctions.net/create-cloud-task-function  
