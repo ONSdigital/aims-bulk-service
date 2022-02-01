@@ -1,15 +1,16 @@
 package uk.gov.ons.bulk.controllers;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,26 +40,17 @@ import com.google.cloud.bigquery.StandardTableDefinition;
 import com.google.cloud.bigquery.TableDefinition;
 import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.TableInfo;
-import com.google.cloud.tasks.v2.CloudTasksClient;
-import com.google.cloud.tasks.v2.HttpMethod;
-import com.google.cloud.tasks.v2.HttpRequest;
-import com.google.cloud.tasks.v2.OidcToken;
-import com.google.cloud.tasks.v2.QueueName;
-import com.google.cloud.tasks.v2.Task;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.protobuf.ByteString;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.Job;
 import uk.gov.ons.bulk.entities.Result;
 import uk.gov.ons.bulk.entities.ResultContainer;
-
-import javax.annotation.PostConstruct;
 
 @Slf4j
 @Controller
@@ -68,42 +62,44 @@ public class BulkAddressController {
 
 	@Value("${spring.cloud.gcp.project-id}")
 	private String projectId;
-	
+
 	@Value("${spring.cloud.gcp.bigquery.dataset-name}")
-	private String datasetName;  
-	
+	private String datasetName;
+
 	@Value("${aims.bigquery.info-table}")
-	private String infoTable;  
-	
-	@Value("${aims.cloud-functions.api-call-function}")
-	private String apiCallFunction;
+	private String infoTable;
+
+	@Value("${aims.cloud-functions.create-cloud-task-function}")
+	private String createTaskFunction;
 
 	private String BASE_DATASET_QUERY;
 	private String INFO_TABLE_QUERY;
 	private String JOBS_QUERY;
 	private String JOB_QUERY;
 
+	private final WebClient webClient = WebClient.create();
+
 	@PostConstruct
 	public void postConstruct() {
 
-	BASE_DATASET_QUERY = new StringBuilder()
-			.append("SELECT * FROM ")
-			.append(projectId)
-			.append(".")
-			.append(datasetName).toString();
-	
-	INFO_TABLE_QUERY = new StringBuilder()
-			.append(BASE_DATASET_QUERY)
-			.append(".")
-			.append(infoTable).toString(); 
-	
-	JOBS_QUERY = new StringBuilder()
-			.append(INFO_TABLE_QUERY)
-			.append(";").toString();
-	
-	JOB_QUERY = new StringBuilder()
-			.append(INFO_TABLE_QUERY)
-			.append(" WHERE runid = %s;").toString();
+		BASE_DATASET_QUERY = new StringBuilder()
+				.append("SELECT * FROM ")
+				.append(projectId)
+				.append(".")
+				.append(datasetName).toString();
+		
+		INFO_TABLE_QUERY = new StringBuilder()
+				.append(BASE_DATASET_QUERY)
+				.append(".")
+				.append(infoTable).toString(); 
+		
+		JOBS_QUERY = new StringBuilder()
+				.append(INFO_TABLE_QUERY)
+				.append(";").toString();
+		
+		JOB_QUERY = new StringBuilder()
+				.append(INFO_TABLE_QUERY)
+				.append(" WHERE runid = %s;").toString();
 	}
 
 	@GetMapping(value = "/")
@@ -146,41 +142,16 @@ public class BulkAddressController {
 		return "error";
 	}
 
-	/*
-	 * Testing methods?
-	 */
-	
-//	@GetMapping(path = { "/paramtest", "/paramtest/{data}" })
-//	public String testVariables(@PathVariable(required = false, name = "data") String data,
-//			@RequestParam(required = false) Map<String, String> qparams) {
-//		qparams.forEach((a, b) -> {
-//			System.out.println(String.format("%s -> %s", a, b));
-//		});
-//
-//		if (data != null) {
-//			System.out.println(data);
-//		}
-//
-//		return "progress";
-//	}
-//
-//	@GetMapping(path = "/jsontest", produces = MediaType.APPLICATION_JSON_VALUE)
-//	public ResponseEntity<JsonNode> get() throws JsonProcessingException {
-//		ObjectMapper mapper = new ObjectMapper();
-//		JsonNode json = mapper.readTree("{\"id\": \"132\", \"name\": \"Alice\"}");
-//		return ResponseEntity.ok(json);
-//	}
-
 	@PostMapping(value = "/bulk")
 	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
 
 		/*
-		 * We are using a single Dataset for the bulk service which makes gathering info on each bulk run easier.
-		 * We need a more robust method of naming the tables for each bulk run.
-		 * Should probably use UUID.randomUUID() or similar.
-		 * Don't need to look up the latest ID used if using UUID. 
+		 * We are using a single Dataset for the bulk service which makes gathering info
+		 * on each bulk run easier. We need a more robust method of naming the tables
+		 * for each bulk run. Should probably use UUID.randomUUID() or similar. Don't
+		 * need to look up the latest ID used if using UUID.
 		 */
-		
+
 		// Create dataset UUID
 		Long jobId = 0L;
 		BulkRequestContainer bcont;
@@ -235,20 +206,13 @@ public class BulkAddressController {
 			return "error";
 		}
 
-		String locationId = "europe-west2";
-		String queueId = "test-queue";
-		/*
-		 * Should set this from a config value. But will be unnecessary when we create the task in a Cloud Function.
-		 */
-		String serviceAccountEmail = "spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
-
 		BulkRequest[] adds = bcont.getAddresses();
 		for (int i = 0; i < adds.length; i++) {
 
 			String id = adds[i].getId();
 			String input = adds[i].getAddress();
 			try {
-				createTask(projectId, locationId, queueId, jobId.toString(), serviceAccountEmail, id, input);
+				createTask(jobId.toString(), id, input);
 			} catch (Exception ex) {
 				model.addAttribute("message",
 						String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
@@ -311,16 +275,14 @@ public class BulkAddressController {
 			model.addAttribute("status", true);
 			return "error";
 		}
-
-		String locationId = "europe-west2";
-		String queueId = "test-queue";
+		
 		/*
-		 * Should set this from a config value. But will be unnecessary when we create the task in a Cloud Function.
+		 * Should set this from a config value. But will be unnecessary when we create
+		 * the task in a Cloud Function.
 		 */
-		String serviceAccountEmail = "spring-boot-bulk-service@ons-aims-initial-test.iam.gserviceaccount.com";
 		String id = "1";
 		try {
-			createTask(projectId, locationId, queueId, jobId.toString(), serviceAccountEmail, id, input);
+			createTask(jobId.toString(), id, input);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
@@ -335,8 +297,9 @@ public class BulkAddressController {
 	public String getBulkRequestProgress(@PathVariable(required = true, name = "jobid") String jobid, Model model) {
 
 		try {
-			
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(String.format(JOB_QUERY, jobid)).build();
+
+			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(String.format(JOB_QUERY, jobid))
+					.build();
 
 			ArrayList<Job> joblist = new ArrayList<Job>();
 			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
@@ -413,33 +376,28 @@ public class BulkAddressController {
 		}
 	}
 
-	/*
-	 * This method can go when we move it to a Cloud Function
+	/**
+	 * Send individual address to GCP Cloud Function for matching.
+	 * 
+	 * @param jobId the id for this job
+	 * @param id    input address id
+	 * @param input the address to match
 	 */
-	// Create a task with a HTTP target using the Cloud Tasks client.
-	public void createTask(String projectId, String locationId, String queueId, String jobId,
-			String serviceAccountEmail, String id, String input) throws IOException {
+	public void createTask(String jobId, String id, String input) {
 
-		// Instantiates a client.
-		try (CloudTasksClient client = CloudTasksClient.create()) {
-			
-			String jsonString = "{'jobId':'" + jobId + "','id':'" + id + "','address':'" + input + "'}";
-			JsonObject payload = (JsonObject) JsonParser.parseString(jsonString);
-			// Construct the fully qualified queue name.
-			String queuePath = QueueName.of(projectId, locationId, queueId).toString();
-			OidcToken.Builder oidcTokenBuilder = OidcToken.newBuilder().setServiceAccountEmail(serviceAccountEmail)
-					.setAudience(apiCallFunction);
-			// Construct the task body.
-			Task.Builder taskBuilder = Task.newBuilder()
-					.setHttpRequest(HttpRequest.newBuilder()
-							.setBody(ByteString.copyFrom(payload.toString(), Charset.defaultCharset())).setUrl(apiCallFunction)
-							.putHeaders("Content-Type", "application/json").setHttpMethod(HttpMethod.POST)
-							.setOidcToken(oidcTokenBuilder).build());
+		String jsonString = String.format("{jobId:'%s',id:'%s',address:'%s'}", jobId, id, input);
 
-			// Send create task request.
-			Task task = client.createTask(queuePath, taskBuilder.build());
-			log.info(String.format("Task created: %s", task.getName()));
-			
-		}
+		webClient.post().uri(createTaskFunction).accept(MediaType.APPLICATION_JSON)
+				.body(BodyInserters.fromValue(JsonParser.parseString(jsonString).toString()))
+				.exchangeToMono(response -> {
+					if (response.statusCode().equals(HttpStatus.OK)) {
+						return response.bodyToMono(String.class);
+					} else if (response.statusCode().is4xxClientError()) {
+						return Mono.just(String.format("Error response: %s %s", response.statusCode().toString(),
+								response.toString()));
+					} else {
+						return response.createException().flatMap(Mono::error);
+					}
+				}).subscribe(res -> log.info(String.format("Response: %s", res)));
 	}
 }
