@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Properties;
 
 import com.google.cloud.bigquery.BigQuery;
@@ -67,10 +69,18 @@ public class SampleQueryTest {
 		for( String query : queries) {
 			
 			TableResult tableResults = Toolbox.getInstance().runQuery(query, bigquery);
+
+			Iterator iter = tableResults.getValues().iterator();
+
+			ArrayList<Object> fieldResults = new ArrayList<Object>();
+			while (iter.hasNext())
+			{
+				fieldResults.add(iter.next());
+			}
 			
 			String key = Toolbox.getInstance().convertToMd5(query);
 			
-			prop.setProperty(key, Toolbox.getInstance().serializeToBase64((tableResults)));
+			prop.setProperty(key, Toolbox.getInstance().serializeToBase64((fieldResults)));
 		}
 		
 		

@@ -77,22 +77,11 @@ public class Toolbox {
 			return o;
 		}
 		
-		public String serializeToBase64(TableResult tr) throws IOException {
-		//	String stest = new Gson().toJson(o);
-	//		TableResult rTest =new Gson().fromJson(stest,TableResult.class);
-           Iterator iter = tr.getValues().iterator();
-
-			ArrayList<Object> results = new ArrayList<Object>();
-			while (iter.hasNext())
-			{
-				results.add(iter.next());
-			}
-
-			// save an arraylist of FieldValueList objects (or save the iterable?)
+		public String serializeToBase64(Serializable o) throws IOException {
 
 	        ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	        ObjectOutputStream oos = new ObjectOutputStream(baos);
-	        oos.writeObject(results);
+	        oos.writeObject(o);
 	        oos.close();
 	        return Base64.getEncoder().encodeToString(baos.toByteArray()); 
 	    }
