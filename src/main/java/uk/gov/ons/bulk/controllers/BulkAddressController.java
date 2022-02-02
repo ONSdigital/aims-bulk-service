@@ -112,14 +112,20 @@ public class BulkAddressController {
 		return "index";
 	}
 
+	public Iterable<FieldValueList> runQuery(QueryJobConfiguration queryConfig) throws  java.lang.InterruptedException {
+
+		return bigquery.query(queryConfig).iterateAll();
+
+	}
+
 	@GetMapping(value = "/jobs")
 	public String getAllBulkRequestProgress(Model model) {
-
 		try {
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(JOBS_QUERY).build();
 
 			ArrayList<Job> joblist = new ArrayList<Job>();
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			for (FieldValueList row : runQuery(queryConfig)) {
+			//for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
 				Job nextJob = new Job();
 				nextJob.setRunid(row.get("runid").getStringValue());
 				nextJob.setUserid(row.get("userid").getStringValue());
