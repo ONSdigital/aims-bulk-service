@@ -1,8 +1,7 @@
 package uk.gov.ons.bulk.controllers;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 import java.io.FileNotFoundException;
@@ -14,6 +13,7 @@ import java.util.Properties;
 
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.FieldValueList;
+import com.google.cloud.bigquery.QueryJobConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -32,6 +32,7 @@ import org.springframework.ui.Model;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import uk.gov.ons.bulk.util.Toolbox;
+import uk.gov.ons.bulk.utils.QueryFuncs;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(Lifecycle.PER_CLASS)
@@ -66,6 +67,9 @@ public class BulkAddressControllerTest {
 	@Mock
 	private Toolbox utils;
 
+	@Mock
+	private QueryFuncs qFuncs;
+
 	Properties queryReponse = new Properties();
 
 	String queryReponseRef = "query.properties";
@@ -82,10 +86,10 @@ public class BulkAddressControllerTest {
 			throw new FileNotFoundException("Query Property file not in classpath");
 		}
 
-
 		MockitoAnnotations.initMocks(this);
 
-		when(utils.runQuery(anyString(),eq(bigquery))).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
+	//	when(qFuncs.runQuery(null,null)).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
+			when(qFuncs.runQuery(anyString(),any(BigQuery.class))).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
 			public ArrayList<FieldValueList> answer(InvocationOnMock invocation) throws Throwable {
 
 				Object[] args = invocation.getArguments();
@@ -113,7 +117,8 @@ public class BulkAddressControllerTest {
 		return null;
 
 	}
-	
+
+
 	@AfterAll
 	public void tear() throws IOException {
 

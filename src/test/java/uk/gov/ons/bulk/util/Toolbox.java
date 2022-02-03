@@ -28,7 +28,8 @@ public class Toolbox {
 		
 		return _instance;
 	}
-	
+
+
 	 /**
 	   * The method runBqQuery is a generic method to call any BigQuery Sql. It will return the result
 	   * of BigQuery Sql as a collection of FieldValueList objects obtained from the TableResult.
