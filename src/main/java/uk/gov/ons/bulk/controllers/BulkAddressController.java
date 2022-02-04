@@ -78,7 +78,7 @@ public class BulkAddressController {
 	private String JOBS_QUERY;
 	private String JOB_QUERY;
 
-    private QueryFuncs qFuncs = new QueryFuncs();
+    // private QueryFuncs qFuncs = new QueryFuncs();
 
 	private final WebClient webClient = WebClient.create();
 
@@ -112,12 +112,14 @@ public class BulkAddressController {
 	}
 
 	@GetMapping(value = "/jobs")
-	public String getAllBulkRequestProgress(Model model) {
+	public String getAllBulkRequestProgress(Model model,@RequestParam(required = false) String test) {
 		try {
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(JOBS_QUERY).build();
+			Boolean isTest = true;
+			if (test == null) {isTest = false;}
 
 			ArrayList<Job> joblist = new ArrayList<Job>();
-			for (FieldValueList row : qFuncs.runQuery(JOBS_QUERY,bigquery)) {
+			for (FieldValueList row : QueryFuncs.runQuery(JOBS_QUERY,bigquery,isTest)) {
 			//for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
 				Job nextJob = new Job();
 				nextJob.setRunid(row.get("runid").getStringValue());

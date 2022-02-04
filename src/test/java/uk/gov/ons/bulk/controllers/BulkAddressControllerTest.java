@@ -89,14 +89,14 @@ public class BulkAddressControllerTest {
 		MockitoAnnotations.initMocks(this);
 
 	//	when(qFuncs.runQuery(null,null)).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
-			when(qFuncs.runQuery(anyString(),any(BigQuery.class))).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
-			public ArrayList<FieldValueList> answer(InvocationOnMock invocation) throws Throwable {
-
-				Object[] args = invocation.getArguments();
-
-				return getResponse((String) args[0]);
-			}
-		});
+//			when(qFuncs.runQuery(anyString(),any(BigQuery.class),anyBoolean())).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
+//			public ArrayList<FieldValueList> answer(InvocationOnMock invocation) throws Throwable {
+//
+//				Object[] args = invocation.getArguments();
+//
+//				return getResponse((String) args[0]);
+//			}
+//		});
 
 
 	}
@@ -146,8 +146,8 @@ public class BulkAddressControllerTest {
 
 	@Test
 	void testGetAllBulkRequestProgress () {
-		String peek = client.get().uri("/jobs").exchange().expectBody().returnResult().toString();
-		client.get().uri("/jobs")
+		String peek = client.get().uri("/jobs?test=true").exchange().expectBody().returnResult().toString();
+		client.get().uri("/jobs?test=true")
 				.exchange()
 				.expectStatus().isOk();
 	}
