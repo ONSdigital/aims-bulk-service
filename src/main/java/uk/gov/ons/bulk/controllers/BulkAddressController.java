@@ -77,6 +77,7 @@ public class BulkAddressController {
 	private String INFO_TABLE_QUERY;
 	private String JOBS_QUERY;
 	private String JOB_QUERY;
+	private String RESULT_QUERY;
 
     // private QueryFuncs qFuncs = new QueryFuncs();
 
@@ -103,6 +104,11 @@ public class BulkAddressController {
 		JOB_QUERY = new StringBuilder()
 				.append(INFO_TABLE_QUERY)
 				.append(" WHERE runid = %s;").toString();
+
+		RESULT_QUERY = new StringBuilder()
+				.append(BASE_DATASET_QUERY)
+				.append(".")
+				.append("results%s;").toString();
 	}
 
 	@GetMapping(value = "/")
@@ -333,13 +339,16 @@ public class BulkAddressController {
 	public @ResponseBody String getBulkResults(@PathVariable(required = true, name = "jobid") String jobid,
 											   @RequestParam(required = false) String test, Model model) {
 
+		Boolean isTest = true;
+		if (test == null) {isTest = false;}
+
 		ArrayList<Result> rlist = new ArrayList<Result>();
 		ResultContainer rcont = new ResultContainer();
 		try {
 			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.results" + jobid + ";";
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
 
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			for (FieldValueList row : QueryFuncs.runQuery(String.format(RESULT_QUERY,jobid),bigquery,isTest)) {
 				Result nextResult = new Result();
 				nextResult.setId(row.get("id").getStringValue());
 				nextResult.setInputaddress(row.get("inputaddress").getStringValue());
@@ -382,6 +391,9 @@ public class BulkAddressController {
 		}
 	}
 
+	public void createTableTest(String datasetName, String tableName, Schema schema) {
+		log.info("Table created successfully");
+	}
 	/**
 	 * Send individual address to GCP Cloud Function for matching.
 	 *
@@ -405,5 +417,10 @@ public class BulkAddressController {
 						return response.createException().flatMap(Mono::error);
 					}
 				}).subscribe(res -> log.info(String.format("Response: %s", res)));
+	}
+
+	public void createTaskTest(String jobId, String id, String input){
+		String jsonString = String.format("{jobId:'%s',id:'%s',address:'%s'}", jobId, id, input);
+		log.info(jsonString);
 	}
 }
