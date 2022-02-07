@@ -126,7 +126,7 @@ public class BulkAddressControllerTest {
 					"\"address\": \"Costa Coffee, 12 Bedford Street, Exeter\"" +
 		"}]}";
 
-		client.post().uri("/bulk")
+		client.post().uri("/bulk?test=true")
 				.contentType(MediaType.APPLICATION_JSON)
 				.body(BodyInserters.fromValue(postJson))
 				.exchange()
@@ -137,28 +137,5 @@ public class BulkAddressControllerTest {
 //						.expectStatus().isForbidden();
 	}
 
-//	String responseSpec = client.post()
-//			.uri("URI")
-//			.headers(h -> h.setBearerAuth("token if any"))
-//			.body(BodyInserters.fromValue(bodyMap))
-//			.exchange()
-//			.flatMap(clientResponse -> {
-//				if (clientResponse.statusCode().is5xxServerError()) {
-//					clientResponse.body((clientHttpResponse, context) -> {
-//						return clientHttpResponse.getBody();
-//					});
-//					return clientResponse.bodyToMono(String.class);
-//				}
-//				else
-//					return clientResponse.bodyToMono(String.class);
-//			})
-//			.block();
 
-
-	@Test
-	void testCreateTable () {
-	}
-	@Test
-	void testCreateTask () {
-	}
 }

@@ -33,7 +33,7 @@ public class SampleQueryTest {
 	private String infoTable;
 
 	// Uncomment Test annotation to regenerate query.properties file
-//@Test
+@Test
 	public void SampleQueryTest() throws InterruptedException, IOException, NoSuchAlgorithmException {
 
 		String BASE_DATASET_QUERY = new StringBuilder()
@@ -53,9 +53,22 @@ public class SampleQueryTest {
 
 		String JOB_QUERY = new StringBuilder()
 				.append(INFO_TABLE_QUERY)
-				.append(" WHERE runid = %s;").toString();
+				.append(" WHERE runid = 14;").toString();
 
-		String[] queries = {JOBS_QUERY};
+		String RESULT_QUERY = new StringBuilder()
+				.append(BASE_DATASET_QUERY)
+				.append(".")
+				.append("results14;").toString();
+
+		String MAX_QUERY = new StringBuilder()
+				.append("SELECT MAX(runid) FROM ")
+				.append(projectId)
+				.append(".")
+				.append(datasetName)
+				.append(".")
+				.append(infoTable).toString();
+
+		String[] queries = {JOBS_QUERY,JOB_QUERY,RESULT_QUERY,MAX_QUERY};
 
 		Properties prop = Toolbox.getInstance().getPropertyFile();
 		
