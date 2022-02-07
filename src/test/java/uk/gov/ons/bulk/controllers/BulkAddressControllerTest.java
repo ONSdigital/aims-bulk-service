@@ -27,10 +27,12 @@ import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.ui.Model;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.springframework.web.reactive.function.BodyInserters;
 import uk.gov.ons.bulk.util.Toolbox;
 import uk.gov.ons.bulk.utils.QueryFuncs;
 
@@ -64,61 +66,6 @@ public class BulkAddressControllerTest {
 	private String infoTable;
 
 
-	@Mock
-	private Toolbox utils;
-
-	@Mock
-	private QueryFuncs qFuncs;
-
-	Properties queryReponse = new Properties();
-
-	String queryReponseRef = "query.properties";
-
-
-	@BeforeAll
-	public void setUp() throws Exception {
-
-		InputStream is = getClass().getClassLoader().getResourceAsStream(queryReponseRef);
-
-		if (is != null) {
-			queryReponse.load(is);
-		} else {
-			throw new FileNotFoundException("Query Property file not in classpath");
-		}
-
-		MockitoAnnotations.initMocks(this);
-
-	//	when(qFuncs.runQuery(null,null)).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
-//			when(qFuncs.runQuery(anyString(),any(BigQuery.class),anyBoolean())).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
-//			public ArrayList<FieldValueList> answer(InvocationOnMock invocation) throws Throwable {
-//
-//				Object[] args = invocation.getArguments();
-//
-//				return getResponse((String) args[0]);
-//			}
-//		});
-
-
-	}
-
-	public ArrayList<FieldValueList> getResponse(String query) throws ClassNotFoundException, IOException, NoSuchAlgorithmException {
-
-
-		String key = Toolbox.getInstance().convertToMd5(query);
-
-		String result = (String) queryReponse.get(key);
-
-		System.out.println(result);
-
-		ArrayList<FieldValueList> fields = (ArrayList<FieldValueList>) Toolbox.getInstance().deserializeFromBase64(result);
-
-		if(query != null)
-			return fields;
-		return null;
-
-	}
-
-
 	@AfterAll
 	public void tear() throws IOException {
 
@@ -150,5 +97,68 @@ public class BulkAddressControllerTest {
 		client.get().uri("/jobs?test=true")
 				.exchange()
 				.expectStatus().isOk();
+	}
+
+	@Test
+	void testGetBulkRequestProgress () {
+		String peek = client.get().uri("/bulk-progress/14?test=true").exchange().expectBody().returnResult().toString();
+		client.get().uri("/bulk-progress/14?test=true")
+				.exchange()
+				.expectStatus().isOk();
+	}
+
+	@Test
+	void testGetBulkResults () {
+		String peek = client.get().uri("/bulk-result/14?test=true").exchange().expectBody().returnResult().toString();
+		client.get().uri("/bulk-result/14?test=true")
+				.exchange()
+				.expectStatus().isOk();
+	}
+
+	@Test
+	void testrunBulkRequest () {
+		String postJson = "{"+
+				"\"addresses\":[{" +
+			"\"id\" : \"1\"," +
+					"\"address\": \"4 Gate Reach Exeter EX2 6GA\"" +
+		"},{" +
+			"\"id\" : \"2\"," +
+					"\"address\": \"Costa Coffee, 12 Bedford Street, Exeter\"" +
+		"}]}";
+
+		client.post().uri("/bulk")
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(BodyInserters.fromValue(postJson))
+				.exchange()
+				.expectBody(String.class)
+				.consumeWith(response -> {
+					assertTrue(response.toString().contains("Submitted"));
+				});
+//						.expectStatus().isForbidden();
+	}
+
+//	String responseSpec = client.post()
+//			.uri("URI")
+//			.headers(h -> h.setBearerAuth("token if any"))
+//			.body(BodyInserters.fromValue(bodyMap))
+//			.exchange()
+//			.flatMap(clientResponse -> {
+//				if (clientResponse.statusCode().is5xxServerError()) {
+//					clientResponse.body((clientHttpResponse, context) -> {
+//						return clientHttpResponse.getBody();
+//					});
+//					return clientResponse.bodyToMono(String.class);
+//				}
+//				else
+//					return clientResponse.bodyToMono(String.class);
+//			})
+//			.block();
+
+
+	@Test
+	void testCreateTable () {
+	}
+	@Test
+	void testCreateTask () {
 	}
 }

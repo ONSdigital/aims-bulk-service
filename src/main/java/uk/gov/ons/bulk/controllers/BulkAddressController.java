@@ -120,7 +120,6 @@ public class BulkAddressController {
 
 			ArrayList<Job> joblist = new ArrayList<Job>();
 			for (FieldValueList row : QueryFuncs.runQuery(JOBS_QUERY,bigquery,isTest)) {
-			//for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
 				Job nextJob = new Job();
 				nextJob.setRunid(row.get("runid").getStringValue());
 				nextJob.setUserid(row.get("userid").getStringValue());
@@ -150,7 +149,7 @@ public class BulkAddressController {
 
 
 	@PostMapping(value = "/bulk")
-	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
+	public String runBulkRequest(@RequestBody String addressesJson, Model model,@RequestParam(required = false) String test) {
 
 		/*
 		 * We are using a single Dataset for the bulk service which makes gathering info
@@ -235,7 +234,7 @@ public class BulkAddressController {
 	 * Can this method go? Is it just for testing?
 	 */
 	@GetMapping(value = "/single")
-	public String runTestRequest(@RequestParam(required = false) String input, Model model) {
+	public String runTestRequest(@RequestParam(required = false) String input, Model model,@RequestParam(required = false) String test) {
 		// Create dataset UUID
 		Long jobId = 0L;
 		try {
@@ -301,7 +300,7 @@ public class BulkAddressController {
 	}
 
 	@GetMapping(value = "/bulk-progress/{jobid}")
-	public String getBulkRequestProgress(@PathVariable(required = true, name = "jobid") String jobid, Model model) {
+	public String getBulkRequestProgress(@PathVariable(required = true, name = "jobid") String jobid, Model model,@RequestParam(required = false) String test) {
 
 		try {
 
@@ -332,7 +331,7 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-result/{jobid}", produces = "application/json")
 	public @ResponseBody String getBulkResults(@PathVariable(required = true, name = "jobid") String jobid,
-			Model model) {
+											   @RequestParam(required = false) String test, Model model) {
 
 		ArrayList<Result> rlist = new ArrayList<Result>();
 		ResultContainer rcont = new ResultContainer();

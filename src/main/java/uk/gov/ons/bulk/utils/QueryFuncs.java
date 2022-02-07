@@ -17,18 +17,6 @@ import java.util.Properties;
 
 public class QueryFuncs {
 
-    private static QueryFuncs _instance = new QueryFuncs();
-
-    private QueryFuncs() {
-
-
-    }
-
-    public static QueryFuncs getInstance() {
-
-        return _instance;
-    }
-
 
     public static Iterable<FieldValueList> runQuery(String queryText,BigQuery bigquery, Boolean isTest) throws  java.lang.InterruptedException, ClassNotFoundException, IOException, NoSuchAlgorithmException {
 
