@@ -179,16 +179,9 @@ public class BulkAddressController {
 		try {
 
 			ObjectMapper objectMapper = new ObjectMapper();
-			// List<BulkRequest> bulkAdds = objectMapper.readValue(addressesJson,
-			// objectMapper.getTypeFactory().constructCollectionType(List.class,
-			// BulkRequest.class));
 			bcont = objectMapper.readValue(addressesJson, BulkRequestContainer.class);
 			int recs = bcont.getAddresses().length;
-
-		//	String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(MAX_QUERY).build();
 			long newKey = 0;
-	//		for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
 			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY,bigquery,isTest)) {
 				for (FieldValue val : row) {
 					newKey = val.getLongValue() + 1;
@@ -255,85 +248,14 @@ public class BulkAddressController {
 		return "submitted";
 	}
 
-	/*
-	 * Can this method go? Is it just for testing?
-	 */
-	@GetMapping(value = "/single")
-	public String runTestRequest(@RequestParam(required = false) String input, Model model,@RequestParam(required = false) String test) {
-		// Create dataset UUID
-		Long jobId = 0L;
-		try {
-			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
-			long newKey = 0;
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
-				for (FieldValue val : row) {
-					newKey = val.getLongValue() + 1;
-					log.info(String.format("newkey:%d", newKey));
-				}
-			}
-			// Create new Job record
-			String tableName = "bulkinfo";
-			Map<String, Object> row1Data = new HashMap<>();
-			row1Data.put("runid", newKey);
-			row1Data.put("userid", "bigqueryboy");
-			row1Data.put("status", "waiting");
-			row1Data.put("totalrecs", 99);
-			row1Data.put("recssofar", 0);
-			TableId tableId = TableId.of(datasetName, tableName);
-			InsertAllResponse response = bigquery
-					.insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
-			if (response.hasErrors()) {
-				// If any of the insertions failed, this lets you inspect the errors
-				for (Map.Entry<Long, List<BigQueryError>> entry : response.getInsertErrors().entrySet()) {
-					log.error(String.format("entry: %s", entry.toString()));
-				}
-			}
-
-			// Create results table for UUID
-
-			tableName = "results" + newKey;
-			jobId = newKey;
-			model.addAttribute("jobid", newKey);
-			Schema schema = Schema.of(
-					Field.of("id", StandardSQLTypeName.INT64),
-					Field.of("inputaddress", StandardSQLTypeName.STRING),
-					Field.of("response", StandardSQLTypeName.STRING));
-			createTable(datasetName, tableName, schema);
-		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred creating results table : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
-		}
-
-		/*
-		 * Should set this from a config value. But will be unnecessary when we create
-		 * the task in a Cloud Function.
-		 */
-		String id = "1";
-		try {
-			createTask(jobId.toString(), id, input);
-		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
-		}
-
-		return "submitted";
-	}
-
 	@GetMapping(value = "/bulk-progress/{jobid}")
 	public String getBulkRequestProgress(@PathVariable(required = true, name = "jobid") String jobid, Model model,@RequestParam(required = false) String test) {
-
+		Boolean isTest = true;
+		if (test == null) {isTest = false;}
 		try {
 
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(String.format(JOB_QUERY, jobid))
-					.build();
-
 			ArrayList<Job> joblist = new ArrayList<Job>();
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			for (FieldValueList row : QueryFuncs.runQuery(String.format(JOB_QUERY, jobid),bigquery,isTest)) {
 				Job nextJob = new Job();
 				nextJob.setRunid(row.get("runid").getStringValue());
 				nextJob.setUserid(row.get("userid").getStringValue());
@@ -360,12 +282,9 @@ public class BulkAddressController {
 
 		Boolean isTest = true;
 		if (test == null) {isTest = false;}
-
 		ArrayList<Result> rlist = new ArrayList<Result>();
 		ResultContainer rcont = new ResultContainer();
 		try {
-			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.results" + jobid + ";";
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
 
 			for (FieldValueList row : QueryFuncs.runQuery(String.format(RESULT_QUERY,jobid),bigquery,isTest)) {
 				Result nextResult = new Result();

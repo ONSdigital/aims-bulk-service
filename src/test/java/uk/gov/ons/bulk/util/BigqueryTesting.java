@@ -8,17 +8,11 @@ import static org.mockito.Mockito.when;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Properties;
 
-import com.google.api.gax.paging.Page;
 import com.google.cloud.bigquery.BigQuery;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.Md5Crypt;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;

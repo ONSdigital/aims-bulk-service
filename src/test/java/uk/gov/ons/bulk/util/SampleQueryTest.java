@@ -33,7 +33,7 @@ public class SampleQueryTest {
 	private String infoTable;
 
 	// Uncomment Test annotation to regenerate query.properties file
-@Test
+//@Test
 	public void SampleQueryTest() throws InterruptedException, IOException, NoSuchAlgorithmException {
 
 		String BASE_DATASET_QUERY = new StringBuilder()
