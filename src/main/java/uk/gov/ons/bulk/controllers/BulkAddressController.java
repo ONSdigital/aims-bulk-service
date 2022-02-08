@@ -188,6 +188,9 @@ public class BulkAddressController {
 					log.info(String.format("newkey:%d", newKey));
 				}
 			}
+			if (isTest) {
+				createTableTest(datasetName, null, null);
+			} else {
 			// Create new Job record
 			String tableName = "bulkinfo";
 			Map<String, Object> row1Data = new HashMap<>();
@@ -213,9 +216,7 @@ public class BulkAddressController {
 					Field.of("id", StandardSQLTypeName.INT64),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
-			if (isTest) {
-				createTableTest(datasetName, tableName, schema);
-			} else {
+
 				createTable(datasetName, tableName, schema);
 			}
 		} catch (Exception ex) {

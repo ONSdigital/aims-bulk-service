@@ -84,7 +84,7 @@ public class BulkAddressControllerTest {
 
 	@Test
 	void testGetAllBulkRequestProgress () {
-		String peek = client.get().uri("/jobs?test=true").exchange().expectBody().returnResult().toString();
+	//	String peek = client.get().uri("/jobs?test=true").exchange().expectBody().returnResult().toString();
 		client.get().uri("/jobs?test=true")
 				.exchange()
 				.expectStatus().isOk();
@@ -92,7 +92,7 @@ public class BulkAddressControllerTest {
 
 	@Test
 	void testGetBulkRequestProgress () {
-		String peek = client.get().uri("/bulk-progress/14?test=true").exchange().expectBody().returnResult().toString();
+//		String peek = client.get().uri("/bulk-progress/14?test=true").exchange().expectBody().returnResult().toString();
 		client.get().uri("/bulk-progress/14?test=true")
 				.exchange()
 				.expectStatus().isOk();
@@ -100,7 +100,7 @@ public class BulkAddressControllerTest {
 
 	@Test
 	void testGetBulkResults () {
-		String peek = client.get().uri("/bulk-result/14?test=true").exchange().expectBody().returnResult().toString();
+//		String peek = client.get().uri("/bulk-result/14?test=true").exchange().expectBody().returnResult().toString();
 		client.get().uri("/bulk-result/14?test=true")
 				.exchange()
 				.expectStatus().isOk();
