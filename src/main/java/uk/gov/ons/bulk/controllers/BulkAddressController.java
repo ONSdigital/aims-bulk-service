@@ -1,5 +1,6 @@
 package uk.gov.ons.bulk.controllers;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +11,6 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,11 +20,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpContent;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.http.json.JsonHttpContent;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.IdTokenCredentials;
+import com.google.auth.oauth2.IdTokenProvider;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryError;
 import com.google.cloud.bigquery.BigQueryException;
@@ -42,10 +51,9 @@ import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.TableInfo;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonParser;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Mono;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.Job;
@@ -76,9 +84,7 @@ public class BulkAddressController {
 	private String INFO_TABLE_QUERY;
 	private String JOBS_QUERY;
 	private String JOB_QUERY;
-
-	private final WebClient webClient = WebClient.create();
-
+	  
 	@PostConstruct
 	public void postConstruct() {
 
@@ -378,26 +384,44 @@ public class BulkAddressController {
 
 	/**
 	 * Send individual address to GCP Cloud Function for matching.
+	 * This won't work locally as it requires a service account.
+	 * Service account has Cloud Functions Invoker role but must also authenticate. 
 	 * 
 	 * @param jobId the id for this job
 	 * @param id    input address id
 	 * @param input the address to match
+	 *  @throws IOException
 	 */
-	public void createTask(String jobId, String id, String input) {
+	public void createTask(String jobId, String id, String input) throws IOException {
 
-		String jsonString = String.format("{jobId:'%s',id:'%s',address:'%s'}", jobId, id, input);
+		BulkJobRequest bjr = new BulkJobRequest(jobId, id, input);
+		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+		
+		if (!(credentials instanceof IdTokenProvider)) {
+			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
+		}
+		
+		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
+				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
 
-		webClient.post().uri(createTaskFunction).accept(MediaType.APPLICATION_JSON)
-				.body(BodyInserters.fromValue(JsonParser.parseString(jsonString).toString()))
-				.exchangeToMono(response -> {
-					if (response.statusCode().equals(HttpStatus.OK)) {
-						return response.bodyToMono(String.class);
-					} else if (response.statusCode().is4xxClientError()) {
-						return Mono.just(String.format("Error response: %s %s", response.statusCode().toString(),
-								response.toString()));
-					} else {
-						return response.createException().flatMap(Mono::error);
-					}
-				}).subscribe(res -> log.info(String.format("Response: %s", res)));
+		GenericUrl genericUrl = new GenericUrl(createTaskFunction);
+		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
+		HttpTransport transport = new NetHttpTransport();
+		HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
+
+		HttpRequest request = transport.createRequestFactory(adapter).buildPutRequest(genericUrl, content);
+		request.execute();
+	}
+	
+	public @Data class BulkJobRequest {
+		private Map<String, String> job;
+
+		public BulkJobRequest(String jobId, String id, String address) {
+			super();
+			job = new HashMap<String, String>();
+			job.put("jobId", jobId);
+			job.put("id", id);
+			job.put("address", address);
+		}
 	}
 }
