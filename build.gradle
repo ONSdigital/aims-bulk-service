@@ -19,7 +19,7 @@ ext {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	
+
 	implementation 'com.google.cloud:spring-cloud-gcp-dependencies:2.0.6'
 	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-bigquery:1.2.8.RELEASE'
 
@@ -33,9 +33,13 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
+
+	// Required for MockMvc autoconfigure
+	testImplementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation 'io.projectreactor:reactor-test:3.4.13'
 	testImplementation 'com.squareup.okhttp3:okhttp:4.9.3'
 	testImplementation 'com.squareup.okhttp3:mockwebserver:4.9.3'
+	//testImplementation 'javax.servlet:javax.servlet-api:4.0.1'
 	// Resolves the java.lang.NoClassDefFoundError: org/junit/platform/engine/EngineDiscoveryListener in Eclipse	
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
