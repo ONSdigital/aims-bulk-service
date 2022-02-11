@@ -409,7 +409,7 @@ public class BulkAddressController {
 		HttpTransport transport = new NetHttpTransport();
 		HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
 
-		HttpRequest request = transport.createRequestFactory(adapter).buildPutRequest(genericUrl, content);
+		HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
 		request.execute();
 	}
 	
