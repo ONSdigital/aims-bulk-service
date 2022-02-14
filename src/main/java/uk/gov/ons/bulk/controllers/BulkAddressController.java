@@ -59,6 +59,7 @@ import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.Job;
 import uk.gov.ons.bulk.entities.Result;
 import uk.gov.ons.bulk.entities.ResultContainer;
+import uk.gov.ons.bulk.util.QueryFuncs;
 
 @Slf4j
 @Controller
@@ -79,6 +80,8 @@ public class BulkAddressController {
 
 	@Value("${aims.cloud-functions.create-cloud-task-function}")
 	private String createTaskFunction;
+
+	private QueryFuncs utils;
 
 	private String BASE_DATASET_QUERY;
 	private String INFO_TABLE_QUERY;
@@ -121,7 +124,7 @@ public class BulkAddressController {
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(JOBS_QUERY).build();
 
 			ArrayList<Job> joblist = new ArrayList<Job>();
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			for (FieldValueList row : utils.runQuery(JOBS_QUERY,bigquery)) {
 				Job nextJob = new Job();
 				nextJob.setRunid(row.get("runid").getStringValue());
 				nextJob.setUserid(row.get("userid").getStringValue());

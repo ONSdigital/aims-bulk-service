@@ -29,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 // This class exists to check the big query test framework is working
 // The actual unit tests are in the appropriate classes
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BigqueryTesting {
@@ -110,7 +111,7 @@ public class BigqueryTesting {
 			
 		}
 		
-		assert resultCount.equalsIgnoreCase("57");
+		assert resultCount.equalsIgnoreCase("101");
 		
 	}
 	
