@@ -81,7 +81,7 @@ public class BulkAddressController {
 	@Value("${aims.cloud-functions.create-cloud-task-function}")
 	private String createTaskFunction;
 
-	private QueryFuncs utils;
+	private QueryFuncs utils = QueryFuncs.getInstance();
 
 	private String BASE_DATASET_QUERY;
 	private String INFO_TABLE_QUERY;
@@ -124,7 +124,7 @@ public class BulkAddressController {
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(JOBS_QUERY).build();
 
 			ArrayList<Job> joblist = new ArrayList<Job>();
-			for (FieldValueList row : utils.runQuery(JOBS_QUERY,bigquery)) {
+			for (FieldValueList row : QueryFuncs.runQuery(JOBS_QUERY,bigquery)) {
 				Job nextJob = new Job();
 				nextJob.setRunid(row.get("runid").getStringValue());
 				nextJob.setUserid(row.get("userid").getStringValue());

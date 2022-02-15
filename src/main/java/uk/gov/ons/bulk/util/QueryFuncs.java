@@ -30,38 +30,41 @@ public class QueryFuncs {
     }
 
 
-    /**
-     * The method runBqQuery is a generic method to call any BigQuery Sql. It will return the result
-     * of BigQuery Sql as a collection of FieldValueList objects obtained from the TableResult.
-     *
-     * @param query : sql query to execute in bigquery
-     * @return
-     * @throws InterruptedException
-     */
-    public ArrayList<FieldValueList> runQuery(String query, BigQuery bigquery) throws InterruptedException {
-        QueryJobConfiguration queryConfig =
-                QueryJobConfiguration.newBuilder(query).setUseLegacySql(false).build();
+    public static Iterable<FieldValueList> runQuery(String queryText,BigQuery bigquery) throws  java.lang.InterruptedException, ClassNotFoundException, IOException, NoSuchAlgorithmException {
 
-        JobId jobId = JobId.of(UUID.randomUUID().toString());
+        if (queryText == "") return new ArrayList<FieldValueList>();
 
-        Job queryJob = bigquery.create(JobInfo.newBuilder(queryConfig).setJobId(jobId).build());
+        QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(queryText).build();
 
-        TableResult result = queryJob.getQueryResults();
+        return bigquery.query(queryConfig).iterateAll();
 
-        Iterator iter = result.getValues().iterator();
-
-        ArrayList<FieldValueList> fieldResults = new ArrayList<FieldValueList>();
-        while (iter.hasNext())
-        {
-            fieldResults.add((FieldValueList) iter.next());
-        }
-
-        return fieldResults;
     }
 
 
+//    public static ArrayList<FieldValueList> runQuery(String query, BigQuery bigquery) throws InterruptedException {
+//        QueryJobConfiguration queryConfig =
+//                QueryJobConfiguration.newBuilder(query).setUseLegacySql(false).build();
+//
+//        JobId jobId = JobId.of(UUID.randomUUID().toString());
+//
+//        Job queryJob = bigquery.create(JobInfo.newBuilder(queryConfig).setJobId(jobId).build());
+//
+//        TableResult result = queryJob.getQueryResults();
+//
+//        Iterator iter = result.getValues().iterator();
+//
+//        ArrayList<FieldValueList> fieldResults = new ArrayList<FieldValueList>();
+//        while (iter.hasNext())
+//        {
+//            fieldResults.add((FieldValueList) iter.next());
+//        }
+//
+//        return fieldResults;
+//    }
 
-    public Object deserializeFromBase64( String s ) throws IOException ,ClassNotFoundException {
+
+
+    public static Object deserializeFromBase64( String s ) throws IOException ,ClassNotFoundException {
 
         byte [] data = Base64.getDecoder().decode( s );
         ObjectInputStream ois = new ObjectInputStream(
@@ -72,7 +75,7 @@ public class QueryFuncs {
         return o;
     }
 
-    public String serializeToBase64(Serializable o) throws IOException {
+    public static String serializeToBase64(Serializable o) throws IOException {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -82,18 +85,18 @@ public class QueryFuncs {
     }
 
 
-    public Properties getPropertyFile() throws IOException {
+//    public static Properties getPropertyFile() throws IOException {
+//
+//        Properties prop = new Properties();
+//        InputStream in = getClass().getClassLoader().getResourceAsStream("query.properties");
+//
+//        prop.load(in);
+//
+//        return prop;
+//
+//    }
 
-        Properties prop = new Properties();
-        InputStream in = getClass().getClassLoader().getResourceAsStream("query.properties");
-
-        prop.load(in);
-
-        return prop;
-
-    }
-
-    public String convertToMd5(String text ) throws NoSuchAlgorithmException {
+    public static String convertToMd5(String text ) throws NoSuchAlgorithmException {
 
         MessageDigest md = MessageDigest.getInstance("MD5");
         md.update(text.getBytes(Charset.forName("UTF8")));
