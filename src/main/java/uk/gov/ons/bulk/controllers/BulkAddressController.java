@@ -85,6 +85,8 @@ public class BulkAddressController {
 	private String INFO_TABLE_QUERY;
 	private String JOBS_QUERY;
 	private String JOB_QUERY;
+	private String RESULT_QUERY;
+	private String MAX_QUERY;
 	  
 	@PostConstruct
 	public void postConstruct() {
@@ -107,6 +109,19 @@ public class BulkAddressController {
 		JOB_QUERY = new StringBuilder()
 				.append(INFO_TABLE_QUERY)
 				.append(" WHERE runid = %s;").toString();
+
+		RESULT_QUERY = new StringBuilder()
+				.append(BASE_DATASET_QUERY)
+				.append(".")
+				.append("results%s;").toString();
+
+		MAX_QUERY = new StringBuilder()
+				.append("SELECT MAX(runid) FROM ")
+				.append(projectId)
+				.append(".")
+				.append(datasetName)
+				.append(".")
+				.append(infoTable).toString();
 	}
 
 	@GetMapping(value = "/")
@@ -119,8 +134,6 @@ public class BulkAddressController {
 	public String getBulkRequestProgress(Model model) {
 
 		try {
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(JOBS_QUERY).build();
-
 			ArrayList<Job> joblist = new ArrayList<Job>();
 			for (FieldValueList row : QueryFuncs.runQuery(JOBS_QUERY,bigquery)) {
 				Job nextJob = new Job();
@@ -165,16 +178,10 @@ public class BulkAddressController {
 		try {
 
 			ObjectMapper objectMapper = new ObjectMapper();
-			// List<BulkRequest> bulkAdds = objectMapper.readValue(addressesJson,
-			// objectMapper.getTypeFactory().constructCollectionType(List.class,
-			// BulkRequest.class));
 			bcont = objectMapper.readValue(addressesJson, BulkRequestContainer.class);
 			int recs = bcont.getAddresses().length;
-
-			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
 			long newKey = 0;
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY,bigquery)) {
 				for (FieldValue val : row) {
 					newKey = val.getLongValue() + 1;
 					log.info(String.format("newkey:%d", newKey));
@@ -205,7 +212,7 @@ public class BulkAddressController {
 					Field.of("id", StandardSQLTypeName.INT64),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
-			createTable(datasetName, tableName, schema);
+			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating results table : %s", ex.getMessage()));
@@ -239,10 +246,8 @@ public class BulkAddressController {
 		// Create dataset UUID
 		Long jobId = 0L;
 		try {
-			String query = "SELECT MAX(runid) FROM ons-aims-initial-test.bulk_status.bulkinfo;";
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
 			long newKey = 0;
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY,bigquery)) {
 				for (FieldValue val : row) {
 					newKey = val.getLongValue() + 1;
 					log.info(String.format("newkey:%d", newKey));
@@ -275,7 +280,7 @@ public class BulkAddressController {
 					Field.of("id", StandardSQLTypeName.INT64),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
-			createTable(datasetName, tableName, schema);
+			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating results table : %s", ex.getMessage()));
@@ -305,11 +310,8 @@ public class BulkAddressController {
 
 		try {
 
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(String.format(JOB_QUERY, jobid))
-					.build();
-
 			ArrayList<Job> joblist = new ArrayList<Job>();
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			for (FieldValueList row : QueryFuncs.runQuery(String.format(JOB_QUERY, jobid),bigquery)) {
 				Job nextJob = new Job();
 				nextJob.setRunid(row.get("runid").getStringValue());
 				nextJob.setUserid(row.get("userid").getStringValue());
@@ -337,10 +339,7 @@ public class BulkAddressController {
 		ArrayList<Result> rlist = new ArrayList<Result>();
 		ResultContainer rcont = new ResultContainer();
 		try {
-			String query = "SELECT * FROM ons-aims-initial-test.bulk_status.results" + jobid + ";";
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(query).build();
-
-			for (FieldValueList row : bigquery.query(queryConfig).iterateAll()) {
+			for (FieldValueList row : QueryFuncs.runQuery(String.format(RESULT_QUERY, jobid),bigquery)) {
 				Result nextResult = new Result();
 				nextResult.setId(row.get("id").getStringValue());
 				nextResult.setInputaddress(row.get("inputaddress").getStringValue());
@@ -366,22 +365,7 @@ public class BulkAddressController {
 		return json2;
 	}
 
-	public void createTable(String datasetName, String tableName, Schema schema) {
-		try {
-			// Initialize client that will be used to send requests. This client only needs
-			// to be created
-			// once, and can be reused for multiple requests.
 
-			TableId tableId = TableId.of(datasetName, tableName);
-			TableDefinition tableDefinition = StandardTableDefinition.of(schema);
-			TableInfo tableInfo = TableInfo.newBuilder(tableId, tableDefinition).build();
-
-			bigquery.create(tableInfo);
-			log.info(String.format("Table %s created successfully", tableId));
-		} catch (BigQueryException e) {
-			log.error(String.format("Table was not created. \n %s", e.toString()));
-		}
-	}
 
 	/**
 	 * Send individual address to GCP Cloud Function for matching.
