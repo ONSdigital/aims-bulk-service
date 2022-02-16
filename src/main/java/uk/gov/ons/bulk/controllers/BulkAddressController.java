@@ -81,8 +81,6 @@ public class BulkAddressController {
 	@Value("${aims.cloud-functions.create-cloud-task-function}")
 	private String createTaskFunction;
 
-	private QueryFuncs utils = QueryFuncs.getInstance();
-
 	private String BASE_DATASET_QUERY;
 	private String INFO_TABLE_QUERY;
 	private String JOBS_QUERY;

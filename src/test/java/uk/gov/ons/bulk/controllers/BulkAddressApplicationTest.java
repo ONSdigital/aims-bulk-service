@@ -61,9 +61,6 @@ public class BulkAddressApplicationTest {
     @Autowired
     private MockMvc mockMvc;
 
-//    @Mock
-//    private QueryFuncs utils = QueryFuncs.getInstance();
-
     Properties queryReponse = new Properties();
     String queryReponseRef = "query.properties";
 
@@ -112,7 +109,7 @@ public class BulkAddressApplicationTest {
     @BeforeAll
     public void setUp() throws Exception {
 
-
+        // load up cached responses
         InputStream is = getClass().getClassLoader().getResourceAsStream(queryReponseRef);
 
         if (is != null) {
@@ -120,29 +117,6 @@ public class BulkAddressApplicationTest {
         } else {
             throw new FileNotFoundException("Query Property file not in classpath");
         }
-
-//        try (MockedStatic<QueryFuncs> theMock = Mockito.mockStatic(QueryFuncs.class)) {
-//
-//            theMock.when(() -> QueryFuncs.runQuery(JOBS_QUERY,bigquery))
-//            .thenReturn(getResponse(JOBS_QUERY));
-//         //   assertThat(Buddy.name()).isEqualTo("Rafael");
-//        }
-
-
-        MockitoAnnotations.initMocks(this);
-
-
-      //  when(utils.runQuery(anyString(),any(BigQuery.class))).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
-//            when(QueryFuncs.runQuery(any(),any())).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
-//            public ArrayList<FieldValueList> answer(InvocationOnMock invocation) throws Throwable {
-//
-//                Object[] args = invocation.getArguments();
-//
-//                return getResponse((String) args[0]);
-//            }
-//        });
-
-
     }
 
     public ArrayList<FieldValueList> getResponse(String query) throws ClassNotFoundException, IOException, NoSuchAlgorithmException {

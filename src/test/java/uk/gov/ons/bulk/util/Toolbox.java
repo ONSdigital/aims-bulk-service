@@ -15,6 +15,8 @@ import java.util.*;
 import com.google.cloud.bigquery.*;
 import org.apache.commons.codec.binary.Hex;
 
+
+// Utilities for bigquery cache tests
 public class Toolbox {
 
 	private static Toolbox _instance = new Toolbox();

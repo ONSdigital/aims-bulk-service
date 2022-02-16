@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
-// This class exists to check the big query test framework is working
+// This class exists ONLY to check the big query test framework is working
 // The actual unit tests are in the appropriate classes
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -45,19 +45,15 @@ public class BigqueryTesting {
 
 	@Value("${aims.bigquery.info-table}")
 	private String infoTable;
-	
-	
+
 	@Mock private Toolbox utils;
 	
 	Properties queryReponse = new Properties();
-	
 	String queryReponseRef = "query.properties";
-	
 
 	@BeforeAll
 	public void setUp() throws Exception {
-		
-		
+
 		InputStream is = getClass().getClassLoader().getResourceAsStream(queryReponseRef);
 
 		if (is != null) {
@@ -66,11 +62,9 @@ public class BigqueryTesting {
 			throw new FileNotFoundException("Query Property file not in classpath");
 		}
 		
+	    MockitoAnnotations.initMocks(this);
 		
-		MockitoAnnotations.initMocks(this);
-		
-		
-		when(utils.runQuery(anyString(),eq(bigquery))).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
+    	when(utils.runQuery(anyString(),eq(bigquery))).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
 		    public ArrayList<FieldValueList> answer(InvocationOnMock invocation) throws Throwable {
 		      
 		    	Object[] args = invocation.getArguments();
@@ -78,11 +72,8 @@ public class BigqueryTesting {
 		    	return getResponse((String) args[0]);
 		    }
 		  });
-
-		 
 	}
 
-	
 	@Test
 	public void testJobsOutput() throws InterruptedException {
 
@@ -110,20 +101,15 @@ public class BigqueryTesting {
 			resultCount = x.get(0).getStringValue();
 			
 		}
-		
 		assert resultCount.equalsIgnoreCase("101");
-		
+
 	}
-	
-	
+
 
 	public ArrayList<FieldValueList> getResponse(String query) throws ClassNotFoundException, IOException, NoSuchAlgorithmException {
-		
-		
+
 		String key = Toolbox.getInstance().convertToMd5(query);
-		
 		String result = (String) queryReponse.get(key);
-		
 		System.out.println(result);
 
 		ArrayList<FieldValueList> fields = (ArrayList<FieldValueList>) Toolbox.getInstance().deserializeFromBase64(result);
