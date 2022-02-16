@@ -2,6 +2,7 @@ package uk.gov.ons.bulk.controllers;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -123,7 +124,6 @@ public class BulkAddressApplicationTest {
 
         String key = Toolbox.getInstance().convertToMd5(query);
         String result = (String) queryReponse.get(key);
-        System.out.println(result);
         ArrayList<FieldValueList> fields = (ArrayList<FieldValueList>) Toolbox.getInstance().deserializeFromBase64(result);
 
         if(query != null)
@@ -135,12 +135,11 @@ public class BulkAddressApplicationTest {
     @Test
     public void testGetBulkRequestProgress() throws Exception {
 
+  // use mockstatic to make it use cached queries
         try (MockedStatic<QueryFuncs> theMock = Mockito.mockStatic(QueryFuncs.class)) {
 
             theMock.when(() -> QueryFuncs.runQuery(JOBS_QUERY,bigquery))
                     .thenReturn(getResponse(JOBS_QUERY));
-            //   assertThat(Buddy.name()).isEqualTo("Rafael");
-
 
         RequestBuilder requestBuilder = MockMvcRequestBuilders.get(
                 "/jobs").accept(
@@ -148,16 +147,14 @@ public class BulkAddressApplicationTest {
 
         MvcResult result = mockMvc.perform(requestBuilder).andReturn();
 
-        System.out.println(result.getResponse());
-        String expected = "hello";
-
-        assertEquals(expected,"hello");
+        String expected = "waiting";
+        assertTrue(result.getResponse().getContentAsString().contains(expected));
         }
     }
 
 
     @Test
-    public void shouldReturnDefaultMessage() throws Exception {
+    public void testHomePage() throws Exception {
         this.mockMvc.perform(get("/")).andDo(print()).andExpect(status().isOk())
                 .andExpect(content().string(containsString("bulk")));
     }
