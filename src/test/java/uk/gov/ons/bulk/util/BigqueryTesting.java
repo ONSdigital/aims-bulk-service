@@ -26,12 +26,14 @@ import com.google.cloud.bigquery.TableResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 // This class exists ONLY to check the big query test framework is working
 // The actual unit tests are in the appropriate classes
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@ActiveProfiles("test")
 public class BigqueryTesting {
 
 	@Autowired
