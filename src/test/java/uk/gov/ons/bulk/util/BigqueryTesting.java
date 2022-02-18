@@ -64,8 +64,6 @@ public class BigqueryTesting {
 			throw new FileNotFoundException("Query Property file not in classpath");
 		}
 		
-	    MockitoAnnotations.initMocks(this);
-		
     	when(utils.runQuery(anyString(),eq(bigquery))).thenAnswer(new Answer<ArrayList<FieldValueList>>() {
 		    public ArrayList<FieldValueList> answer(InvocationOnMock invocation) throws Throwable {
 		      
