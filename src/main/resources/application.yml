@@ -5,7 +5,9 @@ spring:
     gcp:
       project-id: YOUR-GCP-PROJECT-ID-HERE
       bigquery:
-        dataset-name: bulk_status      
+        dataset-name: bulk_status
+  codec:
+    max-in-memory-size: 10MB
   servlet:
     multipart:
       max-file-size: 100MB
