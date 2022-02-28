@@ -10,8 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.FieldValueList;
+import com.google.cloud.bigquery.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -30,12 +29,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import uk.gov.ons.bulk.util.QueryFuncs;
 import uk.gov.ons.bulk.util.Toolbox;
 
@@ -139,6 +140,8 @@ public class BulkAddressApplicationTest {
 
     }
 
+    public String getOK() {return "OK";}
+
     @Test
     public void testGetBulkRequestProgress() throws Exception {
 
@@ -201,6 +204,61 @@ public class BulkAddressApplicationTest {
             MvcResult result = mockMvc.perform(requestBuilder).andReturn();
 
             String expected = "CR07";
+            assertTrue(result.getResponse().getContentAsString().contains(expected));
+        }
+    }
+
+    private static Stream<Arguments> addJson() {
+        return Stream.of(
+                Arguments.of("{\n" +
+                        "    \"addresses\":[{\n" +
+                        "        \"id\" : \"1\",\n" +
+                        "        \"address\": \"4 Gate Reach Exeter EX2 6GA\"\n" +
+                        "    },{\n" +
+                        "        \"id\" : \"2\",\n" +
+                        "        \"address\": \"Costa Coffee, 12 Bedford Street, Exeter\"\n" +
+                        "    }]\n" +
+                        "}"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("addJson")
+    public void runBulkRequest(@RequestBody String addressesJson) throws Exception {
+        try (MockedStatic<QueryFuncs> theMock = Mockito.mockStatic(QueryFuncs.class)) {
+
+            Schema schema = Schema.of(
+                    Field.of("id", StandardSQLTypeName.INT64),
+                    Field.of("inputaddress", StandardSQLTypeName.STRING),
+                    Field.of("response", StandardSQLTypeName.STRING));
+
+
+
+            theMock.when(() -> QueryFuncs.runQuery(MAX_QUERY,bigquery))
+                    .thenReturn(getResponse(MAX_QUERY));
+
+            long newKey = 0;
+            for (FieldValueList row : getResponse(MAX_QUERY)) {
+                for (FieldValue val : row) {
+                    newKey = val.getLongValue() + 1;
+                    System.out.println((String.format("newkey:%d", newKey)));
+                }
+            }
+
+            String tableName = "results" + newKey;
+
+//            mock.when(() -> UtilClass.staticMethod(any()))
+//                    .thenAnswer((Answer<Void>) invocation -> null);
+
+            theMock.when(() -> QueryFuncs.createTable(bigquery, datasetName, tableName, schema))
+                    .thenReturn(getOK());
+
+            RequestBuilder requestBuilder = MockMvcRequestBuilders.post(
+                    "/bulk").accept(
+                    MediaType.APPLICATION_JSON).content(addressesJson);
+
+            MvcResult result = mockMvc.perform(requestBuilder).andReturn();
+
+            String expected = "submitted";
             assertTrue(result.getResponse().getContentAsString().contains(expected));
         }
     }

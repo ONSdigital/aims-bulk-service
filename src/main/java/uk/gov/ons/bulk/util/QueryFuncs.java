@@ -16,7 +16,7 @@ public class QueryFuncs {
 
     }
 
-    public static void createTable(BigQuery bigquery, String datasetName, String tableName, Schema schema) {
+    public static String createTable(BigQuery bigquery, String datasetName, String tableName, Schema schema) {
         try {
             TableId tableId = TableId.of(datasetName, tableName);
             TableDefinition tableDefinition = StandardTableDefinition.of(schema);
@@ -27,6 +27,7 @@ public class QueryFuncs {
         } catch (BigQueryException e) {
             log.error(String.format("Table was not created. \n %s", e.toString()));
         }
+        return "OK";
     }
 
 }
