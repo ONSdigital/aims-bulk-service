@@ -16,6 +16,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -32,6 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.web.bind.annotation.PathVariable;
 import uk.gov.ons.bulk.util.QueryFuncs;
 import uk.gov.ons.bulk.util.Toolbox;
 
@@ -42,6 +46,7 @@ import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -155,9 +160,56 @@ public class BulkAddressApplicationTest {
     }
 
 
+    @ParameterizedTest
+    @MethodSource("addJobIds")
+    public void testGetBulkRequestProgress(@PathVariable(required = true, name = "jobid") String jobid) throws Exception {
+
+        // use mockstatic to make it use cached queries
+        try (MockedStatic<QueryFuncs> theMock = Mockito.mockStatic(QueryFuncs.class)) {
+
+            theMock.when(() -> QueryFuncs.runQuery(String.format(JOB_QUERY, jobid),bigquery))
+                    .thenReturn(getResponse(String.format(JOB_QUERY, jobid)));
+
+            RequestBuilder requestBuilder = MockMvcRequestBuilders.get(
+                    "/bulk-progress/"+jobid).accept(
+                    MediaType.APPLICATION_JSON);
+
+            MvcResult result = mockMvc.perform(requestBuilder).andReturn();
+
+            String expected = "waiting";
+            assertTrue(result.getResponse().getContentAsString().contains(expected));
+        }
+    }
+
+    private static Stream<Arguments> addJobIds() {
+        return Stream.of(
+                Arguments.of("14"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("addJobIds")
+    public void getBulkResults(@PathVariable(required = true, name = "jobid") String jobid) throws Exception {
+        try (MockedStatic<QueryFuncs> theMock = Mockito.mockStatic(QueryFuncs.class)) {
+
+            theMock.when(() -> QueryFuncs.runQuery(String.format(RESULT_QUERY, jobid),bigquery))
+                    .thenReturn(getResponse(String.format(RESULT_QUERY, jobid)));
+
+            RequestBuilder requestBuilder = MockMvcRequestBuilders.get(
+                    "/bulk-result/"+jobid).accept(
+                    MediaType.APPLICATION_JSON);
+
+            MvcResult result = mockMvc.perform(requestBuilder).andReturn();
+
+            String expected = "CR07";
+            assertTrue(result.getResponse().getContentAsString().contains(expected));
+        }
+    }
+
     @Test
     public void testHomePage() throws Exception {
         this.mockMvc.perform(get("/")).andDo(print()).andExpect(status().isOk())
                 .andExpect(content().string(containsString("bulk")));
     }
+
+
 }
