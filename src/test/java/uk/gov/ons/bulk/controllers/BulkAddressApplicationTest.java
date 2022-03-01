@@ -67,6 +67,9 @@ public class BulkAddressApplicationTest {
     @Value("${aims.bigquery.info-table}")
     private String infoTable;
 
+    @Value("${aims.cloud-functions.create-cloud-task-function}")
+    private String createTaskFunction;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -246,11 +249,11 @@ public class BulkAddressApplicationTest {
 
             String tableName = "results" + newKey;
 
-//            mock.when(() -> UtilClass.staticMethod(any()))
-//                    .thenAnswer((Answer<Void>) invocation -> null);
-
             theMock.when(() -> QueryFuncs.createTable(bigquery, datasetName, tableName, schema))
                     .thenReturn(getOK());
+
+            theMock.when(() -> QueryFuncs.createTask(anyString(),anyString(),anyString(),anyString()))
+                    .thenAnswer((Answer<Void>) invocation -> null);
 
             RequestBuilder requestBuilder = MockMvcRequestBuilders.post(
                     "/bulk").accept(
@@ -258,7 +261,7 @@ public class BulkAddressApplicationTest {
 
             MvcResult result = mockMvc.perform(requestBuilder).andReturn();
 
-            String expected = "submitted";
+            String expected = "Submitted";
             assertTrue(result.getResponse().getContentAsString().contains(expected));
         }
     }

@@ -226,7 +226,7 @@ public class BulkAddressController {
 			String id = adds[i].getId();
 			String input = adds[i].getAddress();
 			try {
-				createTask(jobId.toString(), id, input);
+				QueryFuncs.createTask(createTaskFunction, jobId.toString(), id, input);
 			} catch (Exception ex) {
 				model.addAttribute("message",
 						String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
@@ -294,7 +294,7 @@ public class BulkAddressController {
 		 */
 		String id = "1";
 		try {
-			createTask(jobId.toString(), id, input);
+			QueryFuncs.createTask(createTaskFunction,jobId.toString(), id, input);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
@@ -365,40 +365,8 @@ public class BulkAddressController {
 		return json2;
 	}
 
-
-
-	/**
-	 * Send individual address to GCP Cloud Function for matching.
-	 * This won't work locally as it requires a service account.
-	 * Service account has Cloud Functions Invoker role but must also authenticate. 
-	 * 
-	 * @param jobId the id for this job
-	 * @param id    input address id
-	 * @param input the address to match
-	 *  @throws IOException
-	 */
-	public void createTask(String jobId, String id, String input) throws IOException {
-
-		BulkJobRequest bjr = new BulkJobRequest(jobId, id, input);
-		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-		
-		if (!(credentials instanceof IdTokenProvider)) {
-			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
-		}
-		
-		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
-				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
-
-		GenericUrl genericUrl = new GenericUrl(createTaskFunction);
-		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
-		HttpTransport transport = new NetHttpTransport();
-		HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
-
-		HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
-		request.execute();
-	}
-	
-	public @Data class BulkJobRequest {
+	public @Data
+	static class BulkJobRequest {
 		private Map<String, String> job;
 
 		public BulkJobRequest(String jobId, String id, String address) {
