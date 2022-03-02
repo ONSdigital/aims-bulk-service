@@ -31,7 +31,7 @@ public class QueryFuncs {
 
     }
 
-    public static String createTable(BigQuery bigquery, String datasetName, String tableName, Schema schema) {
+    public static void createTable(BigQuery bigquery, String datasetName, String tableName, Schema schema) {
         try {
             TableId tableId = TableId.of(datasetName, tableName);
             TableDefinition tableDefinition = StandardTableDefinition.of(schema);
@@ -42,42 +42,20 @@ public class QueryFuncs {
         } catch (BigQueryException e) {
             log.error(String.format("Table was not created. \n %s", e.toString()));
         }
-        return "OK";
     }
 
-    /**
-     * Send individual address to GCP Cloud Function for matching.
-     * This won't work locally as it requires a service account.
-     * Service account has Cloud Functions Invoker role but must also authenticate.
-     *
-     * @param creatTaskFunction the name of the function
-     * @param jobId the id for this job
-     * @param id    input address id
-     * @param input the address to match
-     *  @throws IOException
-     */
-    public static void createTask(String createTaskFunction, String jobId, String id, String input) throws IOException {
+    public static String InsertRow(BigQuery bigquery, TableId tableId, Map<String, Object> row1Data) {
+        InsertAllResponse response = bigquery
+                .insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
+        if (response.hasErrors()) {
+            // If any of the insertions failed, this lets you inspect the errors
+            for (Map.Entry<Long, List<BigQueryError>> entry : response.getInsertErrors().entrySet()) {
+                log.error(String.format("entry: %s", entry.toString()));
+            }
 
-        BulkAddressController.BulkJobRequest bjr = new BulkAddressController.BulkJobRequest(jobId, id, input);
-        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-
-        if (!(credentials instanceof IdTokenProvider)) {
-            throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
         }
-
-        IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
-                .setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
-
-        GenericUrl genericUrl = new GenericUrl(createTaskFunction);
-        HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
-        HttpTransport transport = new NetHttpTransport();
-        HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
-
-        HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
-        request.execute();
+        return response.toString();
     }
-
-
 
 }
 

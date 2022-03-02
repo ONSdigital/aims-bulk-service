@@ -1,10 +1,7 @@
 package uk.gov.ons.bulk.controllers;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -18,18 +15,14 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -46,6 +39,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
 
@@ -234,8 +229,6 @@ public class BulkAddressApplicationTest {
                     Field.of("inputaddress", StandardSQLTypeName.STRING),
                     Field.of("response", StandardSQLTypeName.STRING));
 
-
-
             theMock.when(() -> QueryFuncs.runQuery(MAX_QUERY,bigquery))
                     .thenReturn(getResponse(MAX_QUERY));
 
@@ -250,10 +243,24 @@ public class BulkAddressApplicationTest {
             String tableName = "results" + newKey;
 
             theMock.when(() -> QueryFuncs.createTable(bigquery, datasetName, tableName, schema))
+                    .thenAnswer((Answer<Void>) invocation -> null);
+
+            String iTableName = "bulkinfo";
+            Map<String, Object> row1Data = new HashMap<>();
+            row1Data.put("runid", newKey);
+            row1Data.put("userid", "bigqueryboy");
+            row1Data.put("status", "waiting");
+            row1Data.put("totalrecs", 99);
+            row1Data.put("recssofar", 0);
+            TableId tableId = TableId.of(datasetName, iTableName);
+
+            theMock.when(() -> QueryFuncs.InsertRow(bigquery, tableId, row1Data))
                     .thenReturn(getOK());
 
-            theMock.when(() -> QueryFuncs.createTask(anyString(),anyString(),anyString(),anyString()))
-                    .thenAnswer((Answer<Void>) invocation -> null);
+// Will be service call
+//            theMock.when(() -> BulkAddressController.createTask(createTaskFunction,
+//                    anyString(),anyString(),anyString()))
+//                    .thenAnswer((Answer<Void>) invocation -> null);
 
             RequestBuilder requestBuilder = MockMvcRequestBuilders.post(
                     "/bulk").accept(
