@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,7 +47,7 @@ import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
 
 @Slf4j
-@Controller
+@RestController
 public class BulkAddressController {
 
 	// BigQuery client object provided by our autoconfiguration.
@@ -201,11 +202,13 @@ public class BulkAddressController {
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 
-			BulkRequest[] adds = bcont.getAddresses();
+//			BulkRequest[] adds = bcont.getAddresses();
+			
+			cloudTaskService.createTasks(jobId, bcont.getAddresses());
 
-			for (int i = 0; i < adds.length; i++) {
-				cloudTaskService.createTask(String.valueOf(jobId), adds[i].getId(), adds[i].getAddress());
-			}
+//			for (int i = 0; i < adds.length; i++) {
+//				cloudTaskService.createTask(String.valueOf(jobId), adds[i].getId(), adds[i].getAddress());
+//			}
 
 		} catch (InterruptedException | IOException e) {
 			// TODO Auto-generated catch block

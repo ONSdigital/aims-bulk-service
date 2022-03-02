@@ -21,6 +21,7 @@ import com.google.auth.oauth2.IdTokenCredentials;
 import com.google.auth.oauth2.IdTokenProvider;
 
 import lombok.Data;
+import uk.gov.ons.bulk.entities.BulkRequest;
 
 @Service
 public class CloudTaskService {
@@ -58,6 +59,31 @@ public class CloudTaskService {
 
 		HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
 		request.execute();
+	}
+	
+	@Async
+	public void createTasks(Long jobId, BulkRequest[] addresses) throws IOException {
+		
+		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+		
+		if (!(credentials instanceof IdTokenProvider)) {
+			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
+		}
+		
+		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
+				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
+
+		GenericUrl genericUrl = new GenericUrl(createTaskFunction);
+		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
+		HttpTransport transport = new NetHttpTransport();		
+		
+		for (int i = 0; i < addresses.length; i++) {	
+			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), addresses[i].getId(), addresses[i].getAddress());
+			
+			HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
+			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
+			request.execute();
+		}
 	}
 	
 	public @Data class BulkJobRequest {
