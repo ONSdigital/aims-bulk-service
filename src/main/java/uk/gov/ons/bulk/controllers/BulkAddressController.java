@@ -23,42 +23,26 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.http.json.JsonHttpContent;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.IdTokenCredentials;
-import com.google.auth.oauth2.IdTokenProvider;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryError;
-import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldValue;
 import com.google.cloud.bigquery.FieldValueList;
 import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
-import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
-import com.google.cloud.bigquery.StandardTableDefinition;
-import com.google.cloud.bigquery.TableDefinition;
 import com.google.cloud.bigquery.TableId;
-import com.google.cloud.bigquery.TableInfo;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.Job;
 import uk.gov.ons.bulk.entities.Result;
 import uk.gov.ons.bulk.entities.ResultContainer;
+import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
 
 @Slf4j
@@ -77,9 +61,9 @@ public class BulkAddressController {
 
 	@Value("${aims.bigquery.info-table}")
 	private String infoTable;
-
-	@Value("${aims.cloud-functions.create-cloud-task-function}")
-	private String createTaskFunction;
+	
+	@Autowired
+	private CloudTaskService cloudTaskService;
 
 	private String BASE_DATASET_QUERY;
 	private String INFO_TABLE_QUERY;
@@ -175,18 +159,20 @@ public class BulkAddressController {
 		// Create dataset UUID
 		Long jobId = 0L;
 		BulkRequestContainer bcont;
-		try {
+		ObjectMapper objectMapper = new ObjectMapper();
 
-			ObjectMapper objectMapper = new ObjectMapper();
+		try {
 			bcont = objectMapper.readValue(addressesJson, BulkRequestContainer.class);
 			int recs = bcont.getAddresses().length;
 			long newKey = 0;
-			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY,bigquery)) {
+			
+			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY, bigquery)) {
 				for (FieldValue val : row) {
 					newKey = val.getLongValue() + 1;
 					log.info(String.format("newkey:%d", newKey));
 				}
 			}
+
 			// Create new Job record
 			String tableName = "bulkinfo";
 			Map<String, Object> row1Data = new HashMap<>();
@@ -198,11 +184,12 @@ public class BulkAddressController {
 			TableId tableId = TableId.of(datasetName, tableName);
 			InsertAllResponse response = bigquery
 					.insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
+
 			if (response.hasErrors()) {
 				// If any of the insertions failed, this lets you inspect the errors
-				for (Map.Entry<Long, List<BigQueryError>> entry : response.getInsertErrors().entrySet()) {
-					log.error(String.format("entry: %s", entry.toString()));
-				}
+				response.getInsertErrors()
+						.forEach((key, value) -> log.error(String.format("Row: %s Errors: %s", key, value.toString())));
+
 			}
 
 			tableName = "results" + newKey;
@@ -213,29 +200,19 @@ public class BulkAddressController {
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
-		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred creating results table : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
-		}
 
-		BulkRequest[] adds = bcont.getAddresses();
-		for (int i = 0; i < adds.length; i++) {
+			BulkRequest[] adds = bcont.getAddresses();
 
-			String id = adds[i].getId();
-			String input = adds[i].getAddress();
-			try {
-				createTask(jobId.toString(), id, input);
-			} catch (Exception ex) {
-				model.addAttribute("message",
-						String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
-				model.addAttribute("status", true);
-				return "error";
+			for (int i = 0; i < adds.length; i++) {
+				cloudTaskService.createTask(String.valueOf(jobId), adds[i].getId(), adds[i].getAddress());
 			}
+
+		} catch (InterruptedException | IOException e) {
+			// TODO Auto-generated catch block
+			log.error(String.format("Error in /bulk endpoint: ", e.getMessage()));
 		}
 
-		return "submitted";
+		return new ObjectMapper().createObjectNode().put("jobId", String.valueOf(jobId)).toString();
 	}
 
 	/*
@@ -294,7 +271,7 @@ public class BulkAddressController {
 		 */
 		String id = "1";
 		try {
-			createTask(jobId.toString(), id, input);
+			cloudTaskService.createTask(jobId.toString(), id, input);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
@@ -363,50 +340,5 @@ public class BulkAddressController {
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		String json2 = gson.toJson(rcont);
 		return json2;
-	}
-
-
-
-	/**
-	 * Send individual address to GCP Cloud Function for matching.
-	 * This won't work locally as it requires a service account.
-	 * Service account has Cloud Functions Invoker role but must also authenticate. 
-	 * 
-	 * @param jobId the id for this job
-	 * @param id    input address id
-	 * @param input the address to match
-	 *  @throws IOException
-	 */
-	public void createTask(String jobId, String id, String input) throws IOException {
-
-		BulkJobRequest bjr = new BulkJobRequest(jobId, id, input);
-		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-		
-		if (!(credentials instanceof IdTokenProvider)) {
-			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
-		}
-		
-		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
-				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
-
-		GenericUrl genericUrl = new GenericUrl(createTaskFunction);
-		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
-		HttpTransport transport = new NetHttpTransport();
-		HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
-
-		HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
-		request.execute();
-	}
-	
-	public @Data class BulkJobRequest {
-		private Map<String, String> job;
-
-		public BulkJobRequest(String jobId, String id, String address) {
-			super();
-			job = new HashMap<String, String>();
-			job.put("jobId", jobId);
-			job.put("id", id);
-			job.put("address", address);
-		}
 	}
 }

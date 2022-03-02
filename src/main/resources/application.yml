@@ -42,4 +42,17 @@ aims:
   bigquery:
     info-table: bulkinfo
   cloud-functions:
-    create-cloud-task-function: https://europe-west2-ons-aims-initial-test.cloudfunctions.net/create-cloud-task-function  
+    create-cloud-task-function: https://europe-west2-ons-aims-initial-test.cloudfunctions.net/create-cloud-task-function
+async:
+  executor:
+    thread:
+      core_pool_size: 5
+      # Configure the maximum number of threads
+      max_pool_size: 5
+      # Configure queue size
+      queue_capacity: 999
+      # Configure the maximum idle time of threads
+      keep_alive_seconds: 60
+      # Configure the name prefix of threads in the thread pool
+      name:
+        prefix: bulk-async-
