@@ -3,7 +3,6 @@ package uk.gov.ons.bulk.controllers;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -24,12 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.BigQueryError;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldValue;
 import com.google.cloud.bigquery.FieldValueList;
-import com.google.cloud.bigquery.InsertAllRequest;
-import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.bigquery.TableId;
@@ -147,7 +143,7 @@ public class BulkAddressController {
 	}
 
 	@PostMapping(value = "/bulk")
-	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
+	public String runBulkRequest(@RequestBody String addressesJson) {
 
 		/*
 		 * We are using a single Dataset for the bulk service which makes gathering info
@@ -182,19 +178,12 @@ public class BulkAddressController {
 			row1Data.put("totalrecs", recs);
 			row1Data.put("recssofar", 0);
 			TableId tableId = TableId.of(datasetName, tableName);
-			InsertAllResponse response = bigquery
-					.insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
-
-			if (response.hasErrors()) {
-				// If any of the insertions failed, this lets you inspect the errors
-				response.getInsertErrors()
-						.forEach((key, value) -> log.error(String.format("Row: %s Errors: %s", key, value.toString())));
-
-			}
+			
+			String response = QueryFuncs.InsertRow(bigquery, tableId, row1Data);
+			log.debug(response);
 
 			tableName = "results" + newKey;
 			jobId = newKey;
-			model.addAttribute("jobid", newKey);
 			Schema schema = Schema.of(
 					Field.of("id", StandardSQLTypeName.INT64),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
@@ -234,16 +223,9 @@ public class BulkAddressController {
 			row1Data.put("totalrecs", 99);
 			row1Data.put("recssofar", 0);
 			TableId tableId = TableId.of(datasetName, tableName);
-			InsertAllResponse response = bigquery
-					.insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
-			if (response.hasErrors()) {
-				// If any of the insertions failed, this lets you inspect the errors
-				for (Map.Entry<Long, List<BigQueryError>> entry : response.getInsertErrors().entrySet()) {
-					log.error(String.format("entry: %s", entry.toString()));
-				}
-			}
-
-			// Create results table for UUID
+			
+			String response = QueryFuncs.InsertRow(bigquery,tableId,row1Data);
+			log.debug(response);
 
 			tableName = "results" + newKey;
 			jobId = newKey;
