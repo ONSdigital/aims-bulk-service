@@ -11,7 +11,6 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -111,8 +110,8 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/")
 	@ResponseStatus(HttpStatus.OK)
-	public String index(Model model) {
-		return "index";
+	public String index() {
+		return "OK";
 	}
 
 	@GetMapping(value = "/jobs")
@@ -201,17 +200,10 @@ public class BulkAddressController {
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
-
-//			BulkRequest[] adds = bcont.getAddresses();
-			
+	
 			cloudTaskService.createTasks(jobId, bcont.getAddresses());
 
-//			for (int i = 0; i < adds.length; i++) {
-//				cloudTaskService.createTask(String.valueOf(jobId), adds[i].getId(), adds[i].getAddress());
-//			}
-
 		} catch (InterruptedException | IOException e) {
-			// TODO Auto-generated catch block
 			log.error(String.format("Error in /bulk endpoint: ", e.getMessage()));
 		}
 
@@ -274,7 +266,13 @@ public class BulkAddressController {
 		 */
 		String id = "1";
 		try {
-			cloudTaskService.createTask(jobId.toString(), id, input);
+			// Temp fix - this endpoint is not required and can be removed
+			BulkRequest br = new BulkRequest();
+			br.setId(id);
+			br.setAddress(input);
+			BulkRequest[] addresses = {br};
+			
+			cloudTaskService.createTasks(jobId, addresses);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));

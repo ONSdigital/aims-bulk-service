@@ -30,37 +30,16 @@ public class CloudTaskService {
 	private String createTaskFunction;
 	
 	/**
-	 * Send individual address to GCP Cloud Function for matching.
+	 * Send each address to GCP Cloud Function for matching.
+	 * Done asynchronously so as not to block the client response.
 	 * This won't work locally as it requires a service account.
 	 * Service account has Cloud Functions Invoker role but must also authenticate. 
 	 * 
-	 * @param jobId the id for this job
-	 * @param id    input address id
-	 * @param input the address to match
-	 *  @throws IOException
+	 * 
+	 * @param jobId
+	 * @param addresses
+	 * @throws IOException
 	 */
-	@Async
-	public void createTask(String jobId, String id, String input) throws IOException {
-
-		BulkJobRequest bjr = new BulkJobRequest(jobId, id, input);
-		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-		
-		if (!(credentials instanceof IdTokenProvider)) {
-			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
-		}
-		
-		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
-				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
-
-		GenericUrl genericUrl = new GenericUrl(createTaskFunction);
-		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
-		HttpTransport transport = new NetHttpTransport();
-		HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
-
-		HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
-		request.execute();
-	}
-	
 	@Async
 	public void createTasks(Long jobId, BulkRequest[] addresses) throws IOException {
 		

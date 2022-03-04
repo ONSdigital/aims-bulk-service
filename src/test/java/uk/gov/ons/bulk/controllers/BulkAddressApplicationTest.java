@@ -149,7 +149,8 @@ public class BulkAddressApplicationTest {
 
         MvcResult result = mockMvc.perform(requestBuilder).andReturn();
 
-        String expected = "waiting";
+        String expected = "jobstable";
+        
         assertTrue(result.getResponse().getContentAsString().contains(expected));
         }
     }
@@ -158,6 +159,6 @@ public class BulkAddressApplicationTest {
     @Test
     public void testHomePage() throws Exception {
         this.mockMvc.perform(get("/")).andDo(print()).andExpect(status().isOk())
-                .andExpect(content().string(containsString("bulk")));
+                .andExpect(content().string(containsString("OK")));
     }
 }
