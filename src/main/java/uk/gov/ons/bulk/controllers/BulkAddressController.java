@@ -10,7 +10,6 @@ import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,20 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.http.json.JsonHttpContent;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.IdTokenCredentials;
-import com.google.auth.oauth2.IdTokenProvider;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldValue;
@@ -43,17 +32,17 @@ import com.google.cloud.bigquery.TableId;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.Job;
 import uk.gov.ons.bulk.entities.Result;
 import uk.gov.ons.bulk.entities.ResultContainer;
+import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
 
 @Slf4j
-@Controller
+@RestController
 public class BulkAddressController {
 
 	// BigQuery client object provided by our autoconfiguration.
@@ -68,9 +57,9 @@ public class BulkAddressController {
 
 	@Value("${aims.bigquery.info-table}")
 	private String infoTable;
-
-	@Value("${aims.cloud-functions.create-cloud-task-function}")
-	private String createTaskFunction;
+	
+	@Autowired
+	private CloudTaskService cloudTaskService;
 
 	private String BASE_DATASET_QUERY;
 	private String INFO_TABLE_QUERY;
@@ -117,8 +106,8 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/")
 	@ResponseStatus(HttpStatus.OK)
-	public String index(Model model) {
-		return "index";
+	public String index() {
+		return "OK";
 	}
 
 	@GetMapping(value = "/jobs")
@@ -154,7 +143,7 @@ public class BulkAddressController {
 	}
 
 	@PostMapping(value = "/bulk")
-	public String runBulkRequest(@RequestBody String addressesJson, Model model) {
+	public String runBulkRequest(@RequestBody String addressesJson) {
 
 		/*
 		 * We are using a single Dataset for the bulk service which makes gathering info
@@ -166,18 +155,20 @@ public class BulkAddressController {
 		// Create dataset UUID
 		Long jobId = 0L;
 		BulkRequestContainer bcont;
-		try {
+		ObjectMapper objectMapper = new ObjectMapper();
 
-			ObjectMapper objectMapper = new ObjectMapper();
+		try {
 			bcont = objectMapper.readValue(addressesJson, BulkRequestContainer.class);
 			int recs = bcont.getAddresses().length;
 			long newKey = 0;
-			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY,bigquery)) {
+			
+			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY, bigquery)) {
 				for (FieldValue val : row) {
 					newKey = val.getLongValue() + 1;
 					log.info(String.format("newkey:%d", newKey));
 				}
 			}
+
 			// Create new Job record
 			String tableName = "bulkinfo";
 			Map<String, Object> row1Data = new HashMap<>();
@@ -187,43 +178,29 @@ public class BulkAddressController {
 			row1Data.put("totalrecs", recs);
 			row1Data.put("recssofar", 0);
 			TableId tableId = TableId.of(datasetName, tableName);
-			String response = QueryFuncs.InsertRow(bigquery,tableId,row1Data);
-			log.info(response);
+			
+			String response = QueryFuncs.InsertRow(bigquery, tableId, row1Data);
+			log.debug(response);
+
 			tableName = "results" + newKey;
 			jobId = newKey;
-			model.addAttribute("jobid", newKey);
 			Schema schema = Schema.of(
 					Field.of("id", StandardSQLTypeName.INT64),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
-		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred creating results table : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
+	
+			cloudTaskService.createTasks(jobId, bcont.getAddresses());
+
+		} catch (InterruptedException | IOException e) {
+			log.error(String.format("Error in /bulk endpoint: ", e.getMessage()));
 		}
 
-		BulkRequest[] adds = bcont.getAddresses();
-		for (int i = 0; i < adds.length; i++) {
-
-			String id = adds[i].getId();
-			String input = adds[i].getAddress();
-			try {
-				createTask(createTaskFunction, jobId.toString(), id, input);
-			} catch (Exception ex) {
-				model.addAttribute("message",
-						String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
-				model.addAttribute("status", true);
-				return "error";
-			}
-		}
-
-		return "submitted";
+		return new ObjectMapper().createObjectNode().put("jobId", String.valueOf(jobId)).toString();
 	}
 
 	/*
-	 * Can this method go? Is it just for testing? WILL BE REMOVED
+	 * Can this method go? Is it just for testing?
 	 */
 	@GetMapping(value = "/single")
 	public String runTestRequest(@RequestParam(required = false) String input, Model model) {
@@ -246,8 +223,10 @@ public class BulkAddressController {
 			row1Data.put("totalrecs", 99);
 			row1Data.put("recssofar", 0);
 			TableId tableId = TableId.of(datasetName, tableName);
+			
 			String response = QueryFuncs.InsertRow(bigquery,tableId,row1Data);
-			log.info(response);
+			log.debug(response);
+
 			tableName = "results" + newKey;
 			jobId = newKey;
 			model.addAttribute("jobid", newKey);
@@ -269,7 +248,13 @@ public class BulkAddressController {
 		 */
 		String id = "1";
 		try {
-			createTask(createTaskFunction,jobId.toString(), id, input);
+			// Temp fix - this endpoint is not required and can be removed
+			BulkRequest br = new BulkRequest();
+			br.setId(id);
+			br.setAddress(input);
+			BulkRequest[] addresses = {br};
+			
+			cloudTaskService.createTasks(jobId, addresses);
 		} catch (Exception ex) {
 			model.addAttribute("message",
 					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
@@ -338,51 +323,5 @@ public class BulkAddressController {
 		Gson gson = new GsonBuilder().setPrettyPrinting().create();
 		String json2 = gson.toJson(rcont);
 		return json2;
-	}
-
-	/**
-	 * Send individual address to GCP Cloud Function for matching.
-	 * This won't work locally as it requires a service account.
-	 * Service account has Cloud Functions Invoker role but must also authenticate.
-	 *
-	 * @param createTaskFunction the name of the function
-	 * @param jobId the id for this job
-	 * @param id    input address id
-	 * @param input the address to match
-	 *  @throws IOException
-	 */
-	public static void createTask(String createTaskFunction, String jobId, String id, String input) throws IOException {
-
-		BulkAddressController.BulkJobRequest bjr = new BulkAddressController.BulkJobRequest(jobId, id, input);
-		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-
-		if (!(credentials instanceof IdTokenProvider)) {
-			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
-		}
-
-		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
-				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
-
-		GenericUrl genericUrl = new GenericUrl(createTaskFunction);
-		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
-		HttpTransport transport = new NetHttpTransport();
-		HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
-
-		HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
-		request.execute();
-	}
-
-
-	public @Data
-	static class BulkJobRequest {
-		private Map<String, String> job;
-
-		public BulkJobRequest(String jobId, String id, String address) {
-			super();
-			job = new HashMap<String, String>();
-			job.put("jobId", jobId);
-			job.put("id", id);
-			job.put("address", address);
-		}
 	}
 }
