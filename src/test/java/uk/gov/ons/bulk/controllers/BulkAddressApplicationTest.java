@@ -2,6 +2,8 @@ package uk.gov.ons.bulk.controllers;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -22,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -30,6 +33,8 @@ import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import uk.gov.ons.bulk.entities.BulkRequest;
+import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
 import uk.gov.ons.bulk.util.Toolbox;
 
@@ -67,6 +72,9 @@ public class BulkAddressApplicationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockBean
+    private CloudTaskService cloudTaskService;
 
     Properties queryReponse = new Properties();
     String queryReponseRef = "query.properties";
@@ -258,10 +266,15 @@ public class BulkAddressApplicationTest {
             theMock.when(() -> QueryFuncs.InsertRow(bigquery, tableId, row1Data))
                     .thenReturn(getOK());
 
-// Will be service call
-//            theMock.when(() -> BulkAddressController.createTask(createTaskFunction,
-//                    anyString(),anyString(),anyString()))
-//                    .thenAnswer((Answer<Void>) invocation -> null);
+            BulkRequest testBulkRequest1 = new BulkRequest();
+            testBulkRequest1.setId("1");
+            testBulkRequest1.setAddress("4 Gate Reach Exeter EX2 6GA");
+            BulkRequest testBulkRequest2 = new BulkRequest();
+            testBulkRequest2.setId("2");
+            testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
+            BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
+
+            doNothing().when(cloudTaskService).createTasks(newKey,bulkRequests);
 
             RequestBuilder requestBuilder = MockMvcRequestBuilders.post(
                     "/bulk").accept(
@@ -270,7 +283,7 @@ public class BulkAddressApplicationTest {
             MvcResult result = mockMvc.perform(requestBuilder).andReturn();
 
             String expected = "Submitted";
-            assertTrue(result.getResponse().getContentAsString().contains(expected));
+            assertTrue(result.getResponse().getContentAsString().contains("102"));
         }
     }
 
