@@ -22,6 +22,7 @@ import com.google.auth.oauth2.IdTokenProvider;
 
 import lombok.Data;
 import uk.gov.ons.bulk.entities.BulkRequest;
+import uk.gov.ons.bulk.entities.BulkRequestParams;
 
 @Service
 public class CloudTaskService {
@@ -41,7 +42,7 @@ public class CloudTaskService {
 	 * @throws IOException
 	 */
 	@Async
-	public void createTasks(Long jobId, BulkRequest[] addresses) throws IOException {
+	public void createTasks(Long jobId, BulkRequest[] addresses, BulkRequestParams bulkRequestParams) throws IOException {
 		
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 		
@@ -57,7 +58,7 @@ public class CloudTaskService {
 		HttpTransport transport = new NetHttpTransport();		
 		
 		for (int i = 0; i < addresses.length; i++) {	
-			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), addresses[i].getId(), addresses[i].getAddress());
+			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), addresses[i].getId(), addresses[i].getAddress(), bulkRequestParams);
 			
 			HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
 			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
@@ -68,12 +69,17 @@ public class CloudTaskService {
 	public @Data class BulkJobRequest {
 		private Map<String, String> job;
 
-		public BulkJobRequest(String jobId, String id, String address) {
+		public BulkJobRequest(String jobId, String id, String address, BulkRequestParams bulkRequestParams) {
 			super();
 			job = new HashMap<String, String>();
 			job.put("jobId", jobId);
 			job.put("id", id);
 			job.put("address", address);
+			job.put("limit",bulkRequestParams.getLimit());
+			job.put("matchthreshold",bulkRequestParams.getMatchthreshold());
+			job.put("epoch",bulkRequestParams.getEpoch());
+			job.put("classificationfilter",bulkRequestParams.getClassificationfilter());
+			job.put("verbose",bulkRequestParams.getVerbose());
 		}
 	}
 	

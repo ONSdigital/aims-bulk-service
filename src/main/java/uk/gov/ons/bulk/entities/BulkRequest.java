@@ -6,7 +6,8 @@ import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public @Data class BulkRequest {
-	
-	private String id;
-	private String address;
+
+	private String id; // unique within a batch but otherwise free-format, usually a sequential number
+	private String address; // input full address string
+
 }
