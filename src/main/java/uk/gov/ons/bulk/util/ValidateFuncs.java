@@ -1,85 +1,140 @@
 package uk.gov.ons.bulk.util;
 
+import com.google.api.client.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
-import uk.gov.ons.bulk.entities.BulkRequestParams;
 import uk.gov.ons.bulk.entities.BulkRequestParamsErrors;
 
 @Slf4j
 public class ValidateFuncs {
 
-    public static BulkRequestParamsErrors validateBulkParams(BulkRequestParams bps) {
+    public static BulkRequestParamsErrors validateBulkParams(
+                                    String limitperaddress,
+                                    String classificationfilter,
+                                    String historical,
+                                    String matchthreshold,
+                                    String verbose,
+                                    String epoch,
+                                    String excludeengland,
+                                    String excludenorthernireland,
+                                    String excludescotland,
+                                    String excludewales
+    ) {
 
         BulkRequestParamsErrors paramErrors = new BulkRequestParamsErrors();
 
         // This is more work than using built in validation, but allows for more advanced validation as per the Scala API
 
-        paramErrors.setClassificationfilter(validateClassificationFilter(bps.getClassificationfilter()));
-        paramErrors.setEboost(validateEboost(bps.getEboost()));
-        paramErrors.setEpoch(validateEpoch(bps.getEpoch()));
-        paramErrors.setHistorical(validateHistorical(bps.getHistorical()));
-        paramErrors.setIncludeauxiliarysearch(validateIncludeauxiliarysearch(bps.getIncludeauxiliarysearch()));
-        paramErrors.setLat(validateLat(bps.getLat()));
-        paramErrors.setLon(validateLon(bps.getLon()));
-        paramErrors.setLimit(validateLimit(bps.getLimit()));
-        paramErrors.setMatchthreshold(validateMatchthreshold(bps.getMatchthreshold()));
-        paramErrors.setOffset(validateOffset(bps.getOffset()));
-        paramErrors.setRangekm(validateRangekm(bps.getRangekm()));
-        paramErrors.setSboost(validateSboost(bps.getSboost()));
-        paramErrors.setVerbose(validateVerbose(bps.getVerbose()));
+        paramErrors.setClassificationfilter(validateClassificationFilter(classificationfilter));
+        paramErrors.setEboost(validateEboost(excludeengland));
+        paramErrors.setEpoch(validateEpoch(epoch));
+        paramErrors.setHistorical(validateHistorical(historical));
+        paramErrors.setLimit(validateLimit(limitperaddress));
+        paramErrors.setMatchthreshold(validateMatchthreshold(matchthreshold));
+        paramErrors.setSboost(validateSboost(excludescotland));
+        paramErrors.setVerbose(validateVerbose(verbose));
+        paramErrors.setSboost(validateWboost(excludewales));
+        paramErrors.setSboost(validateNboost(excludenorthernireland));
+
+        paramErrors.setMessage(paramErrors.getClassificationfilter()
+                + paramErrors.getEboost()
+                + paramErrors.getEpoch()
+                + paramErrors.getHistorical()
+                + paramErrors.getLimit()
+                + paramErrors.getMatchthreshold()
+                + paramErrors.getVerbose()
+                + paramErrors.getSboost()
+                + paramErrors.getNboost()
+                + paramErrors.getWboost());
 
         return paramErrors;
     }
 
     public static String validateClassificationFilter(String paramVal){
-        return "OK";
+
+         if (paramVal.contains("*") && paramVal.contains(","))
+             return "classification filter may not contain a list and a wildcard; ";
+         else
+             return "";
+
     }
 
     public static String validateEboost(String paramVal){
-        return "OK";
+
+        if (paramVal.equalsIgnoreCase("false") || paramVal.equalsIgnoreCase("true"))
+                return "";
+        else
+            return "excludeengland must be true or false; ";
     }
 
     public static String validateEpoch(String paramVal){
-        return "OK";
+
+        if (paramVal.equals("89") || paramVal.equals("87") || paramVal.equals("80") || paramVal.equals("39") )
+            return "";
+        else
+            return "epoch must be one of 89,87,80,39; ";
+
     }
 
     public static String validateHistorical(String paramVal){
-        return "OK";
+        if (paramVal.equalsIgnoreCase("false") || paramVal.equalsIgnoreCase("true"))
+            return "";
+        else
+            return "historical must be true or false; ";
     }
 
-    public static String validateIncludeauxiliarysearch(String paramVal){
-        return "OK";
-    }
 
-    public static String validateLat(String paramVal){
-        return "OK";
-    }
-
-    public static String validateLon(String paramVal){
-        return "OK";
+    public static String validateNboost(String paramVal){
+        if (paramVal.equalsIgnoreCase("false") || paramVal.equalsIgnoreCase("true"))
+            return "";
+        else
+            return "excludenorthernireland must be true or false; ";
     }
 
     public static String validateLimit(String paramVal){
-        return "OK";
+
+        if (isNumber(paramVal) && Integer.parseInt(paramVal) > 0 && Integer.parseInt(paramVal) < 101 )
+            return "";
+        else
+            return "limitperaddress must be an integer between 1 and 100; ";
+
+
     }
 
     public static String validateMatchthreshold(String paramVal){
-        return "OK";
+        if (isNumber(paramVal) && Integer.parseInt(paramVal) > 0 && Integer.parseInt(paramVal) < 101 )
+            return "";
+        else
+            return "matchthreshold must be an integer between 1 and 100; ";
     }
 
-    public static String validateOffset(String paramVal){
-        return "OK";
-    }
-
-    public static String validateRangekm(String paramVal){
-        return "OK";
+    public static String validateWboost(String paramVal){
+        if (paramVal.equalsIgnoreCase("false") || paramVal.equalsIgnoreCase("true"))
+            return "";
+        else
+            return "excludewales must be true or false; ";
     }
 
     public static String validateSboost(String paramVal){
-        return "OK";
+        if (paramVal.equalsIgnoreCase("false") || paramVal.equalsIgnoreCase("true"))
+            return "";
+        else
+            return "excludescotland must be true or false; ";
     }
 
     public static String validateVerbose(String paramVal){
-        return "OK";
+        if (paramVal.equalsIgnoreCase("false") || paramVal.equalsIgnoreCase("true"))
+            return "";
+        else
+            return "verbose must be true or false; ";
+    }
+
+    public static boolean isNumber(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
     }
 
 }

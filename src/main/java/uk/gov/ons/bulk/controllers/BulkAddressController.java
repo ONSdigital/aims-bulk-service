@@ -141,32 +141,47 @@ public class BulkAddressController {
 
 	@PostMapping(value = "/bulk")
 	public String runBulkRequest(@RequestBody String addressesJson,
-								 @RequestParam(required = false, defaultValue = "5") int limitperaddress,
-								 @RequestParam(required = false) String classificationfilter,
-								 @RequestParam(required = false, defaultValue = "true") boolean historical,
-								 @RequestParam(required = false, defaultValue = "10")  int matchthreshold,
-								 @RequestParam(required = false, defaultValue = "false") boolean verbose,
+								 @RequestParam(required = false, defaultValue = "5") String limitperaddress,
+								 @RequestParam(required = false, defaultValue = "") String classificationfilter,
+								 @RequestParam(required = false, defaultValue = "true") String historical,
+								 @RequestParam(required = false, defaultValue = "5")  String matchthreshold,
+								 @RequestParam(required = false, defaultValue = "false") String verbose,
 								 @RequestParam(required = false, defaultValue = "current") String epoch,
-								 @RequestParam(required = false, defaultValue = "false") boolean excludeengland,
-								 @RequestParam(required = false, defaultValue = "false") boolean excludenorthernireland,
-								 @RequestParam(required = false, defaultValue = "false") boolean excludescotland,
-								 @RequestParam(required = false, defaultValue = "false") boolean excludewales
+								 @RequestParam(required = false, defaultValue = "false") String excludeengland,
+								 @RequestParam(required = false, defaultValue = "false") String excludenorthernireland,
+								 @RequestParam(required = false, defaultValue = "false") String excludescotland,
+								 @RequestParam(required = false, defaultValue = "false") String excludewales
 								 ) {
 
+		BulkRequestParamsErrors brps = ValidateFuncs.validateBulkParams(
+				limitperaddress,
+				classificationfilter,
+				historical,
+				matchthreshold,
+				verbose,
+				epoch,
+				excludeengland,
+				excludenorthernireland,
+				excludescotland,
+				excludewales
+		);
+
+	    // bail out if there is an error (or more than one) in the parameters
+		String validationResult = brps.getMessage();
+		if (!validationResult.equals("")) return "PARAMETER ERRORS: " + validationResult;
+
+		// set the bulk parameters object using the valid input parameters
 		BulkRequestParams bulkRequestParams = new BulkRequestParams();
-		bulkRequestParams.setLimit(Integer.toString(limitperaddress));
-		bulkRequestParams.setMatchthreshold(Integer.toString(matchthreshold));
+		bulkRequestParams.setLimit(limitperaddress);
+		bulkRequestParams.setMatchthreshold(matchthreshold);
 		if (classificationfilter != null) bulkRequestParams.setClassificationfilter(classificationfilter);
 		bulkRequestParams.setEpoch(epoch);
-		bulkRequestParams.setHistorical(Boolean.toString(historical));
-		bulkRequestParams.setVerbose(Boolean.toString(verbose));
-		if (excludeengland) bulkRequestParams.setEboost("0");
-		if (excludenorthernireland) bulkRequestParams.setNboost("0");
-		if (excludescotland) bulkRequestParams.setSboost("0");
-		if (excludewales) bulkRequestParams.setWboost("0");
-
-		BulkRequestParamsErrors brps = ValidateFuncs.validateBulkParams(bulkRequestParams);
-		String validationResult = brps.toString();
+		bulkRequestParams.setHistorical(historical.toLowerCase());
+		bulkRequestParams.setVerbose(verbose.toLowerCase());
+		if (excludeengland.equalsIgnoreCase("true")) bulkRequestParams.setEboost("0");
+		if (excludenorthernireland.equalsIgnoreCase("true")) bulkRequestParams.setNboost("0");
+		if (excludescotland.equalsIgnoreCase("true")) bulkRequestParams.setSboost("0");
+		if (excludewales.equalsIgnoreCase("true")) bulkRequestParams.setWboost("0");
 
 		/*
 		 * We are using a single Dataset for the bulk service which makes gathering info
