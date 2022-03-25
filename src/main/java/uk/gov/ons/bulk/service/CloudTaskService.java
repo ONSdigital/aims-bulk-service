@@ -78,7 +78,6 @@ public class CloudTaskService {
 			job.put("limit",bulkRequestParams.getLimit());
 			job.put("matchthreshold",bulkRequestParams.getMatchthreshold());
 			job.put("epoch",bulkRequestParams.getEpoch());
-			job.put("classificationfilter",bulkRequestParams.getClassificationfilter());
 			job.put("verbose",bulkRequestParams.getVerbose());
 		}
 	}

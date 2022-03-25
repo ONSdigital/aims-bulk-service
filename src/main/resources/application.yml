@@ -3,7 +3,7 @@ spring:
     name: aims-bulk-service
   cloud:
     gcp:
-      project-id: ons-aims-initial-test
+      project-id: YOUR-GCP-PROJECT-ID-HERE
       bigquery:
         dataset-name: bulk_status
   codec:
