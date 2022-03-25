@@ -34,6 +34,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import uk.gov.ons.bulk.entities.BulkRequest;
+import uk.gov.ons.bulk.entities.BulkRequestParams;
 import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
 import uk.gov.ons.bulk.util.Toolbox;
@@ -273,8 +274,9 @@ public class BulkAddressApplicationTest {
             testBulkRequest2.setId("2");
             testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
             BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
+            BulkRequestParams bulkRequestParams = new BulkRequestParams();
 
-            doNothing().when(cloudTaskService).createTasks(newKey,bulkRequests);
+            doNothing().when(cloudTaskService).createTasks(newKey,bulkRequests,bulkRequestParams);
 
             RequestBuilder requestBuilder = MockMvcRequestBuilders.post(
                     "/bulk").accept(

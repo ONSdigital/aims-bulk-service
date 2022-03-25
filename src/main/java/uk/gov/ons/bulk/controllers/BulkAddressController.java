@@ -33,13 +33,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import lombok.extern.slf4j.Slf4j;
-import uk.gov.ons.bulk.entities.BulkRequest;
-import uk.gov.ons.bulk.entities.BulkRequestContainer;
-import uk.gov.ons.bulk.entities.Job;
-import uk.gov.ons.bulk.entities.Result;
-import uk.gov.ons.bulk.entities.ResultContainer;
+import uk.gov.ons.bulk.entities.*;
 import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
+import uk.gov.ons.bulk.util.ValidateFuncs;
 
 @Slf4j
 @RestController
@@ -143,7 +140,48 @@ public class BulkAddressController {
 	}
 
 	@PostMapping(value = "/bulk")
-	public String runBulkRequest(@RequestBody String addressesJson) {
+	public String runBulkRequest(@RequestBody String addressesJson,
+								 @RequestParam(required = false, defaultValue = "5") String limitperaddress,
+								 @RequestParam(required = false, defaultValue = "") String classificationfilter,
+								 @RequestParam(required = false, defaultValue = "true") String historical,
+								 @RequestParam(required = false, defaultValue = "5")  String matchthreshold,
+								 @RequestParam(required = false, defaultValue = "false") String verbose,
+								 @RequestParam(required = false, defaultValue = "current") String epoch,
+								 @RequestParam(required = false, defaultValue = "false") String excludeengland,
+								 @RequestParam(required = false, defaultValue = "false") String excludenorthernireland,
+								 @RequestParam(required = false, defaultValue = "false") String excludescotland,
+								 @RequestParam(required = false, defaultValue = "false") String excludewales
+								 ) {
+
+		BulkRequestParamsErrors brps = ValidateFuncs.validateBulkParams(
+				limitperaddress,
+				classificationfilter,
+				historical,
+				matchthreshold,
+				verbose,
+				epoch,
+				excludeengland,
+				excludenorthernireland,
+				excludescotland,
+				excludewales
+		);
+
+	    // bail out if there is an error (or more than one) in the parameters
+		String validationResult = brps.getMessage();
+		if (!validationResult.equals("")) return "PARAMETER ERRORS: " + validationResult;
+
+		// set the bulk parameters object using the valid input parameters
+		BulkRequestParams bulkRequestParams = new BulkRequestParams();
+		bulkRequestParams.setLimit(limitperaddress);
+		bulkRequestParams.setMatchthreshold(matchthreshold);
+		if (classificationfilter != null) bulkRequestParams.setClassificationfilter(classificationfilter);
+		bulkRequestParams.setEpoch(epoch);
+		bulkRequestParams.setHistorical(historical.toLowerCase());
+		bulkRequestParams.setVerbose(verbose.toLowerCase());
+		if (excludeengland.equalsIgnoreCase("true")) bulkRequestParams.setEboost("0");
+		if (excludenorthernireland.equalsIgnoreCase("true")) bulkRequestParams.setNboost("0");
+		if (excludescotland.equalsIgnoreCase("true")) bulkRequestParams.setSboost("0");
+		if (excludewales.equalsIgnoreCase("true")) bulkRequestParams.setWboost("0");
 
 		/*
 		 * We are using a single Dataset for the bulk service which makes gathering info
@@ -190,79 +228,13 @@ public class BulkAddressController {
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 	
-			cloudTaskService.createTasks(jobId, bcont.getAddresses());
+			cloudTaskService.createTasks(jobId, bcont.getAddresses(), bulkRequestParams);
 
 		} catch (InterruptedException | IOException e) {
 			log.error(String.format("Error in /bulk endpoint: ", e.getMessage()));
 		}
 
 		return new ObjectMapper().createObjectNode().put("jobId", String.valueOf(jobId)).toString();
-	}
-
-	/*
-	 * Can this method go? Is it just for testing?
-	 */
-	@GetMapping(value = "/single")
-	public String runTestRequest(@RequestParam(required = false) String input, Model model) {
-		// Create dataset UUID
-		Long jobId = 0L;
-		try {
-			long newKey = 0;
-			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY,bigquery)) {
-				for (FieldValue val : row) {
-					newKey = val.getLongValue() + 1;
-					log.info(String.format("newkey:%d", newKey));
-				}
-			}
-			// Create new Job record
-			String tableName = "bulkinfo";
-			Map<String, Object> row1Data = new HashMap<>();
-			row1Data.put("runid", newKey);
-			row1Data.put("userid", "bigqueryboy");
-			row1Data.put("status", "waiting");
-			row1Data.put("totalrecs", 99);
-			row1Data.put("recssofar", 0);
-			TableId tableId = TableId.of(datasetName, tableName);
-			
-			String response = QueryFuncs.InsertRow(bigquery,tableId,row1Data);
-			log.debug(response);
-
-			tableName = "results" + newKey;
-			jobId = newKey;
-			model.addAttribute("jobid", newKey);
-			Schema schema = Schema.of(
-					Field.of("id", StandardSQLTypeName.INT64),
-					Field.of("inputaddress", StandardSQLTypeName.STRING),
-					Field.of("response", StandardSQLTypeName.STRING));
-			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
-		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred creating results table : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
-		}
-		
-		/*
-		 * Should set this from a config value. But will be unnecessary when we create
-		 * the task in a Cloud Function.
-		 */
-		String id = "1";
-		try {
-			// Temp fix - this endpoint is not required and can be removed
-			BulkRequest br = new BulkRequest();
-			br.setId(id);
-			br.setAddress(input);
-			BulkRequest[] addresses = {br};
-			
-			cloudTaskService.createTasks(jobId, addresses);
-		} catch (Exception ex) {
-			model.addAttribute("message",
-					String.format("An error occurred creating the cloud task : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
-		}
-
-		return "submitted";
 	}
 
 	@GetMapping(value = "/bulk-progress/{jobid}")
