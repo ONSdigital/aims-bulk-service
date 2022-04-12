@@ -43,6 +43,8 @@ aims:
     info-table: bulkinfo
   cloud-functions:
     create-cloud-task-function: https://europe-west2-ons-aims-initial-test.cloudfunctions.net/create-cloud-task-function
+  epochs: 89|87|80|39
+  current-epoch: 89
 async:
   executor:
     thread:

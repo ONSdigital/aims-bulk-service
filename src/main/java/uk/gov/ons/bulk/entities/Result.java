@@ -10,5 +10,5 @@ public @Data class Result {
 	
 	private String id;
 	private String inputaddress;
-	private Map response;
+	private Map<String, Object> response;
 }
