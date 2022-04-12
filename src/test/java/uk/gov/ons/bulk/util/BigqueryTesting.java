@@ -2,7 +2,6 @@ package uk.gov.ons.bulk.util;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.FileNotFoundException;
@@ -12,21 +11,19 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Properties;
 
-import com.google.cloud.bigquery.BigQuery;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
-import com.google.cloud.bigquery.FieldValueList;
-import com.google.cloud.bigquery.TableResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.FieldValueList;
 
 // This class exists ONLY to check the big query test framework is working
 // The actual unit tests are in the appropriate classes

@@ -5,10 +5,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -65,5 +68,22 @@ public class BulkAsyncConfig implements AsyncConfigurer {
             log.error(String.format("Method : %s", method.toString()));
             log.error(String.format("Number of parameters : %s",  params.length));
         };
+	}
+	
+	@Bean
+	public MessageSource messageSource() {
+	    ReloadableResourceBundleMessageSource messageSource
+	      = new ReloadableResourceBundleMessageSource();
+	    
+	    messageSource.setBasename("classpath:messages");
+	    messageSource.setDefaultEncoding("UTF-8");
+	    return messageSource;
+	}
+	
+	@Bean
+	public LocalValidatorFactoryBean getValidator() {
+	    LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
+	    bean.setValidationMessageSource(messageSource());
+	    return bean;
 	}
 }

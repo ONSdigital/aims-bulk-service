@@ -6,21 +6,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
@@ -29,16 +34,19 @@ import com.google.cloud.bigquery.FieldValueList;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.bigquery.TableId;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import lombok.extern.slf4j.Slf4j;
-import uk.gov.ons.bulk.entities.*;
+import uk.gov.ons.bulk.entities.BulkRequestContainer;
+import uk.gov.ons.bulk.entities.BulkRequestParams;
+import uk.gov.ons.bulk.entities.Job;
+import uk.gov.ons.bulk.entities.Result;
+import uk.gov.ons.bulk.entities.ResultContainer;
 import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
-import uk.gov.ons.bulk.util.ValidateFuncs;
+import uk.gov.ons.bulk.validator.Epoch;
 
 @Slf4j
+@Validated
 @RestController
 public class BulkAddressController {
 
@@ -64,7 +72,7 @@ public class BulkAddressController {
 	private String JOB_QUERY;
 	private String RESULT_QUERY;
 	private String MAX_QUERY;
-	  
+
 	@PostConstruct
 	public void postConstruct() {
 
@@ -101,87 +109,54 @@ public class BulkAddressController {
 				.append(infoTable).toString();
 	}
 
-	@GetMapping(value = "/")
-	@ResponseStatus(HttpStatus.OK)
-	public String index() {
-		return "OK";
-	}
+	@GetMapping(value = "/jobs", produces = "application/json")
+	public ResponseEntity<String> getBulkRequestProgress() {
 
-	@GetMapping(value = "/jobs")
-	public String getBulkRequestProgress(Model model) {
-
+		String output;
+		
 		try {
 			ArrayList<Job> joblist = new ArrayList<Job>();
-			for (FieldValueList row : QueryFuncs.runQuery(JOBS_QUERY,bigquery)) {
-				Job nextJob = new Job();
-				nextJob.setRunid(row.get("runid").getStringValue());
-				nextJob.setUserid(row.get("userid").getStringValue());
-				nextJob.setStatus(row.get("status").getStringValue());
-				nextJob.setTotalrecs(row.get("totalrecs").getStringValue());
-				nextJob.setRecssofar(row.get("recssofar").getStringValue());
-				joblist.add(nextJob);
-			}
+			
+			QueryFuncs.runQuery(JOBS_QUERY,bigquery).forEach(row -> {
+				Job job = new Job();
+				job.setRunid(row.get("runid").getStringValue());
+				job.setUserid(row.get("userid").getStringValue());
+				job.setStatus(row.get("status").getStringValue());
+				job.setTotalrecs(row.get("totalrecs").getStringValue());
+				job.setRecssofar(row.get("recssofar").getStringValue());
+				joblist.add(job);
+			});			
 
-			model.addAttribute("jobslist", joblist);
+			ObjectMapper objectMapper = new ObjectMapper();
+			output = objectMapper.writeValueAsString(joblist);
 
-		} catch (Exception ex) {
-			model.addAttribute("message", String.format("An error occurred : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
+		} catch (InterruptedException | JsonProcessingException ex) {
+
+			String response = String.format("/jobs error: %s",ex.getMessage());
+
+			log.error(response);
+			return ResponseEntity.internalServerError().body(response);
 		}
 
-		return "jobstable";
+		return ResponseEntity.ok(output);
 	}
-
-	@GetMapping(value = "/error")
-	@ResponseStatus(HttpStatus.OK)
-	public String error(Model model) {
-		return "error";
-	}
-
-	@PostMapping(value = "/bulk")
-	public String runBulkRequest(@RequestBody String addressesJson,
-								 @RequestParam(required = false, defaultValue = "5") String limitperaddress,
-								 @RequestParam(required = false, defaultValue = "") String classificationfilter,
-								 @RequestParam(required = false, defaultValue = "true") String historical,
-								 @RequestParam(required = false, defaultValue = "5")  String matchthreshold,
-								 @RequestParam(required = false, defaultValue = "false") String verbose,
-								 @RequestParam(required = false, defaultValue = "current") String epoch,
-								 @RequestParam(required = false, defaultValue = "false") String excludeengland,
-								 @RequestParam(required = false, defaultValue = "false") String excludenorthernireland,
-								 @RequestParam(required = false, defaultValue = "false") String excludescotland,
-								 @RequestParam(required = false, defaultValue = "false") String excludewales
-								 ) {
-
-		BulkRequestParamsErrors brps = ValidateFuncs.validateBulkParams(
-				limitperaddress,
-				classificationfilter,
-				historical,
-				matchthreshold,
-				verbose,
-				epoch,
-				excludeengland,
-				excludenorthernireland,
-				excludescotland,
-				excludewales
-		);
-
-	    // bail out if there is an error (or more than one) in the parameters
-		String validationResult = brps.getMessage();
-		if (!validationResult.equals("")) return "PARAMETER ERRORS: " + validationResult;
+	
+	@PostMapping(value = "/bulk", produces = "application/json")
+	public ResponseEntity<String> runBulkRequest(@Valid @RequestBody BulkRequestContainer bulkRequestContainer,
+			@RequestParam(required = false, defaultValue = "5") @Min(1) @Max(100) String limitperaddress,
+			@RequestParam(required = false) @Pattern(regexp = "^[^*,]+$", message = "{class.val.message}") String classificationfilter,
+			@RequestParam(required = false, defaultValue = "true") @Pattern(regexp = "^(true|false)$", message = "{historical.val.message}") String historical,
+			@RequestParam(required = false, defaultValue = "5") @Min(1) @Max(100) String matchthreshold,
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{verbose.val.message}") String verbose,
+			@RequestParam(required = false, defaultValue = "${aims.current-epoch}") @Epoch(message = "{epoch.val.message}") String epoch,
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludeengland.val.message}") String excludeengland,
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludescotland.val.message}") String excludescotland,
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludewales.val.message}") String excludewales,
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludenorthernireland.val.message}") String excludenorthernireland) {
 
 		// set the bulk parameters object using the valid input parameters
-		BulkRequestParams bulkRequestParams = new BulkRequestParams();
-		bulkRequestParams.setLimit(limitperaddress);
-		bulkRequestParams.setMatchthreshold(matchthreshold);
-		if (classificationfilter != null) bulkRequestParams.setClassificationfilter(classificationfilter);
-		bulkRequestParams.setEpoch(epoch);
-		bulkRequestParams.setHistorical(historical.toLowerCase());
-		bulkRequestParams.setVerbose(verbose.toLowerCase());
-		if (excludeengland.equalsIgnoreCase("true")) bulkRequestParams.setEboost("0");
-		if (excludenorthernireland.equalsIgnoreCase("true")) bulkRequestParams.setNboost("0");
-		if (excludescotland.equalsIgnoreCase("true")) bulkRequestParams.setSboost("0");
-		if (excludewales.equalsIgnoreCase("true")) bulkRequestParams.setWboost("0");
+		BulkRequestParams bulkRequestParams = new BulkRequestParams(limitperaddress, classificationfilter, historical,
+				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland);
 
 		/*
 		 * We are using a single Dataset for the bulk service which makes gathering info
@@ -189,23 +164,20 @@ public class BulkAddressController {
 		 * for each bulk run. Should probably use UUID.randomUUID() or similar. Don't
 		 * need to look up the latest ID used if using UUID.
 		 */
-
-		// Create dataset UUID
 		Long jobId = 0L;
 		BulkRequestContainer bcont;
-		ObjectMapper objectMapper = new ObjectMapper();
 
 		try {
-			bcont = objectMapper.readValue(addressesJson, BulkRequestContainer.class);
+			bcont = bulkRequestContainer;
 			int recs = bcont.getAddresses().length;
 			long newKey = 0;
-			
+
 			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY, bigquery)) {
 				for (FieldValue val : row) {
 					newKey = val.getLongValue() + 1;
 					log.info(String.format("newkey:%d", newKey));
 				}
-			}
+			}			
 
 			// Create new Job record
 			String tableName = "bulkinfo";
@@ -216,7 +188,7 @@ public class BulkAddressController {
 			row1Data.put("totalrecs", recs);
 			row1Data.put("recssofar", 0);
 			TableId tableId = TableId.of(datasetName, tableName);
-			
+
 			String response = QueryFuncs.InsertRow(bigquery, tableId, row1Data);
 			log.debug(response);
 
@@ -227,73 +199,91 @@ public class BulkAddressController {
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
-	
+
 			cloudTaskService.createTasks(jobId, bcont.getAddresses(), bulkRequestParams);
 
-		} catch (InterruptedException | IOException e) {
-			log.error(String.format("Error in /bulk endpoint: ", e.getMessage()));
+		} catch (InterruptedException | IOException ex) {
+			
+			String response = String.format("/bulk error: %s", ex.getMessage());
+			log.error(response);
+			return ResponseEntity.internalServerError().body(response);
 		}
 
-		return new ObjectMapper().createObjectNode().put("jobId", String.valueOf(jobId)).toString();
+		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("jobId", String.valueOf(jobId)).toString());
 	}
 
-	@GetMapping(value = "/bulk-progress/{jobid}")
-	public String getBulkRequestProgress(@PathVariable(required = true, name = "jobid") String jobid, Model model) {
+	@GetMapping(value = "/bulk-progress/{jobid}", produces = "application/json")
+	public ResponseEntity<String> getBulkRequestProgress(
+			@PathVariable(required = true, name = "jobid") @NotBlank(message="{jobid.val.message}") String jobid) {
 
+		String output;
+		
 		try {
+			Job job = new Job();
+			
+			QueryFuncs.runQuery(String.format(JOB_QUERY, jobid), bigquery).forEach(row -> {
+				job.setRunid(row.get("runid").getStringValue());
+				job.setUserid(row.get("userid").getStringValue());
+				job.setStatus(row.get("status").getStringValue());
+				job.setTotalrecs(row.get("totalrecs").getStringValue());
+				job.setRecssofar(row.get("recssofar").getStringValue());
+			});
 
-			ArrayList<Job> joblist = new ArrayList<Job>();
-			for (FieldValueList row : QueryFuncs.runQuery(String.format(JOB_QUERY, jobid),bigquery)) {
-				Job nextJob = new Job();
-				nextJob.setRunid(row.get("runid").getStringValue());
-				nextJob.setUserid(row.get("userid").getStringValue());
-				nextJob.setStatus(row.get("status").getStringValue());
-				nextJob.setTotalrecs(row.get("totalrecs").getStringValue());
-				nextJob.setRecssofar(row.get("recssofar").getStringValue());
-				joblist.add(nextJob);
-			}
+			ObjectMapper objectMapper = new ObjectMapper();
+			output = objectMapper.writeValueAsString(job);
 
-			model.addAttribute("jobslist", joblist);
+		} catch (InterruptedException | JsonProcessingException ex) {
 
-		} catch (Exception ex) {
-			model.addAttribute("message", String.format("An error occurred : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
+			String response = String.format("/bulk-progress/%s error: %s", jobid, ex.getMessage());
+
+			log.error(response);
+			return ResponseEntity.internalServerError().body(response);
 		}
 
-		return "jobstable";
+		return ResponseEntity.ok(output);
 	}
-
+	
 	@GetMapping(value = "/bulk-result/{jobid}", produces = "application/json")
-	public @ResponseBody String getBulkResults(@PathVariable(required = true, name = "jobid") String jobid,
-			Model model) {
-
+	public @ResponseBody ResponseEntity<String> getBulkResults(
+			@PathVariable(required = true, name = "jobid") @NotBlank(message="{jobid.val.message}") String jobid) {
+		
+		/*
+		 * This is not going to be very speedy with large result sets.
+		 * Need another export mechanism.
+		 * https://cloud.google.com/bigquery/docs/exporting-data#java
+		 * Can be exported to JSON.
+		 */
 		ArrayList<Result> rlist = new ArrayList<Result>();
 		ResultContainer rcont = new ResultContainer();
+		String output;
+		ObjectMapper objectMapper = new ObjectMapper();
+
 		try {
-			for (FieldValueList row : QueryFuncs.runQuery(String.format(RESULT_QUERY, jobid),bigquery)) {
+
+			for (FieldValueList row : QueryFuncs.runQuery(String.format(RESULT_QUERY, jobid), bigquery)) {
 				Result nextResult = new Result();
 				nextResult.setId(row.get("id").getStringValue());
 				nextResult.setInputaddress(row.get("inputaddress").getStringValue());
 				String jsonString = row.get("response").getStringValue();
-				ObjectMapper objectMapper = new ObjectMapper();
-				Map<String, Object> jsonMap = objectMapper.readValue(jsonString,
-						new TypeReference<Map<String, Object>>() {
-						});
+				Map<String, Object> jsonMap = new HashMap<String, Object>();
+				jsonMap = objectMapper.readValue(jsonString, Map.class);
 				nextResult.setResponse(jsonMap);
 				rlist.add(nextResult);
 			}
 
-		} catch (Exception ex) {
-			model.addAttribute("message", String.format("An error occurred : %s", ex.getMessage()));
-			model.addAttribute("status", true);
-			return "error";
+			rcont.setResults(rlist);
+			rcont.setJobid(jobid);
+			rcont.setStatus(HttpStatus.OK.toString());
+
+			output = objectMapper.writeValueAsString(rcont);
+
+		} catch (InterruptedException | JsonProcessingException ex) {
+			String response = String.format("/bulk-result/%s error: %s", jobid, ex.getMessage());
+
+			log.error(response);
+			return ResponseEntity.internalServerError().body(response);
 		}
-		rcont.setResults(rlist);
-		rcont.setJobid(jobid);
-		rcont.setStatus("200");
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		String json2 = gson.toJson(rcont);
-		return json2;
+
+		return ResponseEntity.ok(output);
 	}
 }

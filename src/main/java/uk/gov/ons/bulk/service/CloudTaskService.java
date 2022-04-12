@@ -40,7 +40,7 @@ public class CloudTaskService {
 	 * @param jobId
 	 * @param addresses
 	 * @throws IOException
-	 */
+	 */	
 	@Async
 	public void createTasks(Long jobId, BulkRequest[] addresses, BulkRequestParams bulkRequestParams) throws IOException {
 		
@@ -75,11 +75,16 @@ public class CloudTaskService {
 			job.put("jobId", jobId);
 			job.put("id", id);
 			job.put("address", address);
-			job.put("limit",bulkRequestParams.getLimit());
-			job.put("matchthreshold",bulkRequestParams.getMatchthreshold());
-			job.put("epoch",bulkRequestParams.getEpoch());
-			job.put("verbose",bulkRequestParams.getVerbose());
+			job.put("limitperaddress", bulkRequestParams.getLimitperaddress());
+			job.put("classificationfilter", bulkRequestParams.getClassificationfilter());
+			job.put("historical", bulkRequestParams.getHistorical());
+			job.put("matchthreshold", bulkRequestParams.getMatchthreshold());
+			job.put("verbose", bulkRequestParams.getVerbose());
+			job.put("epoch", bulkRequestParams.getEpoch());
+			job.put("eboost", bulkRequestParams.getEboost());
+			job.put("sboost", bulkRequestParams.getSboost());
+			job.put("wboost", bulkRequestParams.getWboost());
+			job.put("nboost", bulkRequestParams.getNboost());
 		}
 	}
-	
 }
