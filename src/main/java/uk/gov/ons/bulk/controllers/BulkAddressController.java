@@ -12,18 +12,13 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 
+import com.google.api.client.http.HttpHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -152,7 +147,8 @@ public class BulkAddressController {
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludeengland.val.message}") String excludeengland,
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludescotland.val.message}") String excludescotland,
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludewales.val.message}") String excludewales,
-			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludenorthernireland.val.message}") String excludenorthernireland) {
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludenorthernireland.val.message}") String excludenorthernireland,
+			@RequestHeader Map<String, String> headersIn) {
 
 		// set the bulk parameters object using the valid input parameters
 		BulkRequestParams bulkRequestParams = new BulkRequestParams(limitperaddress, classificationfilter, historical,
@@ -177,13 +173,19 @@ public class BulkAddressController {
 					newKey = val.getLongValue() + 1;
 					log.info(String.format("newkey:%d", newKey));
 				}
-			}			
+			}
+
+			// Pass on username and api key headers from CA Gateway
+			HttpHeaders headers = new HttpHeaders();
+			String userName = headersIn.getOrDefault("user","Anon");
+			headers.set("user",userName);
+			headers.setAuthorization(headersIn.getOrDefault("Authorization","None"));
 
 			// Create new Job record
 			String tableName = "bulkinfo";
 			Map<String, Object> row1Data = new HashMap<>();
 			row1Data.put("runid", newKey);
-			row1Data.put("userid", "bigqueryboy");
+			row1Data.put("userid", userName);
 			row1Data.put("status", "waiting");
 			row1Data.put("totalrecs", recs);
 			row1Data.put("recssofar", 0);
@@ -200,7 +202,7 @@ public class BulkAddressController {
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 
-			cloudTaskService.createTasks(jobId, bcont.getAddresses(), bulkRequestParams);
+			cloudTaskService.createTasks(jobId, bcont.getAddresses(), bulkRequestParams, headers);
 
 		} catch (InterruptedException | IOException ex) {
 			
