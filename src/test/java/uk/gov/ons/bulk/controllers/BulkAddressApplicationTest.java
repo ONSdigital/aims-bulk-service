@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
+import com.google.api.client.http.HttpHeaders;
 import org.hamcrest.core.Is;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -278,7 +279,10 @@ public class BulkAddressApplicationTest {
             testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
             BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
 
-            doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, null);
+		    HttpHeaders headers = new HttpHeaders();
+		    headers.set("user","bigqueryboy");
+
+            doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, null,headers);
             
     		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
     				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
