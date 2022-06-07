@@ -25,6 +25,8 @@ spring:
   jackson:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
+  datasource:
+    username: YOUR-DATABASE-USER    
 management:
   endpoints:
     web:
