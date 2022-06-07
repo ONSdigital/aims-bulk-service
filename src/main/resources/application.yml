@@ -6,6 +6,9 @@ spring:
       project-id: YOUR-GCP-PROJECT-ID-HERE
       bigquery:
         dataset-name: bulk_status
+      sql:
+        database-name: bulk-status-db
+        instance-connection-name: ons-aims-YOUR-GCP-PROJECT-ID-HERE:europe-west2:bulk-status-test
   codec:
     max-in-memory-size: 10MB
   servlet:
@@ -15,6 +18,13 @@ spring:
   thymeleaf:
     reactive:
       max-chunk-size: 8192
+  sql:
+    init:
+      continue-on-error: true
+      mode: always
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
 management:
   endpoints:
     web:
@@ -39,12 +49,12 @@ logging:
     reactor:
       netty: INFO
 aims:
-  bigquery:
-    info-table: bulkinfo
   cloud-functions:
-    create-cloud-task-function: https://europe-west2-ons-aims-initial-test.cloudfunctions.net/create-cloud-task-function
+    create-cloud-task-function: https://europe-west2-ons-aims-analysis-prod.cloudfunctions.net/create-cloud-task-function
   epochs: 89|87|80|39
   current-epoch: 89
+  # Update the records processed at every n% of completion
+  report-frequency: 5
 async:
   executor:
     thread:

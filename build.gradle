@@ -22,7 +22,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web' 
 
 	implementation 'com.google.cloud:spring-cloud-gcp-dependencies:2.0.6'
-	implementation 'org.springframework.cloud:spring-cloud-gcp-starter-bigquery:1.2.8.RELEASE'
+	implementation 'com.google.cloud:spring-cloud-gcp-starter-bigquery:3.2.1'
+	implementation 'com.google.cloud:spring-cloud-gcp-starter-sql-mysql:3.2.1'
 
 	implementation 'org.springframework.integration:spring-integration-core'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -40,6 +41,7 @@ dependencies {
 	testImplementation 'com.squareup.okhttp3:okhttp:4.9.3'
 	testImplementation 'com.squareup.okhttp3:mockwebserver:4.9.3'
 	testImplementation 'org.mockito:mockito-inline:4.3.1'
+	testImplementation 'com.h2database:h2'
 
 	// Resolves the java.lang.NoClassDefFoundError: org/junit/platform/engine/EngineDiscoveryListener in Eclipse	
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
