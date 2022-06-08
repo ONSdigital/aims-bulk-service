@@ -232,7 +232,7 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
 				.andExpect(jsonPath("$.recssofar", Is.is(107)))
 				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(jsonPath("$.enddate", Is.is(now.plusHours(2).toString())))
+				.andExpect(jsonPath("$.enddate", Is.is(now.plusHours(2).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	

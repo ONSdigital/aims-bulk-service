@@ -26,7 +26,8 @@ spring:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
   datasource:
-    username: YOUR-DATABASE-USER    
+    username: YOUR-DATABASE-USER
+    password: YOUR-DATABASE-PASSWORD
 management:
   endpoints:
     web:
