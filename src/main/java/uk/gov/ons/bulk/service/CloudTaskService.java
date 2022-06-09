@@ -70,7 +70,7 @@ public class CloudTaskService {
 		for (int i = 0; i < addresses.length; i++) {	
 					
 			if (reportAddresses.contains(i + 1)) {
-				log.info("Reporting: " + (i + 1));
+				log.debug("Reporting: " + (i + 1));
 			}
 			
 			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), addresses[i].getId(), addresses[i].getAddress(), 

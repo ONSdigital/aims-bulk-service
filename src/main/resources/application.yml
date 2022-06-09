@@ -53,7 +53,7 @@ logging:
       netty: INFO
 aims:
   cloud-functions:
-    create-cloud-task-function: https://europe-west2-ons-aims-analysis-prod.cloudfunctions.net/create-cloud-task-function
+    create-cloud-task-function: https://europe-west2-YOUR-GCP-PROJECT-ID-HERE.cloudfunctions.net/create-cloud-task-function
   epochs: 89|87|80|39
   current-epoch: 89
   # Update the records processed at every n% of completion
