@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
+import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -49,7 +50,7 @@ public class CloudTaskService {
 	 * @throws IOException
 	 */	
 	@Async
-	public void createTasks(long jobId, BulkRequest[] addresses, long totalAddresses, BulkRequestParams bulkRequestParams) throws IOException {
+	public void createTasks(long jobId, BulkRequest[] addresses, long totalAddresses, BulkRequestParams bulkRequestParams, HttpHeaders headers) throws IOException {
 		
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 		
@@ -79,6 +80,7 @@ public class CloudTaskService {
 			
 			HttpContent content = new JsonHttpContent(new GsonFactory(), bjr.getJob());
 			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
+			request.setHeaders(headers);
 			request.execute();
 		}
 	}

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,6 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldValueList;
@@ -62,9 +64,6 @@ public class BulkAddressController {
 
 	@Value("${spring.cloud.gcp.bigquery.dataset-name}")
 	private String datasetName;
-
-//	@Value("${aims.bigquery.info-table}")
-//	private String infoTable;
 	
 	@Autowired
 	private CloudTaskService cloudTaskService;
@@ -73,11 +72,8 @@ public class BulkAddressController {
 	private BulkStatusService bulkStatusService;
 
 	private String BASE_DATASET_QUERY;
-//	private String INFO_TABLE_QUERY;
 	private String JOBS_QUERY;
-//	private String JOB_QUERY;
 	private String RESULT_QUERY;
-//	private String MAX_QUERY;
 	
 	@PostConstruct
 	public void postConstruct() {
@@ -87,32 +83,11 @@ public class BulkAddressController {
 				.append(projectId)
 				.append(".")
 				.append(datasetName).toString();
-		
-//		INFO_TABLE_QUERY = new StringBuilder()
-//				.append(BASE_DATASET_QUERY)
-//				.append(".")
-//				.append(infoTable).toString(); 
-		
-//		JOBS_QUERY = new StringBuilder()
-//				.append(INFO_TABLE_QUERY)
-//				.append(";").toString();
-//		
-//		JOB_QUERY = new StringBuilder()
-//				.append(INFO_TABLE_QUERY)
-//				.append(" WHERE runid = %s;").toString();
 
 		RESULT_QUERY = new StringBuilder()
 				.append(BASE_DATASET_QUERY)
 				.append(".")
 				.append("results%s;").toString();
-
-//		MAX_QUERY = new StringBuilder()
-//				.append("SELECT MAX(runid) FROM ")
-//				.append(projectId)
-//				.append(".")
-//				.append(datasetName)
-//				.append(".")
-//				.append(infoTable).toString();
 	}
 
 	@GetMapping(value = "/jobs", produces = "application/json")
@@ -158,16 +133,23 @@ public class BulkAddressController {
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludeengland.val.message}") String excludeengland,
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludescotland.val.message}") String excludescotland,
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludewales.val.message}") String excludewales,
-			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludenorthernireland.val.message}") String excludenorthernireland) {
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludenorthernireland.val.message}") String excludenorthernireland,
+			@RequestHeader Map<String, String> headersIn) {
 
 		// set the bulk parameters object using the valid input parameters
 		BulkRequestParams bulkRequestParams = new BulkRequestParams(limitperaddress, classificationfilter, historical,
 				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland);
 
+		// Pass on username and api key headers from CA Gateway
+		HttpHeaders headers = new HttpHeaders();
+		String userName = headersIn.getOrDefault("user","Anon");
+		headers.set("user", userName);
+		headers.setAuthorization(headersIn.getOrDefault("Authorization","None"));
+		
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
 		
-		BulkInfo bulkInfo = new BulkInfo("bigqueryboy", "in-progress", recs, 0);
+		BulkInfo bulkInfo = new BulkInfo(userName, "in-progress", recs, 0);
 		
 		long newKey = bulkStatusService.saveJob(bulkInfo);
 
@@ -179,7 +161,7 @@ public class BulkAddressController {
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 
-			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams);
+			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams, headers);
 		} catch (IOException ex) {
 			
 			String response = String.format("/bulk error: %s", ex.getMessage());

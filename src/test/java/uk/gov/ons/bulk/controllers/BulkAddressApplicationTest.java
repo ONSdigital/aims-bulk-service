@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.FieldValueList;
 
@@ -268,9 +269,12 @@ public class BulkAddressApplicationTest {
         testBulkRequest2.setId("2");
         testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
         BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
+        
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.set("user","bigqueryboy");
 
         when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
-        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null);
+        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, headers);
         
 		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
