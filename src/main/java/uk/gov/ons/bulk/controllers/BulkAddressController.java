@@ -27,22 +27,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
-import com.google.cloud.bigquery.FieldValue;
 import com.google.cloud.bigquery.FieldValueList;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
-import com.google.cloud.bigquery.TableId;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
 import uk.gov.ons.bulk.entities.Job;
 import uk.gov.ons.bulk.entities.Result;
 import uk.gov.ons.bulk.entities.ResultContainer;
+import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
 import uk.gov.ons.bulk.validator.Epoch;
@@ -61,20 +65,17 @@ public class BulkAddressController {
 
 	@Value("${spring.cloud.gcp.bigquery.dataset-name}")
 	private String datasetName;
-
-	@Value("${aims.bigquery.info-table}")
-	private String infoTable;
 	
 	@Autowired
 	private CloudTaskService cloudTaskService;
+	
+	@Autowired
+	private BulkStatusService bulkStatusService;
 
 	private String BASE_DATASET_QUERY;
-	private String INFO_TABLE_QUERY;
 	private String JOBS_QUERY;
-	private String JOB_QUERY;
 	private String RESULT_QUERY;
-	private String MAX_QUERY;
-
+	
 	@PostConstruct
 	public void postConstruct() {
 
@@ -83,32 +84,11 @@ public class BulkAddressController {
 				.append(projectId)
 				.append(".")
 				.append(datasetName).toString();
-		
-		INFO_TABLE_QUERY = new StringBuilder()
-				.append(BASE_DATASET_QUERY)
-				.append(".")
-				.append(infoTable).toString(); 
-		
-		JOBS_QUERY = new StringBuilder()
-				.append(INFO_TABLE_QUERY)
-				.append(";").toString();
-		
-		JOB_QUERY = new StringBuilder()
-				.append(INFO_TABLE_QUERY)
-				.append(" WHERE runid = %s;").toString();
 
 		RESULT_QUERY = new StringBuilder()
 				.append(BASE_DATASET_QUERY)
 				.append(".")
 				.append("results%s;").toString();
-
-		MAX_QUERY = new StringBuilder()
-				.append("SELECT MAX(runid) FROM ")
-				.append(projectId)
-				.append(".")
-				.append(datasetName)
-				.append(".")
-				.append(infoTable).toString();
 	}
 
 	@GetMapping(value = "/jobs", produces = "application/json")
@@ -161,64 +141,37 @@ public class BulkAddressController {
 		BulkRequestParams bulkRequestParams = new BulkRequestParams(limitperaddress, classificationfilter, historical,
 				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland);
 
-		/*
-		 * We are using a single Dataset for the bulk service which makes gathering info
-		 * on each bulk run easier. We need a more robust method of naming the tables
-		 * for each bulk run. Should probably use UUID.randomUUID() or similar. Don't
-		 * need to look up the latest ID used if using UUID.
-		 */
-		Long jobId = 0L;
-		BulkRequestContainer bcont;
+		// Pass on username and api key headers from CA Gateway
+		HttpHeaders headers = new HttpHeaders();
+		String userName = headersIn.getOrDefault("user","Anon");
+		headers.set("user", userName);
+		headers.setAuthorization(headersIn.getOrDefault("Authorization","None"));
+		
+		BulkRequestContainer bcont = bulkRequestContainer;
+		long recs = bcont.getAddresses().length;
+		
+		BulkInfo bulkInfo = new BulkInfo(userName, "in-progress", recs, 0);
+		
+		long newKey = bulkStatusService.saveJob(bulkInfo);
 
 		try {
-			bcont = bulkRequestContainer;
-			int recs = bcont.getAddresses().length;
-			long newKey = 0;
+			String tableName = "results_" + newKey;
 
-			for (FieldValueList row : QueryFuncs.runQuery(MAX_QUERY, bigquery)) {
-				for (FieldValue val : row) {
-					newKey = val.getLongValue() + 1;
-					log.info(String.format("newkey:%d", newKey));
-				}
-			}
-
-			// Pass on username and api key headers from CA Gateway
-			HttpHeaders headers = new HttpHeaders();
-			String userName = headersIn.getOrDefault("user","Anon");
-			headers.set("user",userName);
-			headers.setAuthorization(headersIn.getOrDefault("Authorization","None"));
-
-			// Create new Job record
-			String tableName = "bulkinfo";
-			Map<String, Object> row1Data = new HashMap<>();
-			row1Data.put("runid", newKey);
-			row1Data.put("userid", userName);
-			row1Data.put("status", "waiting");
-			row1Data.put("totalrecs", recs);
-			row1Data.put("recssofar", 0);
-			TableId tableId = TableId.of(datasetName, tableName);
-
-			String response = QueryFuncs.InsertRow(bigquery, tableId, row1Data);
-			log.debug(response);
-
-			tableName = "results" + newKey;
-			jobId = newKey;
 			Schema schema = Schema.of(
 					Field.of("id", StandardSQLTypeName.INT64),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 
-			cloudTaskService.createTasks(jobId, bcont.getAddresses(), bulkRequestParams, headers);
-
-		} catch (InterruptedException | IOException ex) {
+			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams, headers);
+		} catch (IOException ex) {
 			
 			String response = String.format("/bulk error: %s", ex.getMessage());
 			log.error(response);
 			return ResponseEntity.internalServerError().body(response);
 		}
 
-		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("jobId", String.valueOf(jobId)).toString());
+		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("jobId", String.valueOf(newKey)).toString());
 	}
 
 	@GetMapping(value = "/bulk-progress/{jobid}", produces = "application/json")
@@ -227,24 +180,14 @@ public class BulkAddressController {
 
 		String output;
 		
+		BulkInfo bulkInfo = bulkStatusService.queryJob(Long.parseLong(jobid));
+		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+	            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
+		
 		try {
-			Job job = new Job();
-			
-			QueryFuncs.runQuery(String.format(JOB_QUERY, jobid), bigquery).forEach(row -> {
-				job.setRunid(row.get("runid").getStringValue());
-				job.setUserid(row.get("userid").getStringValue());
-				job.setStatus(row.get("status").getStringValue());
-				job.setTotalrecs(row.get("totalrecs").getStringValue());
-				job.setRecssofar(row.get("recssofar").getStringValue());
-			});
-
-			ObjectMapper objectMapper = new ObjectMapper();
-			output = objectMapper.writeValueAsString(job);
-
-		} catch (InterruptedException | JsonProcessingException ex) {
-
-			String response = String.format("/bulk-progress/%s error: %s", jobid, ex.getMessage());
-
+			output = objectMapper.writeValueAsString(bulkInfo);
+		} catch (JsonProcessingException e) {
+			String response = String.format("/bulk-progress/%s error: %s", jobid, e.getMessage());
 			log.error(response);
 			return ResponseEntity.internalServerError().body(response);
 		}

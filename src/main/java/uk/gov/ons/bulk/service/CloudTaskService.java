@@ -1,7 +1,9 @@
 package uk.gov.ons.bulk.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.google.api.client.http.GenericUrl;
@@ -15,22 +17,27 @@ import org.springframework.stereotype.Service;
 
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.http.json.JsonHttpContent;
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.IdTokenCredentials;
 import com.google.auth.oauth2.IdTokenProvider;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
 
 @Service
+@Slf4j
 public class CloudTaskService {
 
 	@Value("${aims.cloud-functions.create-cloud-task-function}")
 	private String createTaskFunction;
 	
+	@Value("${aims.report-frequency}")
+	private double reportFrequency; 
+
 	/**
 	 * Send each address to GCP Cloud Function for matching.
 	 * Done asynchronously so as not to block the client response.
@@ -43,7 +50,7 @@ public class CloudTaskService {
 	 * @throws IOException
 	 */	
 	@Async
-	public void createTasks(Long jobId, BulkRequest[] addresses, BulkRequestParams bulkRequestParams, HttpHeaders headers) throws IOException {
+	public void createTasks(long jobId, BulkRequest[] addresses, long totalAddresses, BulkRequestParams bulkRequestParams, HttpHeaders headers) throws IOException {
 		
 		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 		
@@ -58,25 +65,51 @@ public class CloudTaskService {
 		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
 		HttpTransport transport = new NetHttpTransport();		
 		
+		List<Integer> reportAddresses = reportAddresses(addresses.length);
+		reportAddresses.add(addresses.length);
+		
 		for (int i = 0; i < addresses.length; i++) {	
-			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), addresses[i].getId(), addresses[i].getAddress(), bulkRequestParams);
+					
+			if (reportAddresses.contains(i + 1)) {
+				log.debug("Reporting: " + (i + 1));
+			}
 			
-			HttpContent content = new JsonHttpContent(new JacksonFactory(), bjr.getJob());
+			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), addresses[i].getId(), addresses[i].getAddress(), 
+					String.valueOf(i + 1), String.valueOf(totalAddresses), 
+					String.valueOf(reportAddresses.contains(i + 1)), bulkRequestParams);
+			
+			HttpContent content = new JsonHttpContent(new GsonFactory(), bjr.getJob());
 			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
-		    request.setHeaders(headers);
+			request.setHeaders(headers);
 			request.execute();
 		}
+	}
+	
+	private List<Integer> reportAddresses(double length) {
+		
+		double x = reportFrequency / 100;
+		List<Integer> reportAddresses = new ArrayList<Integer>();
+		
+		do {
+			reportAddresses.add((int)Math.round(length * x));
+			x = x + (reportFrequency / 100);
+		} while(x < 1);
+		
+		return reportAddresses;
 	}
 	
 	public @Data class BulkJobRequest {
 		private Map<String, String> job;
 
-		public BulkJobRequest(String jobId, String id, String address, BulkRequestParams bulkRequestParams) {
+		public BulkJobRequest(String jobId, String id, String address, String addressNumber, String totalAddresses, String report, BulkRequestParams bulkRequestParams) {
 			super();
 			job = new HashMap<String, String>();
 			job.put("jobId", jobId);
 			job.put("id", id);
 			job.put("address", address);
+			job.put("item", addressNumber);
+			job.put("total", totalAddresses);
+			job.put("report", report);
 			job.put("limitperaddress", bulkRequestParams.getLimitperaddress());
 			job.put("classificationfilter", bulkRequestParams.getClassificationfilter());
 			job.put("historical", bulkRequestParams.getHistorical());

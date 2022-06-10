@@ -1,11 +1,11 @@
 package uk.gov.ons.bulk.controllers;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -14,9 +14,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
 
@@ -32,7 +32,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -42,20 +41,20 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.Field;
-import com.google.cloud.bigquery.FieldValue;
 import com.google.cloud.bigquery.FieldValueList;
-import com.google.cloud.bigquery.Schema;
-import com.google.cloud.bigquery.StandardSQLTypeName;
-import com.google.cloud.bigquery.TableId;
 
+import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
+import uk.gov.ons.bulk.repository.BulkStatusRepository;
+import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.util.QueryFuncs;
 import uk.gov.ons.bulk.util.Toolbox;
@@ -75,9 +74,6 @@ public class BulkAddressApplicationTest {
     @Value("${spring.cloud.gcp.bigquery.dataset-name}")
     private String datasetName;
 
-    @Value("${aims.bigquery.info-table}")
-    private String infoTable;
-
     @Value("${aims.cloud-functions.create-cloud-task-function}")
     private String createTaskFunction;
 
@@ -86,18 +82,22 @@ public class BulkAddressApplicationTest {
 
     @MockBean
     private CloudTaskService cloudTaskService;
+    
+    @Autowired
+    private BulkStatusService bulkStatusService;
+    
+    @MockBean
+    private BulkStatusRepository bulkStatusRepository;
 
     Properties queryReponse = new Properties();
     String queryReponseRef = "query.properties";
 
     private String BASE_DATASET_QUERY;
-    private String INFO_TABLE_QUERY;
-    private String JOBS_QUERY;
-    private String JOB_QUERY;
     private String RESULT_QUERY;
-    private String MAX_QUERY;
     
     MockedStatic<QueryFuncs> theMock;
+    
+    private LocalDateTime now;
         
     @PostConstruct
     public void postConstruct() {
@@ -108,31 +108,10 @@ public class BulkAddressApplicationTest {
                 .append(".")
                 .append(datasetName).toString();
 
-         INFO_TABLE_QUERY = new StringBuilder()
-                .append(BASE_DATASET_QUERY)
-                .append(".")
-                .append(infoTable).toString();
-
-         JOBS_QUERY = new StringBuilder()
-                .append(INFO_TABLE_QUERY)
-                .append(";").toString();
-
-         JOB_QUERY = new StringBuilder()
-                .append(INFO_TABLE_QUERY)
-                .append(" WHERE runid = 14;").toString();
-
          RESULT_QUERY = new StringBuilder()
                 .append(BASE_DATASET_QUERY)
                 .append(".")
                 .append("results14;").toString();
-
-         MAX_QUERY = new StringBuilder()
-                .append("SELECT MAX(runid) FROM ")
-                .append(projectId)
-                .append(".")
-                .append(datasetName)
-                .append(".")
-                .append(infoTable).toString();
          
          // use mockstatic to make it use cached queries
          theMock = Mockito.mockStatic(QueryFuncs.class);
@@ -143,12 +122,13 @@ public class BulkAddressApplicationTest {
 
         // load up cached responses
         InputStream is = getClass().getClassLoader().getResourceAsStream(queryReponseRef);
+        now = LocalDateTime.now();
 
         if (is != null) {
             queryReponse.load(is);
         } else {
             throw new FileNotFoundException("Query Property file not in classpath");
-        }        
+        }      
     }
 
     public ArrayList<FieldValueList> getResponse(String query) throws ClassNotFoundException, IOException, NoSuchAlgorithmException {
@@ -182,113 +162,127 @@ public class BulkAddressApplicationTest {
     }
 
     public String getOK() {return "OK";}
-
+    
 	@Test
-	public void testGetBulkRequestProgress() throws Exception {
-
-		// use mockstatic to make it use cached queries
-		theMock.when(() -> QueryFuncs.runQuery(JOBS_QUERY, bigquery)).thenReturn(getResponse(JOBS_QUERY));
-
-		mockMvc.perform(MockMvcRequestBuilders.get("/jobs"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.[0]runid", Is.is("90")))
-				.andExpect(jsonPath("$.[5]userid", Is.is("bigqueryboy")))
-				.andExpect(jsonPath("$.[4]status", Is.is("waiting")))
-				.andExpect(jsonPath("$.[0]totalrecs", Is.is("99")))
-				.andExpect(jsonPath("$.[3]recssofar", Is.is("0")))
-				.andExpect(jsonPath("$.[12]startdate", is(nullValue())))
-				.andExpect(jsonPath("$.[14]enddate", is(nullValue())))
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	public void testQueryJob() {
+		
+		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 45);
+        bulkInfo.setRunid(1);
+        bulkInfo.setStartdate(now);
+        
+        when(bulkStatusRepository.queryJob(1)).thenReturn(bulkInfo);
+		BulkInfo result = bulkStatusService.queryJob(1);
+		
+		assertThat(result.getRunid()).isEqualTo(1);
+		assertThat(result.getUserid()).isEqualTo("bob");
+		assertThat(result.getStatus()).isEqualTo("in-progress");
+		assertThat(result.getTotalrecs()).isEqualTo(107);
+		assertThat(result.getRecssofar()).isEqualTo(45);
+		assertThat(result.getStartdate()).isEqualTo(now);
+	}
+	
+	@Test
+	public void testSaveJob() {
+		
+		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 0);
+        bulkInfo.setRunid(102);
+        bulkInfo.setStartdate(now);
+               
+        when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
+		Long result = bulkStatusService.saveJob(bulkInfo);
+		
+		assertThat(result == 102L);
 	}
 
 	@ParameterizedTest
 	@MethodSource("addJobIds")
-	public void testGetBulkRequestProgress(@PathVariable(required = true, name = "jobid") String jobid)
+	public void testGetBulkRequestProgressInProgress(@PathVariable(required = true, name = "jobid") String jobid)
 			throws Exception {
 
-		// use mockstatic to make it use cached queries
-		theMock.when(() -> QueryFuncs.runQuery(String.format(JOB_QUERY, jobid), bigquery))
-				.thenReturn(getResponse(String.format(JOB_QUERY, jobid)));
+		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 45);
+        bulkInfo.setRunid(14);
+        bulkInfo.setStartdate(now);
+        
+        when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfo);
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/" + jobid)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.runid", Is.is("14")))
-				.andExpect(jsonPath("$.userid", Is.is("bigqueryboy")))
-				.andExpect(jsonPath("$.status", Is.is("waiting")))
-				.andExpect(jsonPath("$.totalrecs", Is.is("2")))
-				.andExpect(jsonPath("$.recssofar", Is.is("0")))
-				.andExpect(jsonPath("$.startdate", is(nullValue())))
-				.andExpect(jsonPath("$.enddate", is(nullValue())))
+				.andExpect(jsonPath("$.runid", Is.is(14)))
+				.andExpect(jsonPath("$.userid", Is.is("bob")))
+				.andExpect(jsonPath("$.status", Is.is("in-progress")))
+				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
+				.andExpect(jsonPath("$.recssofar", Is.is(45)))
+				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
-
+	
 	@ParameterizedTest
 	@MethodSource("addJobIds")
-	public void getBulkResults(@PathVariable(required = true, name = "jobid") String jobid) throws Exception {
+	public void testGetBulkRequestProgressFinished(@PathVariable(required = true, name = "jobid") String jobid)
+			throws Exception {
 
-		theMock.when(() -> QueryFuncs.runQuery(String.format(RESULT_QUERY, jobid), bigquery))
-				.thenReturn(getResponse(String.format(RESULT_QUERY, jobid)));
+		BulkInfo bulkInfo = new BulkInfo("bob", "finished", 107, 107);
+        bulkInfo.setRunid(14);
+        bulkInfo.setStartdate(now);
+        bulkInfo.setEnddate(now.plusHours(2));
+        
+        when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfo);
 
-		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/" + jobid)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.results[1].response.response.addresses[0].classificationCode", Is.is("CR07")))
+		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/" + jobid)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.runid", Is.is(14)))
+				.andExpect(jsonPath("$.userid", Is.is("bob")))
+				.andExpect(jsonPath("$.status", Is.is("finished")))
+				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
+				.andExpect(jsonPath("$.recssofar", Is.is(107)))
+				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+				.andExpect(jsonPath("$.enddate", Is.is(now.plusHours(2).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-
 	}
+	
+	// Commented out for now as the method will be changing
+
+//	@ParameterizedTest
+//	@MethodSource("addJobIds")
+//	public void getBulkResults(@PathVariable(required = true, name = "jobid") String jobid) throws Exception {
+//
+//		theMock.when(() -> QueryFuncs.runQuery(String.format(RESULT_QUERY, jobid), bigquery))
+//				.thenReturn(getResponse(String.format(RESULT_QUERY, jobid)));
+//
+//		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/" + jobid)).andExpect(status().isOk())
+//				.andExpect(jsonPath("$.results[1].response.response.addresses[0].classificationCode", Is.is("CR07")))
+//				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+//
+//	}
 
     @ParameterizedTest
     @MethodSource("bulkRequestObject")
     public void runBulkRequest(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
 
-            Schema schema = Schema.of(
-                    Field.of("id", StandardSQLTypeName.INT64),
-                    Field.of("inputaddress", StandardSQLTypeName.STRING),
-                    Field.of("response", StandardSQLTypeName.STRING));
-
-            theMock.when(() -> QueryFuncs.runQuery(MAX_QUERY,bigquery))
-                    .thenReturn(getResponse(MAX_QUERY));
-
-            long newKey = 0;
-            for (FieldValueList row : getResponse(MAX_QUERY)) {
-                for (FieldValue val : row) {
-                    newKey = val.getLongValue() + 1;
-                    System.out.println((String.format("newkey:%d", newKey)));
-                }
-            }
-
-            String tableName = "results" + newKey;
-
-            theMock.when(() -> QueryFuncs.createTable(bigquery, datasetName, tableName, schema))
-                    .thenAnswer((Answer<Void>) invocation -> null);
-
-            String iTableName = "bulkinfo";
-            Map<String, Object> row1Data = new HashMap<>();
-            row1Data.put("runid", newKey);
-            row1Data.put("userid", "bigqueryboy");
-            row1Data.put("status", "waiting");
-            row1Data.put("totalrecs", 99);
-            row1Data.put("recssofar", 0);
-            TableId tableId = TableId.of(datasetName, iTableName);
-
-            theMock.when(() -> QueryFuncs.InsertRow(bigquery, tableId, row1Data))
-                    .thenReturn(getOK());
-
-            BulkRequest testBulkRequest1 = new BulkRequest();
-            testBulkRequest1.setId("1");
-            testBulkRequest1.setAddress("4 Gate Reach Exeter EX2 6GA");
-            BulkRequest testBulkRequest2 = new BulkRequest();
-            testBulkRequest2.setId("2");
-            testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
-            BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
-
-		    HttpHeaders headers = new HttpHeaders();
-		    headers.set("user","bigqueryboy");
-
-            doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, null,headers);
+    long newKey = 102;
             
-    		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
-    				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
-    				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
-    				.andExpect(jsonPath("$.jobId", Is.is("102")))
-    				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+		BulkInfo bulkInfo = new BulkInfo("bigqueryboy", "in-progress", 2, 0);
+        bulkInfo.setRunid(newKey);
+        bulkInfo.setStartdate(now);
+        
+        BulkRequest testBulkRequest1 = new BulkRequest();
+        testBulkRequest1.setId("1");
+        testBulkRequest1.setAddress("4 Gate Reach Exeter EX2 6GA");
+        BulkRequest testBulkRequest2 = new BulkRequest();
+        testBulkRequest2.setId("2");
+        testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
+        BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
+        
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.set("user","bigqueryboy");
+
+        when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
+        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, headers);
+        
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(jsonPath("$.jobId", Is.is("102")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
     
 	@Test
