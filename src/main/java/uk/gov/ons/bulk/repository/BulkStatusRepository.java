@@ -23,11 +23,11 @@ public class BulkStatusRepository {
 	@Autowired
 	public BulkStatusRepository(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
-		this.simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
 	}
 
 	public Long saveJob(BulkInfo job) {
-
+		
+		simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
 		simpleJdbcInsert.withTableName("bulkinfo")
 			.usingGeneratedKeyColumns("runid")
 			.usingColumns("userid", "status", "totalrecs", "recssofar");
