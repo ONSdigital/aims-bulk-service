@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
+import com.google.api.client.http.HttpHeaders;
 import org.hamcrest.core.Is;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -256,7 +257,7 @@ public class BulkAddressApplicationTest {
     @MethodSource("bulkRequestObject")
     public void runBulkRequest(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
 
-    	long newKey = 102;
+    long newKey = 102;
             
 		BulkInfo bulkInfo = new BulkInfo("bigqueryboy", "in-progress", 2, 0);
         bulkInfo.setRunid(newKey);
