@@ -52,12 +52,17 @@ public class BulkStatusRepository {
 		public BulkInfo mapRow(ResultSet rs, int rowNum) throws SQLException {
 			
 			BulkInfo bulkInfo = new BulkInfo();
-			
+
+			Long correctedRecs = rs.getLong("recssofar");
+			if (rs.getString("status").equals("finished"))
+			{
+				correctedRecs = rs.getLong("totalrecs");
+			}
 			bulkInfo.setRunid(rs.getLong("runid"));
 			bulkInfo.setUserid(rs.getString("userid"));
 			bulkInfo.setStatus(rs.getString("status"));
 			bulkInfo.setTotalrecs(rs.getLong("totalrecs"));
-			bulkInfo.setRecssofar(rs.getLong("recssofar"));
+			bulkInfo.setRecssofar(correctedRecs);
 			bulkInfo.setStartdate(rs.getTimestamp("startdate").toLocalDateTime());
 			
 			Timestamp endDateTimestamp = rs.getTimestamp("enddate");
