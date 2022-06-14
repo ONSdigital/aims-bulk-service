@@ -3,6 +3,7 @@ package uk.gov.ons.bulk.controllers;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -95,24 +96,15 @@ public class BulkAddressController {
 	public ResponseEntity<String> getBulkRequestProgress() {
 
 		String output;
-		
+
+		List<BulkInfo> jobsList = bulkStatusService.getJobs();
+		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
+
 		try {
-			ArrayList<Job> joblist = new ArrayList<Job>();
-			
-			QueryFuncs.runQuery(JOBS_QUERY,bigquery).forEach(row -> {
-				Job job = new Job();
-				job.setRunid(row.get("runid").getStringValue());
-				job.setUserid(row.get("userid").getStringValue());
-				job.setStatus(row.get("status").getStringValue());
-				job.setTotalrecs(row.get("totalrecs").getStringValue());
-				job.setRecssofar(row.get("recssofar").getStringValue());
-				joblist.add(job);
-			});			
+			output = objectMapper.writeValueAsString(jobsList);
 
-			ObjectMapper objectMapper = new ObjectMapper();
-			output = objectMapper.writeValueAsString(joblist);
-
-		} catch (InterruptedException | JsonProcessingException ex) {
+		} catch (JsonProcessingException ex) {
 
 			String response = String.format("/jobs error: %s",ex.getMessage());
 

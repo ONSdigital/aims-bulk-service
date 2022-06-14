@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.repository.BulkStatusRepository;
 
+import java.util.List;
+
 @Service
 public class BulkStatusService {
 
@@ -18,5 +20,9 @@ public class BulkStatusService {
 	
 	public BulkInfo queryJob(long jobId) {
 		return bulkStatusRepository.queryJob(jobId);
+	}
+
+	public List<BulkInfo> getJobs() {
+		return bulkStatusRepository.getJobs();
 	}
 }

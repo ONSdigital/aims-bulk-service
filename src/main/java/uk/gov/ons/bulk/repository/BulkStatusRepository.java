@@ -3,6 +3,7 @@ package uk.gov.ons.bulk.repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,6 +20,7 @@ public class BulkStatusRepository {
 	private JdbcTemplate jdbcTemplate;
 	private SimpleJdbcInsert simpleJdbcInsert;
 	private static String JOB_QUERY = "SELECT * FROM bulkinfo WHERE runid = ?";
+	private static String ALL_JOBS_QUERY = "SELECT * FROM bulkinfo";
 
 	@Autowired
 	public BulkStatusRepository(JdbcTemplate jdbcTemplate) {
@@ -39,7 +41,11 @@ public class BulkStatusRepository {
 	public BulkInfo queryJob(long jobId) {
 		return jdbcTemplate.queryForObject(JOB_QUERY, new BulkInfoMapper(), jobId);
 	}
-	
+
+	public List<BulkInfo> getJobs() {
+		return jdbcTemplate.query(ALL_JOBS_QUERY, new BulkInfoMapper());
+	}
+
 	public class BulkInfoMapper implements RowMapper<BulkInfo> {
 
 		@Override
