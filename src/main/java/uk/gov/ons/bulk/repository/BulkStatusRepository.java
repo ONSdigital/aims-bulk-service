@@ -43,8 +43,10 @@ public class BulkStatusRepository {
 	}
 
 	public List<BulkInfo> getJobs(String userid, String status) {
-		String newQuery = ALL_JOBS_QUERY + " WHERE userid like '" + userid + "%' AND status like '" + status + "%'";
-		return jdbcTemplate.query(newQuery, new BulkInfoMapper(), userid, status);
+		String newQuery = ALL_JOBS_QUERY + " WHERE userid like ? AND status like ?";
+		String userpattern = userid + '%';
+		String statuspattern = status + '%';
+		return jdbcTemplate.query(newQuery, new BulkInfoMapper(), userpattern, statuspattern);
 	}
 
 	public class BulkInfoMapper implements RowMapper<BulkInfo> {

@@ -95,7 +95,7 @@ public class BulkAddressController {
 	@GetMapping(value = "/jobs", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
 			@RequestParam(required = false, defaultValue = "") String userid,
-			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(all|in-progress|finished)$", message = "{status.val.message}") String status
+			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|finished)$", message = "{status.val.message}") String status
 	) {
 
 		String output;
