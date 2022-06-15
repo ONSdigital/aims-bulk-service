@@ -22,7 +22,7 @@ public class BulkStatusService {
 		return bulkStatusRepository.queryJob(jobId);
 	}
 
-	public List<BulkInfo> getJobs() {
-		return bulkStatusRepository.getJobs();
+	public List<BulkInfo> getJobs(String userid, String status) {
+		return bulkStatusRepository.getJobs(userid, status);
 	}
 }

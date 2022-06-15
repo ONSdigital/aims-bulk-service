@@ -93,11 +93,15 @@ public class BulkAddressController {
 	}
 
 	@GetMapping(value = "/jobs", produces = "application/json")
-	public ResponseEntity<String> getBulkRequestProgress() {
+	public ResponseEntity<String> getBulkRequestProgress(
+			@RequestParam(required = false, defaultValue = "") String userid,
+			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(all|in-progress|finished)$", message = "{status.val.message}") String status
+	) {
 
 		String output;
+		String chosenStatus = status;
 
-		List<BulkInfo> jobsList = bulkStatusService.getJobs();
+		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid,chosenStatus);
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
 				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
 
