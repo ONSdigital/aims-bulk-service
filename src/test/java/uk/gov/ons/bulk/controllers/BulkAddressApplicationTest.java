@@ -182,6 +182,24 @@ public class BulkAddressApplicationTest {
 		assertThat(result.getRecssofar()).isEqualTo(45);
 		assertThat(result.getStartdate()).isEqualTo(now);
 	}
+
+	@Test
+	public void testgetJobs() {
+
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 348076, 4);
+		bulkInfo.setRunid(1);
+		bulkInfo.setStartdate(now);
+		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
+		when(bulkStatusRepository.getJobs("mrrobot","in-progress")).thenReturn(bulkInfos);
+		BulkInfo result = bulkStatusService.getJobs("mrrobot","in-progress").get(0);
+
+		assertThat(result.getRunid()).isEqualTo(1);
+		assertThat(result.getUserid()).isEqualTo("mrrobot");
+		assertThat(result.getStatus()).isEqualTo("in-progress");
+		assertThat(result.getTotalrecs()).isEqualTo(348076);
+		assertThat(result.getRecssofar()).isEqualTo(4);
+		assertThat(result.getStartdate()).isEqualTo(now);
+	}
 	
 	@Test
 	public void testSaveJob() {
