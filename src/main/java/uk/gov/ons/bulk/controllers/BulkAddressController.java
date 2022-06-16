@@ -118,7 +118,7 @@ public class BulkAddressController {
 			return ResponseEntity.internalServerError().body(response);
 		}
 
-		return ResponseEntity.ok(output);
+		return ResponseEntity.ok("{\n" + "    \"jobs\":" + output +"\n}");
 	}
 	
 	@PostMapping(value = "/bulk", produces = "application/json")
