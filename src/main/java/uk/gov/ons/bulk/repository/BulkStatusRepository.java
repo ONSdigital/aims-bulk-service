@@ -38,8 +38,8 @@ public class BulkStatusRepository {
 		return id.longValue();
 	}
 	
-	public BulkInfo queryJob(long jobId) {
-		return jdbcTemplate.queryForObject(JOB_QUERY, new BulkInfoMapper(), jobId);
+	public List<BulkInfo> queryJob(long jobId) {
+		return jdbcTemplate.query(JOB_QUERY, new BulkInfoMapper(), jobId);
 	}
 
 	public List<BulkInfo> getJobs(String userid, String status) {

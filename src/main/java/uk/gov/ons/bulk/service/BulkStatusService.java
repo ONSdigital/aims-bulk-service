@@ -18,7 +18,7 @@ public class BulkStatusService {
 		return bulkStatusRepository.saveJob(job);
 	}
 	
-	public BulkInfo queryJob(long jobId) {
+	public List<BulkInfo> queryJob(long jobId) {
 		return bulkStatusRepository.queryJob(jobId);
 	}
 

@@ -2,6 +2,7 @@ package uk.gov.ons.bulk.controllers;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -175,8 +176,13 @@ public class BulkAddressController {
 			@PathVariable(required = true, name = "jobid") @NotBlank(message="{jobid.val.message}") String jobid) {
 
 		String output;
-		
-		BulkInfo bulkInfo = bulkStatusService.queryJob(Long.parseLong(jobid));
+
+		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobid));
+		if (bulkInfos.size() == 0) {
+			return ResponseEntity.badRequest().body("Job ID " + jobid + " not found on the system");
+		}
+		BulkInfo bulkInfo = bulkInfos.get(0);
+
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
 	            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
 		

@@ -17,6 +17,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.stream.Stream;
 
@@ -169,9 +171,9 @@ public class BulkAddressApplicationTest {
 		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 45);
         bulkInfo.setRunid(1);
         bulkInfo.setStartdate(now);
-        
-        when(bulkStatusRepository.queryJob(1)).thenReturn(bulkInfo);
-		BulkInfo result = bulkStatusService.queryJob(1);
+        List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
+        when(bulkStatusRepository.queryJob(1)).thenReturn(bulkInfos);
+		BulkInfo result = bulkStatusService.queryJob(1).get(0);
 		
 		assertThat(result.getRunid()).isEqualTo(1);
 		assertThat(result.getUserid()).isEqualTo("bob");
@@ -202,8 +204,9 @@ public class BulkAddressApplicationTest {
 		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 45);
         bulkInfo.setRunid(14);
         bulkInfo.setStartdate(now);
-        
-        when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfo);
+		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
+
+        when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfos);
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/" + jobid)).andExpect(status().isOk())
 				.andExpect(jsonPath("$.runid", Is.is(14)))
@@ -224,8 +227,9 @@ public class BulkAddressApplicationTest {
         bulkInfo.setRunid(14);
         bulkInfo.setStartdate(now);
         bulkInfo.setEnddate(now.plusHours(2));
-        
-        when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfo);
+		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
+
+        when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfos);
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/" + jobid)).andExpect(status().isOk())
 				.andExpect(jsonPath("$.runid", Is.is(14)))
