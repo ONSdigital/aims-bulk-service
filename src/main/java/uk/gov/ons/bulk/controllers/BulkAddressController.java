@@ -44,6 +44,7 @@ import com.google.cloud.bigquery.StandardSQLTypeName;
 
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkInfo;
+import uk.gov.ons.bulk.entities.BulkInfoList;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
 import uk.gov.ons.bulk.entities.Job;
@@ -104,11 +105,12 @@ public class BulkAddressController {
 		String chosenStatus = status;
 
 		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid,chosenStatus);
+		BulkInfoList jobs = new BulkInfoList(jobsList);
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
 				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
 
 		try {
-			output = objectMapper.writeValueAsString(jobsList);
+			output = objectMapper.writeValueAsString(jobs);
 
 		} catch (JsonProcessingException ex) {
 
@@ -118,7 +120,7 @@ public class BulkAddressController {
 			return ResponseEntity.internalServerError().body(response);
 		}
 
-		return ResponseEntity.ok("{\n" + "    \"jobs\":" + output +"\n}");
+		return ResponseEntity.ok(output);
 	}
 	
 	@PostMapping(value = "/bulk", produces = "application/json")
@@ -180,7 +182,7 @@ public class BulkAddressController {
 
 		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobid));
 		if (bulkInfos.size() == 0) {
-			return ResponseEntity.badRequest().body("Job ID " + jobid + " not found on the system");
+			return ResponseEntity.badRequest().body(String.format("Job ID %s not found on the system", jobid));
 		}
 		BulkInfo bulkInfo = bulkInfos.get(0);
 

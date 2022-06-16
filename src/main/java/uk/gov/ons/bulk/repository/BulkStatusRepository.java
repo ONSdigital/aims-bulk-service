@@ -20,7 +20,7 @@ public class BulkStatusRepository {
 	private JdbcTemplate jdbcTemplate;
 	private SimpleJdbcInsert simpleJdbcInsert;
 	private static String JOB_QUERY = "SELECT * FROM bulkinfo WHERE runid = ?";
-	private static String ALL_JOBS_QUERY = "SELECT * FROM bulkinfo";
+	private static String ALL_JOBS_QUERY = "SELECT * FROM bulkinfo WHERE userid like ? AND status like ?";
 
 	@Autowired
 	public BulkStatusRepository(JdbcTemplate jdbcTemplate) {
@@ -43,10 +43,9 @@ public class BulkStatusRepository {
 	}
 
 	public List<BulkInfo> getJobs(String userid, String status) {
-		String newQuery = ALL_JOBS_QUERY + " WHERE userid like ? AND status like ?";
 		String userpattern = userid + '%';
 		String statuspattern = status + '%';
-		return jdbcTemplate.query(newQuery, new BulkInfoMapper(), userpattern, statuspattern);
+		return jdbcTemplate.query(ALL_JOBS_QUERY, new BulkInfoMapper(), userpattern, statuspattern);
 	}
 
 	public class BulkInfoMapper implements RowMapper<BulkInfo> {
