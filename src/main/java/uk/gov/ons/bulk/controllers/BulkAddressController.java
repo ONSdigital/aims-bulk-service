@@ -9,6 +9,7 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.validation.Valid;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -173,7 +174,7 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-progress/{jobid}", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
-			@PathVariable(required = true, name = "jobid") @NotBlank(message="{jobid.val.message}") String jobid) {
+			@PathVariable(required = true, name = "jobid") @Pattern(regexp="^[0-9]+$", message="{jobid.val.message}") String jobid) {
 
 		String output;
 
