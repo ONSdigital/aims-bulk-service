@@ -2,11 +2,14 @@ package uk.gov.ons.bulk.controllers;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.validation.Valid;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -41,6 +44,7 @@ import com.google.cloud.bigquery.StandardSQLTypeName;
 
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkInfo;
+import uk.gov.ons.bulk.entities.BulkInfoList;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
 import uk.gov.ons.bulk.entities.Job;
@@ -92,27 +96,23 @@ public class BulkAddressController {
 	}
 
 	@GetMapping(value = "/jobs", produces = "application/json")
-	public ResponseEntity<String> getBulkRequestProgress() {
+	public ResponseEntity<String> getBulkRequestProgress(
+			@RequestParam(required = false, defaultValue = "") String userid,
+			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|finished)$", message = "{status.val.message}") String status
+	) {
 
 		String output;
-		
+		String chosenStatus = status;
+
+		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid,chosenStatus);
+		BulkInfoList jobs = new BulkInfoList(jobsList);
+		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
+
 		try {
-			ArrayList<Job> joblist = new ArrayList<Job>();
-			
-			QueryFuncs.runQuery(JOBS_QUERY,bigquery).forEach(row -> {
-				Job job = new Job();
-				job.setRunid(row.get("runid").getStringValue());
-				job.setUserid(row.get("userid").getStringValue());
-				job.setStatus(row.get("status").getStringValue());
-				job.setTotalrecs(row.get("totalrecs").getStringValue());
-				job.setRecssofar(row.get("recssofar").getStringValue());
-				joblist.add(job);
-			});			
+			output = objectMapper.writeValueAsString(jobs);
 
-			ObjectMapper objectMapper = new ObjectMapper();
-			output = objectMapper.writeValueAsString(joblist);
-
-		} catch (InterruptedException | JsonProcessingException ex) {
+		} catch (JsonProcessingException ex) {
 
 			String response = String.format("/jobs error: %s",ex.getMessage());
 
@@ -176,11 +176,16 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-progress/{jobid}", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
-			@PathVariable(required = true, name = "jobid") @NotBlank(message="{jobid.val.message}") String jobid) {
+			@PathVariable(required = true, name = "jobid") @Pattern(regexp="^[0-9]+$", message="{jobid.val.message}") String jobid) {
 
 		String output;
-		
-		BulkInfo bulkInfo = bulkStatusService.queryJob(Long.parseLong(jobid));
+
+		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobid));
+		if (bulkInfos.size() == 0) {
+			return ResponseEntity.badRequest().body(String.format("Job ID %s not found on the system", jobid));
+		}
+		BulkInfo bulkInfo = bulkInfos.get(0);
+
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
 	            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
 		
