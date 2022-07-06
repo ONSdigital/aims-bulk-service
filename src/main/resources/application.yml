@@ -8,7 +8,7 @@ spring:
         dataset-name: bulk_status
       sql:
         database-name: bulk-status-db
-        instance-connection-name: ons-aims-YOUR-GCP-PROJECT-ID-HERE:europe-west2:bulk-status-test
+        instance-connection-name: YOUR-GCP-PROJECT-ID-HERE:europe-west2:bulk-status-instance
   codec:
     max-in-memory-size: 10MB
   servlet:
@@ -54,6 +54,7 @@ logging:
 aims:
   cloud-functions:
     create-cloud-task-function: https://europe-west2-YOUR-GCP-PROJECT-ID-HERE.cloudfunctions.net/create-cloud-task-function
+  project-number: YOUR-GCP-PROJECT-NUMBER-HERE
   epochs: 92|91|89|87|80|39
   current-epoch: 89
   # Update the records processed at every n% of completion

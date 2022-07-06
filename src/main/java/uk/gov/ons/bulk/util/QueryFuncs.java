@@ -41,17 +41,17 @@ public class QueryFuncs {
         }
     }
 
-    public static String InsertRow(BigQuery bigquery, TableId tableId, Map<String, Object> row1Data) {
-        InsertAllResponse response = bigquery
-                .insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
-		
-        if (response.hasErrors()) {
-			// If any of the insertions failed, this lets you inspect the errors
-			response.getInsertErrors()
-					.forEach((key, value) -> log.error(String.format("Row: %s Errors: %s", key, value.toString())));
-		}
-
-        return response.toString();
-    }
+//    public static String InsertRow(BigQuery bigquery, TableId tableId, Map<String, Object> row1Data) {
+//        InsertAllResponse response = bigquery
+//                .insertAll(InsertAllRequest.newBuilder(tableId).addRow("runid", row1Data).build());
+//		
+//        if (response.hasErrors()) {
+//			// If any of the insertions failed, this lets you inspect the errors
+//			response.getInsertErrors()
+//					.forEach((key, value) -> log.error(String.format("Row: %s Errors: %s", key, value.toString())));
+//		}
+//
+//        return response.toString();
+//    }
 }
 

@@ -1,6 +1,5 @@
 package uk.gov.ons.bulk.controllers;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -24,7 +23,6 @@ import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
-import com.google.api.client.http.HttpHeaders;
 import org.hamcrest.core.Is;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,6 +38,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -55,9 +54,11 @@ import com.google.cloud.bigquery.FieldValueList;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
+import uk.gov.ons.bulk.entities.DownloadRequest;
 import uk.gov.ons.bulk.repository.BulkStatusRepository;
 import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.CloudTaskService;
+import uk.gov.ons.bulk.service.DownloadService;
 import uk.gov.ons.bulk.util.QueryFuncs;
 import uk.gov.ons.bulk.util.Toolbox;
 
@@ -65,6 +66,7 @@ import uk.gov.ons.bulk.util.Toolbox;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@DirtiesContext
 public class BulkAddressApplicationTest {
 
     @Autowired
@@ -90,31 +92,19 @@ public class BulkAddressApplicationTest {
     
     @MockBean
     private BulkStatusRepository bulkStatusRepository;
+    
+    @MockBean
+    private DownloadService downloadService;
 
     Properties queryReponse = new Properties();
     String queryReponseRef = "query.properties";
-
-    private String BASE_DATASET_QUERY;
-    private String RESULT_QUERY;
-    
+   
     MockedStatic<QueryFuncs> theMock;
     
     private LocalDateTime now;
         
     @PostConstruct
-    public void postConstruct() {
-
-         BASE_DATASET_QUERY = new StringBuilder()
-                .append("SELECT * FROM ")
-                .append(projectId)
-                .append(".")
-                .append(datasetName).toString();
-
-         RESULT_QUERY = new StringBuilder()
-                .append(BASE_DATASET_QUERY)
-                .append(".")
-                .append("results14;").toString();
-         
+    public void postConstruct() {        
          // use mockstatic to make it use cached queries
          theMock = Mockito.mockStatic(QueryFuncs.class);
     }
@@ -162,72 +152,32 @@ public class BulkAddressApplicationTest {
 		
 		return Stream.of(bulkRequestContainer);
     }
+    
+    private static Stream<DownloadRequest> downloadRequestObject() {
+    	
+    	DownloadRequest downloadRequest = new DownloadRequest();
+    	downloadRequest.setJobId("1");
+    	downloadRequest.setDownloadPath("/some/path/");
+		
+		return Stream.of(downloadRequest);
+    }
 
     public String getOK() {return "OK";}
     
-	@Test
-	public void testQueryJob() {
-		
-		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 45);
-        bulkInfo.setRunid(1);
-        bulkInfo.setStartdate(now);
-        List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
-        when(bulkStatusRepository.queryJob(1)).thenReturn(bulkInfos);
-		BulkInfo result = bulkStatusService.queryJob(1).get(0);
-		
-		assertThat(result.getRunid()).isEqualTo(1);
-		assertThat(result.getUserid()).isEqualTo("bob");
-		assertThat(result.getStatus()).isEqualTo("in-progress");
-		assertThat(result.getTotalrecs()).isEqualTo(107);
-		assertThat(result.getRecssofar()).isEqualTo(45);
-		assertThat(result.getStartdate()).isEqualTo(now);
-	}
-
-	@Test
-	public void testgetJobs() {
-
-		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 348076, 4);
-		bulkInfo.setRunid(1);
-		bulkInfo.setStartdate(now);
-		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
-		when(bulkStatusRepository.getJobs("mrrobot","in-progress")).thenReturn(bulkInfos);
-		BulkInfo result = bulkStatusService.getJobs("mrrobot","in-progress").get(0);
-
-		assertThat(result.getRunid()).isEqualTo(1);
-		assertThat(result.getUserid()).isEqualTo("mrrobot");
-		assertThat(result.getStatus()).isEqualTo("in-progress");
-		assertThat(result.getTotalrecs()).isEqualTo(348076);
-		assertThat(result.getRecssofar()).isEqualTo(4);
-		assertThat(result.getStartdate()).isEqualTo(now);
-	}
-	
-	@Test
-	public void testSaveJob() {
-		
-		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 0);
-        bulkInfo.setRunid(102);
-        bulkInfo.setStartdate(now);
-               
-        when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
-		Long result = bulkStatusService.saveJob(bulkInfo);
-		
-		assertThat(result == 102L);
-	}
-
 	@ParameterizedTest
 	@MethodSource("addJobIds")
 	public void testGetBulkRequestProgressInProgress(@PathVariable(required = true, name = "jobid") String jobid)
 			throws Exception {
 
 		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 45);
-        bulkInfo.setRunid(14);
+        bulkInfo.setJobid(14);
         bulkInfo.setStartdate(now);
 		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
 
         when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfos);
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/" + jobid)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.runid", Is.is(14)))
+				.andExpect(jsonPath("$.jobid", Is.is(14)))
 				.andExpect(jsonPath("$.userid", Is.is("bob")))
 				.andExpect(jsonPath("$.status", Is.is("in-progress")))
 				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
@@ -242,7 +192,7 @@ public class BulkAddressApplicationTest {
 			throws Exception {
 
 		BulkInfo bulkInfo = new BulkInfo("bob", "finished", 107, 107);
-        bulkInfo.setRunid(14);
+        bulkInfo.setJobid(14);
         bulkInfo.setStartdate(now);
         bulkInfo.setEnddate(now.plusHours(2));
 		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
@@ -250,7 +200,7 @@ public class BulkAddressApplicationTest {
         when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfos);
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/" + jobid)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.runid", Is.is(14)))
+				.andExpect(jsonPath("$.jobid", Is.is(14)))
 				.andExpect(jsonPath("$.userid", Is.is("bob")))
 				.andExpect(jsonPath("$.status", Is.is("finished")))
 				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
@@ -260,29 +210,26 @@ public class BulkAddressApplicationTest {
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
-	// Commented out for now as the method will be changing
-
-//	@ParameterizedTest
-//	@MethodSource("addJobIds")
-//	public void getBulkResults(@PathVariable(required = true, name = "jobid") String jobid) throws Exception {
-//
-//		theMock.when(() -> QueryFuncs.runQuery(String.format(RESULT_QUERY, jobid), bigquery))
-//				.thenReturn(getResponse(String.format(RESULT_QUERY, jobid)));
-//
-//		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/" + jobid)).andExpect(status().isOk())
-//				.andExpect(jsonPath("$.results[1].response.response.addresses[0].classificationCode", Is.is("CR07")))
-//				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-//
-//	}
+	@Test
+	public void bulkProgressNoJobId() throws Exception {
+		
+		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/ ")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", containsString("jobid: jobid is mandatory")))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("jobid: jobid is mandatory"))))		
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
 
     @ParameterizedTest
     @MethodSource("bulkRequestObject")
     public void runBulkRequest(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
 
-    long newKey = 102;
+    	long newKey = 102;
             
 		BulkInfo bulkInfo = new BulkInfo("bigqueryboy", "in-progress", 2, 0);
-        bulkInfo.setRunid(newKey);
+        bulkInfo.setJobid(newKey);
         bulkInfo.setStartdate(now);
         
         BulkRequest testBulkRequest1 = new BulkRequest();
@@ -307,30 +254,6 @@ public class BulkAddressApplicationTest {
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
     
-	@Test
-	public void bulkProgressNoJobId() throws Exception {
-		
-		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/ ")
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("jobid: jobid is mandatory")))
-				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("jobid: jobid is mandatory"))))		
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-	
-	@Test
-	public void bulkResultNoJobId() throws Exception {
-		
-		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/ ")
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("jobid: jobid is mandatory")))
-				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("jobid: jobid is mandatory"))))		
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-
 	@Test
 	public void bulkPostRequestInvalidBulkRequestNoAddresses() throws Exception {
 		
@@ -613,6 +536,137 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.errors", hasItem("uk.gov.ons.bulk.controllers.BulkAddressController " + epochError)))
 				.andExpect(jsonPath("$.errors", hasItem("uk.gov.ons.bulk.controllers.BulkAddressController " + excludeenglandError)))
 				.andExpect(jsonPath("$.errors", hasItem("uk.gov.ons.bulk.controllers.BulkAddressController " + excludenorthernirelandError)))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+	
+	@Test
+	public void bulkResultPostRequestInvalidDownloadRequestMissingJobId() throws Exception {
+
+		DownloadRequest downloadRequest = new DownloadRequest();
+		downloadRequest.setJobId("");
+		downloadRequest.setDownloadPath("/some/path/");
+		
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
+				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", containsString("'jobId': rejected value []")))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem("jobId: jobId is mandatory")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+	
+	@Test
+	public void bulkResultPostRequestInvalidDownloadRequestMissingDownloadPath() throws Exception {
+
+		DownloadRequest downloadRequest = new DownloadRequest();
+		downloadRequest.setJobId("1");
+		downloadRequest.setDownloadPath("");
+		
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
+				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", containsString("'downloadPath': rejected value []")))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem("downloadPath: downloadPath is mandatory")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+	
+    @ParameterizedTest
+    @MethodSource("downloadRequestObject")
+    public void runBulkResultRequest(@RequestBody DownloadRequest downloadRequest) throws Exception {
+    	
+    	String filename = String.format("results_%s.csv.gz", downloadRequest.getJobId());
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-ready", 2, 2);
+        bulkInfo.setStartdate(now);
+        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	bulkInfos.add(bulkInfo);
+        
+        doNothing().when(downloadService).downloadGCSObject(downloadRequest.getJobId(), downloadRequest.getDownloadPath(), filename);
+        when(bulkStatusService.queryJob(Long.parseLong(downloadRequest.getJobId()))).thenReturn(bulkInfos);
+        
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
+				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(jsonPath("$.file", Is.is(filename)))
+				.andExpect(jsonPath("$.status", Is.is("Downloading")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+    @ParameterizedTest
+    @MethodSource("downloadRequestObject")
+    public void runBulkResultRequestNonExistent(@RequestBody DownloadRequest downloadRequest) throws Exception {
+    	
+    	String filename = String.format("results_%s.csv.gz", downloadRequest.getJobId());
+    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        
+        doNothing().when(downloadService).downloadGCSObject(downloadRequest.getJobId(), downloadRequest.getDownloadPath(), filename);
+        when(bulkStatusService.queryJob(Long.parseLong(downloadRequest.getJobId()))).thenReturn(bulkInfos);
+        
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
+				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s not found on the system", downloadRequest.getJobId()))))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+    @ParameterizedTest
+    @MethodSource("downloadRequestObject")
+    public void runBulkResultRequestNotDownloadable(@RequestBody DownloadRequest downloadRequest) throws Exception {
+
+    	String filename = String.format("results_%s.csv.gz", downloadRequest.getJobId());
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "processing-finished", 2, 2);
+        bulkInfo.setStartdate(now);
+        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	bulkInfos.add(bulkInfo);
+        
+        doNothing().when(downloadService).downloadGCSObject(downloadRequest.getJobId(), downloadRequest.getDownloadPath(), filename);
+        when(bulkStatusService.queryJob(Long.parseLong(downloadRequest.getJobId()))).thenReturn(bulkInfos);
+        
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
+				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s is not currently downloadable", downloadRequest.getJobId()))))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+    
+	@Test
+	public void jobsRequestWrongStatus() throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/jobs?status=xyz&userid=mrrobot")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready or blank")))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready or blank"))))		
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+	
+	@Test
+	public void jobsRequest() throws Exception {
+    	
+		long newKey = 102;
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "processing-finished", 2, 2);
+        bulkInfo.setJobid(newKey);
+        bulkInfo.setStartdate(now);
+        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	bulkInfos.add(bulkInfo);
+        
+        when(bulkStatusService.getJobs("mrrobot", "processing-finished")).thenReturn(bulkInfos);
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/jobs?status=processing-finished&userid=mrrobot")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.jobs").isArray()).andExpect(jsonPath("$.jobs", hasSize(1)))
+				.andExpect(jsonPath("$.jobs[0].jobid", Is.is(102)))
+				.andExpect(jsonPath("$.jobs[0].userid", Is.is("mrrobot")))
+				.andExpect(jsonPath("$.jobs[0].status", Is.is("processing-finished")))
+				.andExpect(jsonPath("$.jobs[0].totalrecs", Is.is(2)))
+				.andExpect(jsonPath("$.jobs[0].recssofar", Is.is(2)))
+				.andExpect(jsonPath("$.jobs[0].startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 }

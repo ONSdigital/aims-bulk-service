@@ -6,7 +6,7 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public @Data class Job {
 	
-	private String runid;
+	private String jobid;
 	private String userid;
 	private String status;
 	private String totalrecs;
