@@ -1,6 +1,7 @@
 package uk.gov.ons.bulk.controllers;
 
-import static uk.gov.ons.bulk.util.BulkServiceConstants.*;
+import static uk.gov.ons.bulk.util.BulkServiceConstants.BIG_QUERY_TABLE_PREFIX;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -176,6 +177,65 @@ public class BulkAddressController {
 		return ResponseEntity.ok(output);
 	}
 	
+	
+	
+	
+//	@PostMapping(value = "/bulk-result", produces = "application/json")
+//	public @ResponseBody Mono<ResponseEntity<String>> getBulkResults(@Valid @RequestBody DownloadRequest downloadRequest) {
+//		
+//		String jobId = downloadRequest.getJobId();
+//		String filename = String.format("%s%s.csv.gz", BIG_QUERY_TABLE_PREFIX, jobId);
+//		
+//		// Does the jobId exist?
+//		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobId));
+//		if (bulkInfos.size() == 0) {
+//			String response = String.format("Job ID %s not found on the system", jobId);
+//			log.info(response);
+////			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
+////					response).toString());
+//			
+//			return Mono.just(ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
+//					response).toString()));
+//		}
+//		
+//		// Is the jobId downloadable? Check the status.
+//		if (bulkInfos.get(0).getStatus().equals("results-ready")) {
+////			Mono<String> downloadResult = downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
+//			return downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename).map(output -> ResponseEntity.ok(output));
+//
+//			
+////			String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
+////			String downloadUrl = String.format("https://storage.googleapis.com/storage/v1/b/%s/o/%s?alt=media", gcsResultsBucket, filename);
+////			
+////			Path path = Paths.get(String.format("%s/%s", downloadRequest.getDownloadPath(), filename));
+////			
+////			WebClient webClient = WebClient.builder().baseUrl(downloadUrl).build();
+////			
+////			// Get file data
+////			Flux<DataBuffer> dataBufferFlux = webClient.get().accept(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL)
+////					.retrieve().bodyToFlux(DataBuffer.class);
+////			
+////			// Streams the dataBufferFlux from response instead of loading it all in memory
+////			DataBufferUtils.write(dataBufferFlux, path, StandardOpenOption.CREATE).block();
+//			
+//			
+//			
+//		} else {
+//			String response = String.format("Job ID %s is not currently downloadable", jobId);
+//			log.info(response);
+////			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
+////					response).toString());
+//			
+//			return Mono.just(ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
+//					response).toString()));
+//		}
+//		
+////		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", "Downloading").toString());
+//		
+////		return downloadRe
+//
+//	}
+	
 	@PostMapping(value = "/bulk-result", produces = "application/json")
 	public @ResponseBody ResponseEntity<String> getBulkResults(@Valid @RequestBody DownloadRequest downloadRequest) {
 		
@@ -193,14 +253,14 @@ public class BulkAddressController {
 		
 		// Is the jobId downloadable? Check the status.
 		if (bulkInfos.get(0).getStatus().equals("results-ready")) {
-			downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
+			String result = downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
+			return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", result).toString());
+			
 		} else {
 			String response = String.format("Job ID %s is not currently downloadable", jobId);
 			log.info(response);
 			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
 					response).toString());
 		}
-		
-		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", "Downloading").toString());
 	}
 }
