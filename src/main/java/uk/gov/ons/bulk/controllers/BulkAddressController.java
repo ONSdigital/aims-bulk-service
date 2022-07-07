@@ -3,6 +3,9 @@ package uk.gov.ons.bulk.controllers;
 import static uk.gov.ons.bulk.util.BulkServiceConstants.BIG_QUERY_TABLE_PREFIX;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +16,9 @@ import javax.validation.constraints.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,6 +43,7 @@ import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkInfoList;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
@@ -70,6 +78,9 @@ public class BulkAddressController {
 	
 	@Autowired
 	private DownloadService downloadService;
+	
+	@Value("${aims.project-number}")
+	private String projectNumber;
 
 	@GetMapping(value = "/jobs", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
@@ -177,65 +188,6 @@ public class BulkAddressController {
 		return ResponseEntity.ok(output);
 	}
 	
-	
-	
-	
-//	@PostMapping(value = "/bulk-result", produces = "application/json")
-//	public @ResponseBody Mono<ResponseEntity<String>> getBulkResults(@Valid @RequestBody DownloadRequest downloadRequest) {
-//		
-//		String jobId = downloadRequest.getJobId();
-//		String filename = String.format("%s%s.csv.gz", BIG_QUERY_TABLE_PREFIX, jobId);
-//		
-//		// Does the jobId exist?
-//		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobId));
-//		if (bulkInfos.size() == 0) {
-//			String response = String.format("Job ID %s not found on the system", jobId);
-//			log.info(response);
-////			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-////					response).toString());
-//			
-//			return Mono.just(ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-//					response).toString()));
-//		}
-//		
-//		// Is the jobId downloadable? Check the status.
-//		if (bulkInfos.get(0).getStatus().equals("results-ready")) {
-////			Mono<String> downloadResult = downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
-//			return downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename).map(output -> ResponseEntity.ok(output));
-//
-//			
-////			String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
-////			String downloadUrl = String.format("https://storage.googleapis.com/storage/v1/b/%s/o/%s?alt=media", gcsResultsBucket, filename);
-////			
-////			Path path = Paths.get(String.format("%s/%s", downloadRequest.getDownloadPath(), filename));
-////			
-////			WebClient webClient = WebClient.builder().baseUrl(downloadUrl).build();
-////			
-////			// Get file data
-////			Flux<DataBuffer> dataBufferFlux = webClient.get().accept(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL)
-////					.retrieve().bodyToFlux(DataBuffer.class);
-////			
-////			// Streams the dataBufferFlux from response instead of loading it all in memory
-////			DataBufferUtils.write(dataBufferFlux, path, StandardOpenOption.CREATE).block();
-//			
-//			
-//			
-//		} else {
-//			String response = String.format("Job ID %s is not currently downloadable", jobId);
-//			log.info(response);
-////			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-////					response).toString());
-//			
-//			return Mono.just(ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-//					response).toString()));
-//		}
-//		
-////		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", "Downloading").toString());
-//		
-////		return downloadRe
-//
-//	}
-	
 	@PostMapping(value = "/bulk-result", produces = "application/json")
 	public @ResponseBody ResponseEntity<String> getBulkResults(@Valid @RequestBody DownloadRequest downloadRequest) {
 		
@@ -247,20 +199,76 @@ public class BulkAddressController {
 		if (bulkInfos.size() == 0) {
 			String response = String.format("Job ID %s not found on the system", jobId);
 			log.info(response);
+//			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
+//					response).toString());
+			
 			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
 					response).toString());
 		}
 		
 		// Is the jobId downloadable? Check the status.
 		if (bulkInfos.get(0).getStatus().equals("results-ready")) {
-			String result = downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
-			return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", result).toString());
+//			String result = downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
+//			return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", result).toString());
+
+			
+			String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
+			String downloadUrl = String.format("https://storage.googleapis.com/storage/v1/b/%s/o/%s?alt=media", gcsResultsBucket, filename);
+			
+			Path path = Paths.get(String.format("%s/%s", downloadRequest.getDownloadPath(), filename));
+			
+			WebClient webClient = WebClient.builder().baseUrl(downloadUrl).build();
+			
+			// Get file data
+			Flux<DataBuffer> dataBufferFlux = webClient.get().accept(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL)
+					.retrieve().bodyToFlux(DataBuffer.class);
+			
+			// Streams the dataBufferFlux from response instead of loading it all in memory
+			DataBufferUtils.write(dataBufferFlux, path, StandardOpenOption.CREATE).block();
+			
+			return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", "Downloading").toString());
 			
 		} else {
 			String response = String.format("Job ID %s is not currently downloadable", jobId);
 			log.info(response);
+//			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
+//					response).toString());
+			
 			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
 					response).toString());
 		}
+		
+//		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", "Downloading").toString());
+		
+//		return downloadRe
+
 	}
+	
+//	@PostMapping(value = "/bulk-result", produces = "application/json")
+//	public @ResponseBody ResponseEntity<String> getBulkResults(@Valid @RequestBody DownloadRequest downloadRequest) {
+//		
+//		String jobId = downloadRequest.getJobId();
+//		String filename = String.format("%s%s.csv.gz", BIG_QUERY_TABLE_PREFIX, jobId);
+//		
+//		// Does the jobId exist?
+//		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobId));
+//		if (bulkInfos.size() == 0) {
+//			String response = String.format("Job ID %s not found on the system", jobId);
+//			log.info(response);
+//			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
+//					response).toString());
+//		}
+//		
+//		// Is the jobId downloadable? Check the status.
+//		if (bulkInfos.get(0).getStatus().equals("results-ready")) {
+//			String result = downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
+//			return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", result).toString());
+//			
+//		} else {
+//			String response = String.format("Job ID %s is not currently downloadable", jobId);
+//			log.info(response);
+//			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
+//					response).toString());
+//		}
+//	}
 }
