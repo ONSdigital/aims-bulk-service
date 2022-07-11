@@ -1,6 +1,8 @@
 package uk.gov.ons.bulk.controllers;
 
 import static uk.gov.ons.bulk.util.BulkServiceConstants.BIG_QUERY_TABLE_PREFIX;
+import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.IP;
+import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.RR;
 
 import java.io.IOException;
 import java.util.List;
@@ -126,7 +128,7 @@ public class BulkAddressController {
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
 
-		BulkInfo bulkInfo = new BulkInfo(userName, "in-progress", recs, 0);
+		BulkInfo bulkInfo = new BulkInfo(userName, IP.getStatus(), recs, 0);
 
 		long newKey = bulkStatusService.saveJob(bulkInfo);
 
@@ -197,7 +199,7 @@ public class BulkAddressController {
 		}
 
 		// Is the jobId downloadable? Check the status.
-		if (bulkInfos.get(0).getStatus().equals("results-ready")) {
+		if (bulkInfos.get(0).getStatus().equals(RR.getStatus())) {
 			String signedUrl;
 			try {
 				signedUrl = downloadService.getSignedUrl(jobId, filename);

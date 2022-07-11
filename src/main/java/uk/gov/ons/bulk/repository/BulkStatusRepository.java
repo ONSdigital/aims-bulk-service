@@ -1,5 +1,6 @@
 package uk.gov.ons.bulk.repository;
 
+import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.PF;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -57,7 +58,7 @@ public class BulkStatusRepository {
 
 			Long correctedRecs = rs.getLong("recssofar");
 			
-			if (rs.getString("status").equals("finished"))
+			if (rs.getString("status").equals(PF.getStatus()))
 			{
 				correctedRecs = rs.getLong("totalrecs");
 			}
