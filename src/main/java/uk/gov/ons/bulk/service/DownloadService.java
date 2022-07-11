@@ -9,6 +9,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpContent;
@@ -57,20 +58,20 @@ public class DownloadService {
 		HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
 		HttpResponse response = request.execute();
 
-		String signedUrlResponse = "";
+		SignedUrlResponse signedUrlResponse;
 
 		try {
 			// process the HTTP response object
-			signedUrlResponse = new ObjectMapper().readValue(response.getContent(), String.class);
+			signedUrlResponse = new ObjectMapper().readValue(response.getContent(), SignedUrlResponse.class);
 			
-			if (signedUrlResponse.length() == 0) {
+			if (signedUrlResponse == null || signedUrlResponse.getSignedUrl().length() == 0) {
 				throw new BulkAddressException("Signed URL is empty");
 			}
 		} finally {
 			response.disconnect();
 		}
 
-		return signedUrlResponse;
+		return signedUrlResponse.getSignedUrl();
 	}
 
 	public @Data class SignedUrlRequest {
@@ -81,5 +82,10 @@ public class DownloadService {
 			request.put("bucketName", bucketName);
 			request.put("fileName", fileName);
 		}
+	}
+	
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static @Data class SignedUrlResponse {
+		private String signedUrl;
 	}
 }

@@ -206,7 +206,7 @@ public class BulkAddressController {
 				return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename)
 						.put("signedUrl", signedUrl).toString());
 			} catch (IOException | BulkAddressException ex) {
-				String response = String.format("/bulk error: %s", ex.getMessage());
+				String response = String.format("/bulk-result/%s error: %s", jobId, ex.getMessage());
 				log.error(response);
 				return ResponseEntity.internalServerError()
 						.body(new ObjectMapper().createObjectNode().put("error", response).toString());
