@@ -3,9 +3,6 @@ package uk.gov.ons.bulk.controllers;
 import static uk.gov.ons.bulk.util.BulkServiceConstants.BIG_QUERY_TABLE_PREFIX;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 
@@ -16,9 +13,6 @@ import javax.validation.constraints.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferUtils;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,9 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -43,12 +35,11 @@ import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 
 import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkInfoList;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
-import uk.gov.ons.bulk.entities.DownloadRequest;
+import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.CloudTaskService;
 import uk.gov.ons.bulk.service.DownloadService;
@@ -69,24 +60,23 @@ public class BulkAddressController {
 
 	@Value("${spring.cloud.gcp.bigquery.dataset-name}")
 	private String datasetName;
-	
+
 	@Autowired
 	private CloudTaskService cloudTaskService;
-	
+
 	@Autowired
 	private BulkStatusService bulkStatusService;
-	
+
 	@Autowired
 	private DownloadService downloadService;
-	
+
 	@Value("${aims.project-number}")
 	private String projectNumber;
 
 	@GetMapping(value = "/jobs", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
 			@RequestParam(required = false, defaultValue = "") String userid,
-			@RequestParam(required = false, defaultValue = "") 
-			@Pattern(regexp = "^(|in-progress|processing-finished|results-ready)$", message = "{status.val.message}") String status) {
+			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready)$", message = "{status.val.message}") String status) {
 
 		String output;
 		String chosenStatus = status;
@@ -94,20 +84,21 @@ public class BulkAddressController {
 		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid, chosenStatus);
 		BulkInfoList jobs = new BulkInfoList(jobsList);
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.setSerializationInclusion(Include.NON_NULL);
 
 		try {
 			output = objectMapper.writeValueAsString(jobs);
 		} catch (JsonProcessingException ex) {
-			String response = String.format("/jobs error: %s",ex.getMessage());
+			String response = String.format("/jobs error: %s", ex.getMessage());
 			log.error(response);
-			return ResponseEntity.internalServerError().body(new ObjectMapper().createObjectNode().put("error", 
-					response).toString());
+			return ResponseEntity.internalServerError()
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 
 		return ResponseEntity.ok(output);
 	}
-	
+
 	@PostMapping(value = "/bulk", produces = "application/json")
 	public ResponseEntity<String> runBulkRequest(@Valid @RequestBody BulkRequestContainer bulkRequestContainer,
 			@RequestParam(required = false, defaultValue = "5") @Min(1) @Max(100) String limitperaddress,
@@ -128,15 +119,15 @@ public class BulkAddressController {
 
 		// Pass on username and api key headers from CA Gateway
 		HttpHeaders headers = new HttpHeaders();
-		String userName = headersIn.getOrDefault("user","Anon");
+		String userName = headersIn.getOrDefault("user", "Anon");
 		headers.set("user", userName);
-		headers.setAuthorization(headersIn.getOrDefault("Authorization","None"));
-		
+		headers.setAuthorization(headersIn.getOrDefault("Authorization", "None"));
+
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
-		
+
 		BulkInfo bulkInfo = new BulkInfo(userName, "in-progress", recs, 0);
-		
+
 		long newKey = bulkStatusService.saveJob(bulkInfo);
 
 		try {
@@ -152,7 +143,8 @@ public class BulkAddressController {
 		} catch (IOException ex) {
 			String response = String.format("/bulk error: %s", ex.getMessage());
 			log.error(response);
-			return ResponseEntity.internalServerError().body(new ObjectMapper().createObjectNode().put("error", response).toString());
+			return ResponseEntity.internalServerError()
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 
 		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("jobId", String.valueOf(newKey)).toString());
@@ -160,7 +152,7 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-progress/{jobid}", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
-			@PathVariable(required = true, name = "jobid") @Pattern(regexp="^[0-9]+$", message="{jobid.val.message}") String jobid) {
+			@PathVariable(required = true, name = "jobid") @Pattern(regexp = "^[0-9]+$", message = "{jobid.val.message}") String jobid) {
 
 		String output;
 
@@ -168,113 +160,60 @@ public class BulkAddressController {
 		if (bulkInfos.size() == 0) {
 			String response = String.format("Job ID %s not found on the system", jobid);
 			log.info(response);
-			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-					response).toString());
+			return ResponseEntity.badRequest()
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 		BulkInfo bulkInfo = bulkInfos.get(0);
 
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-	            .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false).setSerializationInclusion(Include.NON_NULL);
-		
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.setSerializationInclusion(Include.NON_NULL);
+
 		try {
 			output = objectMapper.writeValueAsString(bulkInfo);
 		} catch (JsonProcessingException e) {
 			String response = String.format("/bulk-progress/%s error: %s", jobid, e.getMessage());
 			log.error(response);
-			return ResponseEntity.internalServerError().body(new ObjectMapper().createObjectNode().put("error", 
-					response).toString());
+			return ResponseEntity.internalServerError()
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 
 		return ResponseEntity.ok(output);
 	}
-	
-//	@PostMapping(value = "/bulk-result", produces = "application/json")
-//	public @ResponseBody ResponseEntity<String> getBulkResults(@Valid @RequestBody DownloadRequest downloadRequest) {
-//		
-//		String jobId = downloadRequest.getJobId();
-//		String filename = String.format("%s%s.csv.gz", BIG_QUERY_TABLE_PREFIX, jobId);
-//		
-//		// Does the jobId exist?
-//		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobId));
-//		if (bulkInfos.size() == 0) {
-//			String response = String.format("Job ID %s not found on the system", jobId);
-//			log.info(response);
-////			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-////					response).toString());
-//			
-//			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-//					response).toString());
-//		}
-//		
-//		// Is the jobId downloadable? Check the status.
-//		if (bulkInfos.get(0).getStatus().equals("results-ready")) {
-////			String result = downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
-////			return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", result).toString());
-//
-//			
-//			String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
-//			String downloadUrl = String.format("https://storage.googleapis.com/storage/v1/b/%s/o/%s?alt=media", gcsResultsBucket, filename);
-//			
-//			Path path = Paths.get(String.format("%s/%s", downloadRequest.getDownloadPath(), filename));
-//			
-//			WebClient webClient = WebClient.builder().baseUrl(downloadUrl).build();
-//			
-//			// Get file data
-//			Flux<DataBuffer> dataBufferFlux = webClient.get().accept(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL)
-//					.retrieve().bodyToFlux(DataBuffer.class);
-//			
-//			// Streams the dataBufferFlux from response instead of loading it all in memory
-//			DataBufferUtils.write(dataBufferFlux, path, StandardOpenOption.CREATE).block();
-//			
-//			return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", "Downloading").toString());
-//			
-//		} else {
-//			String response = String.format("Job ID %s is not currently downloadable", jobId);
-//			log.info(response);
-////			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-////					response).toString());
-//			
-//			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-//					response).toString());
-//		}
-//		
-////		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", "Downloading").toString());
-//		
-////		return downloadRe
-//
-//	}
-	
-	@PostMapping(value = "/bulk-result", produces = "application/json")
-	public @ResponseBody ResponseEntity<String> getBulkResults(@Valid @RequestBody DownloadRequest downloadRequest) {
-		
-		String jobId = downloadRequest.getJobId();
+
+	@GetMapping(value = "/bulk-result/{jobid}", produces = "application/json")
+	public ResponseEntity<String> getBulkResults(
+			@PathVariable(required = true, name = "jobid") @Pattern(regexp = "^[0-9]+$", message = "{jobid.val.message}") String jobId) {
+
 		String filename = String.format("%s%s.csv.gz", BIG_QUERY_TABLE_PREFIX, jobId);
-		
+
 		// Does the jobId exist?
 		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobId));
 		if (bulkInfos.size() == 0) {
 			String response = String.format("Job ID %s not found on the system", jobId);
 			log.info(response);
-			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-					response).toString());
+			return ResponseEntity.badRequest()
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
-		
+
 		// Is the jobId downloadable? Check the status.
 		if (bulkInfos.get(0).getStatus().equals("results-ready")) {
-			String result = "";
+			String signedUrl;
 			try {
-				result = downloadService.downloadGCSObject(jobId, downloadRequest.getDownloadPath(), filename);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				signedUrl = downloadService.getSignedUrl(jobId, filename);
+				return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename)
+						.put("signedUrl", signedUrl).toString());
+			} catch (IOException | BulkAddressException ex) {
+				String response = String.format("/bulk error: %s", ex.getMessage());
+				log.error(response);
+				return ResponseEntity.internalServerError()
+						.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 			}
-			return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("file", filename).put("status", result).toString());
-			
 		} else {
 			String response = String.format("Job ID %s is not currently downloadable", jobId);
 			log.info(response);
-			return ResponseEntity.badRequest().body(new ObjectMapper().createObjectNode().put("error", 
-					response).toString());
+			return ResponseEntity.badRequest()
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 	}
 }

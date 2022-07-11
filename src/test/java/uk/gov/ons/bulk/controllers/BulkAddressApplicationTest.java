@@ -54,7 +54,7 @@ import com.google.cloud.bigquery.FieldValueList;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
-import uk.gov.ons.bulk.entities.DownloadRequest;
+import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.repository.BulkStatusRepository;
 import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.CloudTaskService;
@@ -152,15 +152,6 @@ public class BulkAddressApplicationTest {
 		
 		return Stream.of(bulkRequestContainer);
     }
-    
-    private static Stream<DownloadRequest> downloadRequestObject() {
-    	
-    	DownloadRequest downloadRequest = new DownloadRequest();
-    	downloadRequest.setJobId("1");
-    	downloadRequest.setDownloadPath("/some/path/");
-		
-		return Stream.of(downloadRequest);
-    }
 
     public String getOK() {return "OK";}
     
@@ -216,9 +207,9 @@ public class BulkAddressApplicationTest {
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-progress/ ")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("jobid: jobid is mandatory")))
+				.andExpect(jsonPath("$.message", containsString("jobid: jobid is mandatory and must be an integer")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("jobid: jobid is mandatory"))))		
+				.andExpect(jsonPath("$.errors", hasItem(containsString("jobid: jobid is mandatory and must be an integer"))))		
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 
@@ -443,9 +434,9 @@ public class BulkAddressApplicationTest {
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("epoch", "100")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("epoch must be one of 89, 87, 80, 39")))
+				.andExpect(jsonPath("$.message", containsString("epoch must be one of 92, 91, 89, 87, 80, 39")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch must be one of 89, 87, 80, 39"))))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch must be one of 92, 91, 89, 87, 80, 39"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
@@ -515,7 +506,7 @@ public class BulkAddressApplicationTest {
 			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
 		
 		String classError = "runBulkRequest.classificationfilter: classificationfilter may not contain a list and/or a wildcard";
-		String epochError = "runBulkRequest.epoch: epoch must be one of 89, 87, 80, 39";
+		String epochError = "runBulkRequest.epoch: epoch must be one of 92, 91, 89, 87, 80, 39";
 		String excludeenglandError = "runBulkRequest.excludeengland: excludeengland must be true or false";
 		String excludenorthernirelandError = "runBulkRequest.excludenorthernireland: excludenorthernireland must be true or false";
 		
@@ -540,97 +531,105 @@ public class BulkAddressApplicationTest {
 	}
 	
 	@Test
-	public void bulkResultPostRequestInvalidDownloadRequestMissingJobId() throws Exception {
-
-		DownloadRequest downloadRequest = new DownloadRequest();
-		downloadRequest.setJobId("");
-		downloadRequest.setDownloadPath("/some/path/");
+	public void bulkResultGetRequestInvalidDownloadRequestMissingJobId() throws Exception {
 		
-		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
-				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+		String jobIdError = "getBulkResults.jobId: jobid is mandatory and must be an integer";
+		
+		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/ ")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("'jobId': rejected value []")))
+				.andExpect(jsonPath("$.message", containsString("jobId: jobid is mandatory and must be an integer")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem("jobId: jobId is mandatory")))
+				.andExpect(jsonPath("$.errors", hasItem("uk.gov.ons.bulk.controllers.BulkAddressController " + jobIdError)))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
 	@Test
-	public void bulkResultPostRequestInvalidDownloadRequestMissingDownloadPath() throws Exception {
-
-		DownloadRequest downloadRequest = new DownloadRequest();
-		downloadRequest.setJobId("1");
-		downloadRequest.setDownloadPath("");
-		
-		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
-				.content(new ObjectMapper().writeValueAsString(downloadRequest))
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("'downloadPath': rejected value []")))
-				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem("downloadPath: downloadPath is mandatory")))
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-	
-    @ParameterizedTest
-    @MethodSource("downloadRequestObject")
-    public void runBulkResultRequest(@RequestBody DownloadRequest downloadRequest) throws Exception {
+    public void runBulkResultRequest() throws Exception {
     	
-    	String filename = String.format("results_%s.csv.gz", downloadRequest.getJobId());
+    	String filename = String.format("results_%s.csv.gz", 1);
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-ready", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
         
-        doNothing().when(downloadService).downloadGCSObject(downloadRequest.getJobId(), downloadRequest.getDownloadPath(), filename);
-        when(bulkStatusService.queryJob(Long.parseLong(downloadRequest.getJobId()))).thenReturn(bulkInfos);
+        when(downloadService.getSignedUrl("1", filename)).thenReturn("https://alink");
+        when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
         
-		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
-				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/1")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
 				.andDo(MockMvcResultHandlers.print())
 				.andExpect(jsonPath("$.file", Is.is(filename)))
-				.andExpect(jsonPath("$.status", Is.is("Downloading")))
+				.andExpect(jsonPath("$.signedUrl", Is.is("https://alink")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+	
+	@Test
+    public void runBulkResultThrowIOException() throws Exception {
+    	
+    	String filename = String.format("results_%s.csv.gz", 1);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-ready", 2, 2);
+        bulkInfo.setStartdate(now);
+        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	bulkInfos.add(bulkInfo);
+        
+        when(downloadService.getSignedUrl("1", filename)).thenThrow(new IOException("An IO Exception"));
+        when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
+        
+		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/1")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isInternalServerError())
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(jsonPath("$.error", containsString("An IO Exception")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+	
+	@Test
+    public void runBulkResultThrowBulkAddressException() throws Exception {
+    	
+    	String filename = String.format("results_%s.csv.gz", 1);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-ready", 2, 2);
+        bulkInfo.setStartdate(now);
+        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	bulkInfos.add(bulkInfo);
+        
+        when(downloadService.getSignedUrl("1", filename)).thenThrow(new BulkAddressException("Signed URL is empty"));
+        when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
+        
+		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/1")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isInternalServerError())
+				.andDo(MockMvcResultHandlers.print())
+				.andExpect(jsonPath("$.error", containsString("Signed URL is empty")))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
     
-    @ParameterizedTest
-    @MethodSource("downloadRequestObject")
-    public void runBulkResultRequestNonExistent(@RequestBody DownloadRequest downloadRequest) throws Exception {
+	@Test
+    public void runBulkResultRequestNonExistent() throws Exception {
     	
-    	String filename = String.format("results_%s.csv.gz", downloadRequest.getJobId());
     	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
         
-        doNothing().when(downloadService).downloadGCSObject(downloadRequest.getJobId(), downloadRequest.getDownloadPath(), filename);
-        when(bulkStatusService.queryJob(Long.parseLong(downloadRequest.getJobId()))).thenReturn(bulkInfos);
+        when(bulkStatusService.queryJob(99L)).thenReturn(bulkInfos);
         
-		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
-				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/99")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andDo(MockMvcResultHandlers.print())
-				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s not found on the system", downloadRequest.getJobId()))))
+				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s not found on the system", 99L))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
     
-    @ParameterizedTest
-    @MethodSource("downloadRequestObject")
-    public void runBulkResultRequestNotDownloadable(@RequestBody DownloadRequest downloadRequest) throws Exception {
+	@Test
+    public void runBulkResultRequestNotDownloadable() throws Exception {
 
-    	String filename = String.format("results_%s.csv.gz", downloadRequest.getJobId());
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "processing-finished", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
         
-        doNothing().when(downloadService).downloadGCSObject(downloadRequest.getJobId(), downloadRequest.getDownloadPath(), filename);
-        when(bulkStatusService.queryJob(Long.parseLong(downloadRequest.getJobId()))).thenReturn(bulkInfos);
+        when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
         
-		mockMvc.perform(MockMvcRequestBuilders.post("/bulk-result")
-				.content(new ObjectMapper().writeValueAsString(downloadRequest))
+		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/1")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andDo(MockMvcResultHandlers.print())
-				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s is not currently downloadable", downloadRequest.getJobId()))))
+				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s is not currently downloadable", 1L))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
     

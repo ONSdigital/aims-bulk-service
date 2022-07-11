@@ -3,68 +3,83 @@ package uk.gov.ons.bulk.service;
 import static uk.gov.ons.bulk.util.BulkServiceConstants.BIG_QUERY_TABLE_PREFIX;
 
 import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.google.api.gax.paging.Page;
-import com.google.auth.ServiceAccountSigner;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpContent;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.http.json.JsonHttpContent;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
+import com.google.auth.oauth2.IdTokenCredentials;
+import com.google.auth.oauth2.IdTokenProvider;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.Data;
+import uk.gov.ons.bulk.exception.BulkAddressException;
 
-@Slf4j
 @Service
 public class DownloadService {
 
 	@Value("${aims.project-number}")
 	private String projectNumber;
 
-	@Value("${spring.cloud.gcp.project-id}")
-	private String projectName;
-	
-	public String downloadGCSObject(String jobId, String downloadPath, String filename) throws IOException {
+	@Value("${aims.cloud-functions.create-signed-url-function}")
+	private String createSignedUrlFunction;
+
+	public String getSignedUrl(String jobId, String filename) throws IOException, BulkAddressException {
 
 		String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
-		Path path = Paths.get(String.format("%s/%s", downloadPath, filename));
 
-		Storage storage = StorageOptions.getDefaultInstance().getService();
-		
-		BlobInfo blobInfo = BlobInfo.newBuilder(BlobId.of(gcsResultsBucket, filename)).build();
-		
-		URL url =
-		        storage.signUrl(blobInfo, 15, TimeUnit.MINUTES, 
-		        		Storage.SignUrlOption.withV4Signature(), 
-		        		Storage.SignUrlOption.signWith((ServiceAccountSigner)storage.getOptions().getCredentials()));
+		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
 
-		return url.toString();
-		
+		if (!(credentials instanceof IdTokenProvider)) {
+			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
+		}
 
-//		Page<Blob> blobs = storage.list(gcsResultsBucket);
-//
-//		for (Blob blob : blobs.iterateAll()) {
-//
-//			if (blob.getName().equals(filename)) {
-////				blob.downloadTo(path);
-//				URL signedUrl = blob.signUrl(1, TimeUnit.HOURS, Storage.SignUrlOption.withV4Signature());
-//				
-//				
-//				log.debug(String.format("Downloading: %s", filename));
-//				return signedUrl.toString();
-//			} else {
-//				return String.format("%s does not exist", filename);
-//			}
-//		}
+		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
+				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createSignedUrlFunction).build();
 
-//		return String.format("%s ius empty", gcsResultsBucket);
+		GenericUrl genericUrl = new GenericUrl(createSignedUrlFunction);
+		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
+		HttpTransport transport = new NetHttpTransport();
+		SignedUrlRequest signedUrlRequest = new SignedUrlRequest(gcsResultsBucket, filename);
+
+		HttpContent content = new JsonHttpContent(new GsonFactory(), signedUrlRequest.getRequest());
+		HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
+		HttpResponse response = request.execute();
+
+		String signedUrlResponse = "";
+
+		try {
+			// process the HTTP response object
+			signedUrlResponse = new ObjectMapper().readValue(response.getContent(), String.class);
+			
+			if (signedUrlResponse.length() == 0) {
+				throw new BulkAddressException("Signed URL is empty");
+			}
+		} finally {
+			response.disconnect();
+		}
+
+		return signedUrlResponse;
+	}
+
+	public @Data class SignedUrlRequest {
+		private Map<String, String> request;
+
+		public SignedUrlRequest(String bucketName, String fileName) {
+			request = new HashMap<String, String>();
+			request.put("bucketName", bucketName);
+			request.put("fileName", fileName);
+		}
 	}
 }
