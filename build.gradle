@@ -24,7 +24,6 @@ dependencies {
 	implementation 'com.google.cloud:spring-cloud-gcp-dependencies:2.0.6'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-bigquery:3.2.1'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-sql-mysql:3.2.1'
-	implementation 'com.google.cloud:spring-cloud-gcp-starter-storage:3.2.1'
 
 	implementation 'org.springframework.integration:spring-integration-core'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
