@@ -531,7 +531,7 @@ public class BulkAddressApplicationTest {
 	}
 	
 	@Test
-	public void bulkResultGetRequestInvalidDownloadRequestMissingJobId() throws Exception {
+	public void bulkResultGetRequestMissingJobId() throws Exception {
 		
 		String jobIdError = "getBulkResults.jobId: jobid is mandatory and must be an integer";
 		
