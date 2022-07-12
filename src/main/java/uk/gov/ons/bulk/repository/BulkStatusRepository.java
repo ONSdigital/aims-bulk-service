@@ -1,5 +1,6 @@
 package uk.gov.ons.bulk.repository;
 
+import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.PF;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -19,7 +20,7 @@ public class BulkStatusRepository {
 
 	private JdbcTemplate jdbcTemplate;
 	private SimpleJdbcInsert simpleJdbcInsert;
-	private static String JOB_QUERY = "SELECT * FROM bulkinfo WHERE runid = ?";
+	private static String JOB_QUERY = "SELECT * FROM bulkinfo WHERE jobid = ?";
 	private static String ALL_JOBS_QUERY = "SELECT * FROM bulkinfo WHERE userid like ? AND status like ?";
 
 	@Autowired
@@ -31,7 +32,7 @@ public class BulkStatusRepository {
 		
 		simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
 		simpleJdbcInsert.withTableName("bulkinfo")
-			.usingGeneratedKeyColumns("runid")
+			.usingGeneratedKeyColumns("jobid")
 			.usingColumns("userid", "status", "totalrecs", "recssofar");
 		Number id = simpleJdbcInsert.executeAndReturnKey(new BeanPropertySqlParameterSource(job));
 
@@ -56,11 +57,13 @@ public class BulkStatusRepository {
 			BulkInfo bulkInfo = new BulkInfo();
 
 			Long correctedRecs = rs.getLong("recssofar");
-			if (rs.getString("status").equals("finished"))
+			
+			if (rs.getString("status").equals(PF.getStatus()))
 			{
 				correctedRecs = rs.getLong("totalrecs");
 			}
-			bulkInfo.setRunid(rs.getLong("runid"));
+			
+			bulkInfo.setJobid(rs.getLong("jobid"));
 			bulkInfo.setUserid(rs.getString("userid"));
 			bulkInfo.setStatus(rs.getString("status"));
 			bulkInfo.setTotalrecs(rs.getLong("totalrecs"));

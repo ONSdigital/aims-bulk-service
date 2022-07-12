@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
 public @Data class BulkInfo {
 	
-	private long runid;
+	private long jobid;
 	private String userid;
 	private String status;
 	private long totalrecs;

@@ -1,0 +1,3 @@
+INSERT INTO bulkinfo (userid, status, totalrecs, recssofar, startdate) VALUES ('bob','in-progress',107,45,'2022-07-04T16:36:58.944848');
+INSERT INTO bulkinfo (userid, status, totalrecs, recssofar, startdate) VALUES ('mrrobot','in-progress',348076,2000,'2022-07-05T12:42:58.944872');
+INSERT INTO bulkinfo (userid, status, totalrecs, recssofar, startdate) VALUES ('mrrobot','in-progress',107,45,'2022-07-05T13:12:58.989848');
