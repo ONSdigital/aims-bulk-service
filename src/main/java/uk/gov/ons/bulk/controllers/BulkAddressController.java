@@ -106,7 +106,7 @@ public class BulkAddressController {
 			@RequestParam(required = false, defaultValue = "5") @Min(1) @Max(100) String limitperaddress,
 			@RequestParam(required = false) @Pattern(regexp = "^[^*,]+$", message = "{class.val.message}") String classificationfilter,
 			@RequestParam(required = false, defaultValue = "true") @Pattern(regexp = "^(true|false)$", message = "{historical.val.message}") String historical,
-			@RequestParam(required = false, defaultValue = "5") @Min(1) @Max(100) String matchthreshold,
+			@RequestParam(required = false, defaultValue = "10") @Min(1) @Max(100) String matchthreshold,
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{verbose.val.message}") String verbose,
 			@RequestParam(required = false, defaultValue = "${aims.current-epoch}") @Epoch(message = "{epoch.val.message}") String epoch,
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludeengland.val.message}") String excludeengland,
