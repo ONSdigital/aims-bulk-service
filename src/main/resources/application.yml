@@ -48,7 +48,7 @@ logging:
     root: INFO
     uk:
       gov:
-        ons: INFO
+        ons: DEBUG
     reactor:
       netty: INFO
 aims:
@@ -60,6 +60,13 @@ aims:
   current-epoch: 93
   # Update the records processed at every n% of completion
   report-frequency: 5
+ids:
+  cloud:
+    gcp:
+      project-id: ons-aims-ids-test
+  pubsub:
+    subscription-table-available: ids-table-available
+    subscription-table-pulled: aims-remove-table
 async:
   executor:
     thread:
