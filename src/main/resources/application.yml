@@ -65,8 +65,8 @@ ids:
     gcp:
       project-id: ons-aims-ids-test
   pubsub:
-    subscription-table-available: ids-table-available
-    subscription-table-pulled: aims-remove-table
+    subscription-new-ids-job: ids-table-available
+    subscription-download-complete: aims-remove-table
 async:
   executor:
     thread:

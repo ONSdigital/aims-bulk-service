@@ -21,7 +21,8 @@ import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 
 import lombok.extern.slf4j.Slf4j;
-import uk.gov.ons.bulk.entities.Message;
+import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
+import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 
 @Slf4j
 @Component
@@ -30,27 +31,27 @@ public class PubSubComponent {
 	@Value("${ids.cloud.gcp.project-id}")
 	private String idsGcpProject;
 	
-	@Value("${ids.pubsub.subscription-table-available}")
-	private String pubsubSubscriptionTableAvailable;
+	@Value("${ids.pubsub.subscription-new-ids-job}")
+	private String pubsubSubscriptionNewIdsJob;
 	
-	@Value("${ids.pubsub.subscription-table-pulled}")
-	private String pubsubSubscriptionTablePulled;
+	@Value("${ids.pubsub.subscription-download-complete}")
+	private String pubsubSubscriptionDownloadComplete;
 	
 	@Bean
-	public MessageChannel pubsubInputChannelTableAvailable() {
+	public MessageChannel pubsubInputChannelNewIdsJob() {
 		return new DirectChannel();
 	}
 	
 	@Bean
-	public MessageChannel pubsubInputChannelTablePulled() {
+	public MessageChannel pubsubInputChannelDownloadComplete() {
 		return new DirectChannel();
 	}
 	
 	@Bean
-	public PubSubInboundChannelAdapter messageTableAvailableChannelAdapter(
-			@Qualifier("pubsubInputChannelTableAvailable") MessageChannel inputChannel, PubSubTemplate pubSubTemplate) {
+	public PubSubInboundChannelAdapter messageNewIdsJobChannelAdapter(
+			@Qualifier("pubsubInputChannelNewIdsJob") MessageChannel inputChannel, PubSubTemplate pubSubTemplate) {
 		PubSubInboundChannelAdapter adapter = new PubSubInboundChannelAdapter(pubSubTemplate,
-				String.format("projects/%s/subscriptions/%s", idsGcpProject, pubsubSubscriptionTableAvailable));
+				String.format("projects/%s/subscriptions/%s", idsGcpProject, pubsubSubscriptionNewIdsJob));
 		adapter.setOutputChannel(inputChannel);
 		adapter.setAckMode(AckMode.MANUAL);
 
@@ -58,10 +59,10 @@ public class PubSubComponent {
 	}
 
 	@Bean
-	public PubSubInboundChannelAdapter messageTablePulledChannelAdapter(
-			@Qualifier("pubsubInputChannelTablePulled") MessageChannel inputChannel, PubSubTemplate pubSubTemplate) {
+	public PubSubInboundChannelAdapter messageDownloadCompleteChannelAdapter(
+			@Qualifier("pubsubInputChannelDownloadComplete") MessageChannel inputChannel, PubSubTemplate pubSubTemplate) {
 		PubSubInboundChannelAdapter adapter = new PubSubInboundChannelAdapter(pubSubTemplate,
-				String.format("projects/%s/subscriptions/%s", idsGcpProject, pubsubSubscriptionTablePulled));
+				String.format("projects/%s/subscriptions/%s", idsGcpProject, pubsubSubscriptionDownloadComplete));
 		adapter.setOutputChannel(inputChannel);
 		adapter.setAckMode(AckMode.MANUAL);
 
@@ -69,19 +70,18 @@ public class PubSubComponent {
 	}
 	
 	@Bean
-	@ServiceActivator(inputChannel = "pubsubInputChannelTableAvailable")
-	public MessageHandler messageTableAvailableReceiver() {
+	@ServiceActivator(inputChannel = "pubsubInputChannelNewIdsJob")
+	public MessageHandler messageNewIdsJobReceiver() {
 		return message -> {
 			log.debug("Message arrived! Payload: " + new String((byte[]) message.getPayload()));
 			
 			try {
-				Message msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
-						.readValue((byte[]) message.getPayload(), Message.class);
+				NewIdsJobMessage msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
+						.readValue((byte[]) message.getPayload(), NewIdsJobMessage.class);
 				log.debug(String.format("Message: %s", msg.toString()));
 				
-				// Schedule Job for this resultset
-				String jobId = msg.getPayload().getJobId();
-				
+				// Read the BigQuery table in IDS and start creating Cloud Tasks
+				String idsJobId = msg.getPayload().getIdsJobId();
 				
 				// Send ACK
 				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
@@ -100,19 +100,18 @@ public class PubSubComponent {
 	}
 	
 	@Bean
-	@ServiceActivator(inputChannel = "pubsubInputChannelTablePulled")
-	public MessageHandler messageTablePulledReceiver() {
+	@ServiceActivator(inputChannel = "pubsubInputChannelDownloadComplete")
+	public MessageHandler messageDownloadCompleteReceiver() {
 		return message -> {
 			log.debug("Message arrived! Payload: " + new String((byte[]) message.getPayload()));
 			
 			try {
-				Message msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
-						.readValue((byte[]) message.getPayload(), Message.class);
+				DownloadCompleteMessage msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
+						.readValue((byte[]) message.getPayload(), DownloadCompleteMessage.class);
 				log.debug(String.format("Message: %s", msg.toString()));
 				
-				// Schedule Job for this resultset
-				String jobId = msg.getPayload().getJobId();
-				
+				// Delete the Big Query Table associated with this IDS job
+				String idsJobId = msg.getPayload().getIdsJobId();
 				
 				// Send ACK
 				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
