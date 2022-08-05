@@ -1,13 +1,13 @@
 package uk.gov.ons.bulk.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.opencsv.bean.CsvBindByName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public @Data class Payload {
 	
-	@CsvBindByName(column = "ids_job_id")
+	@JsonProperty("ids_job_id")
 	private String idsJobId;
 }

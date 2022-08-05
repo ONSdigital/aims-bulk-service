@@ -1,21 +1,23 @@
 package uk.gov.ons.bulk.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.opencsv.bean.CsvBindByName;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
 public @Data class NewIdsJobPayload extends Payload {
 	
-	@CsvBindByName(column = "big_query_dataset")
+	@JsonProperty("big_query_dataset")
 	private String bigQueryDataset;
-	@CsvBindByName(column = "big_query_table")
+	@JsonProperty("big_query_table")
 	private String bigQueryTable;
-	@CsvBindByName(column = "address_limit")
+	@JsonProperty("address_limit")
 	private String addressLimit;
-	@CsvBindByName(column = "quality_match_threshold")
+	@JsonProperty("quality_match_threshold")
 	private String qualityMatchThreshold;
 }
