@@ -60,6 +60,13 @@ aims:
   current-epoch: 93
   # Update the records processed at every n% of completion
   report-frequency: 5
+ids:
+  cloud:
+    gcp:
+      project-id: ons-aims-ids-test
+  pubsub:
+    subscription-new-ids-job: ids-table-available
+    subscription-download-complete: aims-remove-table
 async:
   executor:
     thread:

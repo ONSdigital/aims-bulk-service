@@ -1,7 +1,8 @@
 spring:
   cloud:
     gcp:
-      project-id: ons-aims-analysis-prod
+      project-id: ${embedded.google.pubsub.project-id}
+      pubsub.emulatorHost: ${embedded.google.pubsub.host}:${embedded.google.pubsub.port}
       sql:
         enabled: false
   datasource:
