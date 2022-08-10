@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.messaging.MessageChannel;
@@ -26,6 +27,7 @@ import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 
 @Slf4j
 @Component
+@Profile("!test")
 public class PubSubComponent {
 	
 	@Value("${ids.cloud.gcp.project-id}")
