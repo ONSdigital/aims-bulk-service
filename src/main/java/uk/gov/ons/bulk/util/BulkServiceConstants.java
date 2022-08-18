@@ -3,6 +3,7 @@ package uk.gov.ons.bulk.util;
 public final class BulkServiceConstants {
 
 	public static final String BIG_QUERY_TABLE_PREFIX = "results_";
+	public static final String BIG_QUERY_IDS_TABLE_PREFIX = "ids_results_";
 	
 	public enum Status {
 		IP("in-progress"), 

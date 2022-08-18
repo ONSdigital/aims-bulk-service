@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import uk.gov.ons.bulk.entities.BulkInfo;
+import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.repository.BulkStatusRepository;
 
 import java.util.List;
@@ -24,5 +25,17 @@ public class BulkStatusService {
 
 	public List<BulkInfo> getJobs(String userid, String status) {
 		return bulkStatusRepository.getJobs(userid, status);
+	}
+	
+	public Long saveIdsJob(IdsBulkInfo job) {
+		return bulkStatusRepository.saveIdsJob(job);
+	}
+	
+	public List<IdsBulkInfo> queryIdsJob(long jobId) {
+		return bulkStatusRepository.queryIdsJob(jobId);
+	}
+
+	public List<IdsBulkInfo> getIdsJobs(String userid, String status) {
+		return bulkStatusRepository.getIdsJobs(userid, status);
 	}
 }
