@@ -39,24 +39,24 @@ public class CloudTaskService {
 	@Value("${aims.report-frequency}")
 	private double reportFrequency; 
 	
-	private GenericUrl genericUrl;
-	private HttpCredentialsAdapter adapter;
-	private HttpTransport transport;		
+//	private GenericUrl genericUrl;
+//	private HttpCredentialsAdapter adapter;
+//	private HttpTransport transport;		
 
-	public void init() throws IOException {
-		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-		
-		if (!(credentials instanceof IdTokenProvider)) {
-			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
-		}
-		
-		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
-				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
-
-		genericUrl = new GenericUrl(createTaskFunction);
-		adapter = new HttpCredentialsAdapter(tokenCredential);
-		transport = new NetHttpTransport();	
-	}
+//	public void init() throws IOException {
+//		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+//		
+//		if (!(credentials instanceof IdTokenProvider)) {
+//			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
+//		}
+//		
+//		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
+//				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
+//
+//		genericUrl = new GenericUrl(createTaskFunction);
+//		adapter = new HttpCredentialsAdapter(tokenCredential);
+//		transport = new NetHttpTransport();	
+//	}
 
 	/**
 	 * Send each address to GCP Cloud Function for matching.
@@ -71,9 +71,22 @@ public class CloudTaskService {
 	@Async
 	public void createTasks(long jobId, BulkRequest[] addresses, long totalAddresses, BulkRequestParams bulkRequestParams, HttpHeaders headers) throws IOException {
 			
+		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+		
+		if (!(credentials instanceof IdTokenProvider)) {
+			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
+		}
+		
+		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
+				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
+
+		GenericUrl genericUrl = new GenericUrl(createTaskFunction);
+		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
+		HttpTransport transport = new NetHttpTransport();	
+		
 		List<Integer> reportAddresses = reportAddresses(addresses.length);
 		reportAddresses.add(addresses.length);
-		init();
+//		init();
 		
 		for (int i = 0; i < addresses.length; i++) {	
 					
@@ -95,9 +108,22 @@ public class CloudTaskService {
 	@Async
 	public void createIdsTasks(long jobId, String idsJobId, List<IdsRequest> addresses, long totalAddresses, BulkRequestParams bulkRequestParams, HttpHeaders headers) throws IOException {
 			
+		GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+		
+		if (!(credentials instanceof IdTokenProvider)) {
+			throw new IllegalArgumentException("Credentials are not an instance of IdTokenProvider.");
+		}
+		
+		IdTokenCredentials tokenCredential = IdTokenCredentials.newBuilder()
+				.setIdTokenProvider((IdTokenProvider) credentials).setTargetAudience(createTaskFunction).build();
+
+		GenericUrl genericUrl = new GenericUrl(createTaskFunction);
+		HttpCredentialsAdapter adapter = new HttpCredentialsAdapter(tokenCredential);
+		HttpTransport transport = new NetHttpTransport();	
+		
 		List<Integer> reportAddresses = reportAddresses(addresses.size());
 		reportAddresses.add(addresses.size());
-		init();
+//		init();
 		
 		for (int i = 0; i < addresses.size(); i++) {	
 					
