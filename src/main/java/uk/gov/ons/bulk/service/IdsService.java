@@ -44,7 +44,7 @@ public class IdsService {
 	@Value("${ids.cloud.gcp.bigquery.dataset-name}")
 	private String idsDatasetName;
 	
-	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM @datasetId.@tableId";
+	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM %s.@tableId";
 	
 	public void createTasks(NewIdsJobPayload newIdsJobPayload) {
 
@@ -54,8 +54,7 @@ public class IdsService {
 			
 			List<IdsRequest> idsRequests = new ArrayList<IdsRequest>();
 			
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(QUERY_IDS_DATASET_TABLE)
-					.addNamedParameter("datasetId", QueryParameterValue.string(newIdsJobPayload.getBigQueryDataset()))
+			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(String.format(QUERY_IDS_DATASET_TABLE, newIdsJobPayload.getBigQueryDataset()))
 					.addNamedParameter("tableId", QueryParameterValue.string(newIdsJobPayload.getBigQueryTable())).build();
 			
 			// How many rows can this method handle?
@@ -63,7 +62,7 @@ public class IdsService {
 			
 			// Create a status row for this IDS job
 			IdsBulkInfo idsBulkInfo = new IdsBulkInfo(newIdsJobPayload.getIdsJobId(), newIdsJobPayload.getIdsUserId(), IP.getStatus(), results.getTotalRows(), 0);
-			long newKey = bulkStatusService.saveJob(idsBulkInfo);
+			long newKey = bulkStatusService.saveIdsJob(idsBulkInfo);
 			
 			// Create a results table in AIMS BigQuery for this IDS job
 			String tableName = BIG_QUERY_IDS_TABLE_PREFIX + newKey;
