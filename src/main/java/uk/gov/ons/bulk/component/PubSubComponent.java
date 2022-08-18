@@ -2,6 +2,7 @@ package uk.gov.ons.bulk.component;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +25,7 @@ import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
+import uk.gov.ons.bulk.service.IdsService;
 
 @Slf4j
 @Component
@@ -38,6 +40,9 @@ public class PubSubComponent {
 	
 	@Value("${ids.pubsub.subscription-download-complete}")
 	private String pubsubSubscriptionDownloadComplete;
+	
+	@Autowired
+	private IdsService idsService;
 	
 	@Bean
 	public MessageChannel pubsubInputChannelNewIdsJob() {
@@ -84,6 +89,7 @@ public class PubSubComponent {
 				
 				// Read the BigQuery table in IDS and start creating Cloud Tasks
 				String idsJobId = msg.getPayload().getIdsJobId();
+				idsService.createTasks(msg.getPayload());
 				
 				// Send ACK
 				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
