@@ -16,7 +16,6 @@ import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.JobException;
 import com.google.cloud.bigquery.QueryJobConfiguration;
-import com.google.cloud.bigquery.QueryParameterValue;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.bigquery.TableResult;
@@ -44,7 +43,7 @@ public class IdsService {
 	@Value("${ids.cloud.gcp.bigquery.dataset-name}")
 	private String idsDatasetName;
 	
-	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM %s.@tableId";
+	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM %s.%s";
 	
 	public void createTasks(NewIdsJobPayload newIdsJobPayload) {
 
@@ -54,8 +53,8 @@ public class IdsService {
 			
 			List<IdsRequest> idsRequests = new ArrayList<IdsRequest>();
 			
-			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(String.format(QUERY_IDS_DATASET_TABLE, newIdsJobPayload.getBigQueryDataset()))
-					.addNamedParameter("tableId", QueryParameterValue.string(newIdsJobPayload.getBigQueryTable())).build();
+			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(
+					String.format(QUERY_IDS_DATASET_TABLE, newIdsJobPayload.getBigQueryDataset(), newIdsJobPayload.getBigQueryTable())).build();
 			
 			// How many rows can this method handle?
 			results = bigQuery.query(queryConfig);
