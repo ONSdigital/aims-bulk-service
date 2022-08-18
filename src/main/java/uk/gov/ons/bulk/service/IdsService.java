@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.JobException;
 import com.google.cloud.bigquery.QueryJobConfiguration;
@@ -43,7 +44,10 @@ public class IdsService {
 	@Value("${ids.cloud.gcp.bigquery.dataset-name}")
 	private String idsDatasetName;
 	
-	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM %s.%s";
+	@Value("${ids.cloud.gcp.project-id}")
+	private String idsProjectId;
+	
+	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM %s.%s.%s";
 	
 	public void createTasks(NewIdsJobPayload newIdsJobPayload) {
 
@@ -54,9 +58,11 @@ public class IdsService {
 			List<IdsRequest> idsRequests = new ArrayList<IdsRequest>();
 			
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(
-					String.format(QUERY_IDS_DATASET_TABLE, newIdsJobPayload.getBigQueryDataset(), newIdsJobPayload.getBigQueryTable())).build();
+					String.format(QUERY_IDS_DATASET_TABLE, idsProjectId, newIdsJobPayload.getBigQueryDataset(), newIdsJobPayload.getBigQueryTable())).build();
 			
 			// How many rows can this method handle?
+//			BigQuery idsBigQuery = BigQueryOptions.newBuilder().setProjectId(idsProjectId).build().getService();
+			
 			results = bigQuery.query(queryConfig);
 			
 			// Create a status row for this IDS job
