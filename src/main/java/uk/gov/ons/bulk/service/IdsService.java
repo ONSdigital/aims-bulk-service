@@ -80,7 +80,7 @@ public class IdsService {
 
 			results.iterateAll().forEach(row -> {
 				// Create the tasks
-				idsRequests.add(new IdsRequest(row.get("id").getStringValue(), row.get("address").getStringValue()));
+				idsRequests.add(new IdsRequest(row.get("id").getStringValue(), row.get("inputaddress").getStringValue()));
 			});
 			
 			// These parameters need to be validated. Probably in the POJO. Just two at the moment.			
