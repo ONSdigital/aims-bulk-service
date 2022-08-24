@@ -27,6 +27,7 @@ public class BulkStatusRepository {
 	
 	private static String IDS_JOB_QUERY = "SELECT * FROM ids_bulkinfo WHERE jobid = ?";
 	private static String IDS_ALL_JOBS_QUERY = "SELECT * FROM ids_bulkinfo WHERE userid like ? AND status like ?";
+	private static String IDS_SINGLE_JOB_QUERY = "SELECT * FROM ids_bulkinfo WHERE idsjobid = ?";
 
 	@Autowired
 	public BulkStatusRepository(JdbcTemplate jdbcTemplate) {
@@ -73,6 +74,10 @@ public class BulkStatusRepository {
 		String userpattern = userid + '%';
 		String statuspattern = status + '%';
 		return jdbcTemplate.query(IDS_ALL_JOBS_QUERY, new IdsBulkInfoMapper(), userpattern, statuspattern);
+	}
+	
+	public List<IdsBulkInfo> getIdsJob(String idsJobId) {
+		return jdbcTemplate.query(IDS_SINGLE_JOB_QUERY, new IdsBulkInfoMapper(), idsJobId);
 	}
 	
 	public class BulkInfoMapper implements RowMapper<BulkInfo> {

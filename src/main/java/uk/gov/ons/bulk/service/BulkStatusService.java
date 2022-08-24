@@ -38,4 +38,8 @@ public class BulkStatusService {
 	public List<IdsBulkInfo> getIdsJobs(String userid, String status) {
 		return bulkStatusRepository.getIdsJobs(userid, status);
 	}
+	
+	public List<IdsBulkInfo> getIdsJob(String idsJobId) {
+		return bulkStatusRepository.getIdsJob(idsJobId);
+	}
 }

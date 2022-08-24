@@ -13,12 +13,13 @@ import org.springframework.stereotype.Service;
 
 import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.JobException;
 import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
+import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.TableResult;
 
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,8 @@ import uk.gov.ons.bulk.entities.BulkRequestParams;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.entities.IdsRequest;
 import uk.gov.ons.bulk.entities.NewIdsJobPayload;
+import uk.gov.ons.bulk.entities.Payload;
+import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.util.QueryFuncs;
 
 @Service
@@ -47,6 +50,9 @@ public class IdsService {
 	@Value("${ids.cloud.gcp.project-id}")
 	private String idsProjectId;
 	
+	@Value("${aims.current-epoch}")
+	private String currentEpoch;
+	
 	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM %s.%s.%s";
 	
 	public void createTasks(NewIdsJobPayload newIdsJobPayload) {
@@ -60,9 +66,7 @@ public class IdsService {
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(
 					String.format(QUERY_IDS_DATASET_TABLE, idsProjectId, newIdsJobPayload.getBigQueryDataset(), newIdsJobPayload.getBigQueryTable())).build();
 			
-			// How many rows can this method handle?
-//			BigQuery idsBigQuery = BigQueryOptions.newBuilder().setProjectId(idsProjectId).build().getService();
-			
+			// How many rows can this method handle?		
 			results = bigQuery.query(queryConfig);
 			
 			// Create a status row for this IDS job
@@ -83,18 +87,44 @@ public class IdsService {
 				idsRequests.add(new IdsRequest(row.get("id").getStringValue(), row.get("inputaddress").getStringValue()));
 			});
 			
-			// These parameters need to be validated. Probably in the POJO. Just two at the moment.			
-			BulkRequestParams bulkRequestParams = new BulkRequestParams(newIdsJobPayload.getAddressLimit(), "", "",
-					newIdsJobPayload.getQualityMatchThreshold(), "", "", "", "", "", "");
+			// These parameters need to be validated. Probably in the POJO.
+			// Some are hardcoded here - how many do we want IDS to be able to set?
+			BulkRequestParams bulkRequestParams = new BulkRequestParams(newIdsJobPayload.getAddressLimit(), null, "true",
+					newIdsJobPayload.getQualityMatchThreshold(), "false", currentEpoch, "", "", "", "");
 			
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("user", newIdsJobPayload.getIdsUserId());
+			headers.setAuthorization("None");
 			
 			cloudTaskService.createIdsTasks(newKey, newIdsJobPayload.getIdsJobId(), idsRequests, results.getTotalRows(), bulkRequestParams, headers);
 		} catch (JobException | InterruptedException e) {
 			log.error(String.format("Problem querying BigQuery: %s", e.getMessage()));
 		} catch (IOException e) {
 			log.error(String.format("Problem creating tasks: %s", e.getMessage()));
+		}
+	}
+	
+	public void deleteIdsResultTable(Payload payload) throws BulkAddressException {
+
+		List<IdsBulkInfo> idsJob = bulkStatusService.getIdsJob(payload.getIdsJobId());
+
+		if (idsJob == null || idsJob.size() != 1) {
+			throw new BulkAddressException(
+					String.format("Problem getting details of idsjobid %s from status table.", payload.getIdsJobId()));
+		} else {
+
+			String tableName = BIG_QUERY_IDS_TABLE_PREFIX + idsJob.get(0).getJobid();
+
+			try {
+				boolean success = bigQuery.delete(TableId.of(idsDatasetName, tableName));
+				if (success) {
+					log.debug("Table deleted successfully");
+				} else {
+					log.debug("Table was not found");
+				}
+			} catch (BigQueryException e) {
+				log.error(String.format("Table was not deleted: %s", e.getMessage()));
+			}
 		}
 	}
 }
