@@ -48,7 +48,7 @@ logging:
     root: INFO
     uk:
       gov:
-        ons: DEBUG
+        ons: INFO
     reactor:
       netty: INFO
 aims:
