@@ -103,4 +103,17 @@ class BulkStatusRepositoryTest {
 		assertTrue(idsBulkInfos.stream().map(idsBulkInfo -> idsBulkInfo.getTotalrecs()).collect(Collectors.toList()).containsAll(List.of(348076L, 107L)));
 		assertTrue(idsBulkInfos.stream().map(idsBulkInfo -> idsBulkInfo.getRecssofar()).collect(Collectors.toList()).containsAll(List.of(2000L, 45L)));
 	}
+	
+	@Test
+	public void testgetIdsJob() {
+
+		List<IdsBulkInfo> idsBulkInfos = bulkStatusRepository.getIdsJob("ids-job-2");
+		
+		assertEquals(1, idsBulkInfos.size());
+		assertEquals(idsBulkInfos.get(0).getIdsJobId(), "ids-job-2");
+		assertEquals(idsBulkInfos.get(0).getUserid(), "ids-user-y");
+		assertEquals(idsBulkInfos.get(0).getStatus(), "in-progress");
+		assertEquals(idsBulkInfos.get(0).getRecssofar(), 2000L);
+		assertEquals(idsBulkInfos.get(0).getTotalrecs(), 348076L);
+	}
 }
