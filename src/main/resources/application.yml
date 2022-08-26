@@ -64,15 +64,17 @@ ids:
   cloud:
     gcp:
       project-id: ons-aims-ids-test
+      bigquery:
+        dataset-name: ids_results
   pubsub:
     subscription-new-ids-job: ids-table-available
     subscription-download-complete: aims-remove-table
 async:
   executor:
     thread:
-      core_pool_size: 5
+      core_pool_size: 50
       # Configure the maximum number of threads
-      max_pool_size: 5
+      max_pool_size: 50
       # Configure queue size
       queue_capacity: 999
       # Configure the maximum idle time of threads

@@ -16,6 +16,8 @@ public @Data class NewIdsJobPayload extends Payload {
 	private String bigQueryDataset;
 	@JsonProperty("big_query_table")
 	private String bigQueryTable;
+	@JsonProperty("ids_user_id")
+	private String idsUserId;
 	@JsonProperty("address_limit")
 	private String addressLimit;
 	@JsonProperty("quality_match_threshold")

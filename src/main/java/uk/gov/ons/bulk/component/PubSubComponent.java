@@ -2,6 +2,7 @@ package uk.gov.ons.bulk.component;
 
 import java.io.IOException;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +25,8 @@ import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
+import uk.gov.ons.bulk.exception.BulkAddressException;
+import uk.gov.ons.bulk.service.IdsService;
 
 @Slf4j
 @Component
@@ -38,6 +41,9 @@ public class PubSubComponent {
 	
 	@Value("${ids.pubsub.subscription-download-complete}")
 	private String pubsubSubscriptionDownloadComplete;
+	
+	@Autowired
+	private IdsService idsService;
 	
 	@Bean
 	public MessageChannel pubsubInputChannelNewIdsJob() {
@@ -83,7 +89,7 @@ public class PubSubComponent {
 				log.debug(String.format("Message: %s", msg.toString()));
 				
 				// Read the BigQuery table in IDS and start creating Cloud Tasks
-				String idsJobId = msg.getPayload().getIdsJobId();
+				idsService.createTasks(msg.getPayload());
 				
 				// Send ACK
 				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
@@ -113,7 +119,7 @@ public class PubSubComponent {
 				log.debug(String.format("Message: %s", msg.toString()));
 				
 				// Delete the Big Query Table associated with this IDS job
-				String idsJobId = msg.getPayload().getIdsJobId();
+				idsService.deleteIdsResultTable(msg.getPayload());
 				
 				// Send ACK
 				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
@@ -127,6 +133,8 @@ public class PubSubComponent {
 				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
 						.get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
 				originalMessage.nack();	
+			} catch (BulkAddressException e) {
+				log.error(String.format("Problem deleting IDS result table: %s", e));
 			}
 		};
 	}
