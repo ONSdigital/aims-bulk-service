@@ -11,6 +11,7 @@ import java.util.Map;
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,9 +39,9 @@ import com.google.cloud.bigquery.StandardSQLTypeName;
 
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkInfo;
-import uk.gov.ons.bulk.entities.BulkInfoList;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
+import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.CloudTaskService;
@@ -80,25 +81,12 @@ public class BulkAddressController {
 			@RequestParam(required = false, defaultValue = "") String userid,
 			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready)$", message = "{status.val.message}") String status) {
 
-		String output;
-		String chosenStatus = status;
-
-		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid, chosenStatus);
-		BulkInfoList jobs = new BulkInfoList(jobsList);
+		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid, status);
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
 				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
 				.setSerializationInclusion(Include.NON_NULL);
 
-		try {
-			output = objectMapper.writeValueAsString(jobs);
-		} catch (JsonProcessingException ex) {
-			String response = String.format("/jobs error: %s", ex.getMessage());
-			log.error(response);
-			return ResponseEntity.internalServerError()
-					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
-		}
-
-		return ResponseEntity.ok(output);
+		return ResponseEntity.ok(objectMapper.createObjectNode().set("jobs", objectMapper.valueToTree(jobsList)).toString());
 	}
 
 	@PostMapping(value = "/bulk", produces = "application/json")
@@ -217,5 +205,49 @@ public class BulkAddressController {
 			return ResponseEntity.badRequest()
 					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
+	}
+	
+	@GetMapping(value = "/ids/bulk-progress/{idsjobid}", produces = "application/json")
+	public ResponseEntity<String> getIdsBulkRequestProgress(
+			@PathVariable(required = true, name = "idsjobid") @NotBlank(message = "{idsjobid.val.message}") String idsjobid) {
+
+		String output;
+
+		List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(idsjobid);
+		if (idsBulkInfos.size() == 0) {
+			String response = String.format("IDS Job ID %s not found on the system", idsjobid);
+			log.info(response);
+			return ResponseEntity.badRequest()
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
+		}
+		IdsBulkInfo idsBulkInfo = idsBulkInfos.get(0);
+
+		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.setSerializationInclusion(Include.NON_NULL);
+
+		try {
+			output = objectMapper.writeValueAsString(idsBulkInfo);
+		} catch (JsonProcessingException e) {
+			String response = String.format("/ids/bulk-progress/%s error: %s", idsjobid, e.getMessage());
+			log.error(response);
+			return ResponseEntity.internalServerError()
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
+		}
+
+		return ResponseEntity.ok(output);
+	}
+	
+	@GetMapping(value = "/ids/jobs", produces = "application/json")
+	public ResponseEntity<String> getIdsBulkRequestProgress(
+			@RequestParam(required = false, defaultValue = "") String userid,
+			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready)$", message = "{status.val.message}") String status) {
+
+		List<IdsBulkInfo> jobsList = bulkStatusService.getIdsJobs(userid, status);
+		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
+				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+				.setSerializationInclusion(Include.NON_NULL);
+
+		return ResponseEntity.ok(objectMapper.createObjectNode().set("jobs", objectMapper.valueToTree(jobsList)).toString());
 	}
 }
