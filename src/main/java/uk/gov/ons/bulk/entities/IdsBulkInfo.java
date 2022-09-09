@@ -1,5 +1,6 @@
 package uk.gov.ons.bulk.entities;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 
@@ -14,6 +15,7 @@ import lombok.ToString;
 @JsonDeserialize(using = LocalDateDeserializer.class)
 public @Data class IdsBulkInfo extends BulkInfo {
 	
+	@JsonProperty("idsjobid")
 	private String idsJobId;
 
 	public IdsBulkInfo(String idsJobId, String userid, String status, long totalrecs, long recssofar) {
