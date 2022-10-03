@@ -2,6 +2,7 @@ package uk.gov.ons.bulk.service;
 
 import static uk.gov.ons.bulk.util.BulkServiceConstants.BIG_QUERY_IDS_TABLE_PREFIX;
 import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.IP;
+import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.RD;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,6 +120,8 @@ public class IdsService {
 				boolean success = bigQuery.delete(TableId.of(idsDatasetName, tableName));
 				if (success) {
 					log.debug("Table deleted successfully");
+					// Update the status table to results-deleted
+					bulkStatusService.updateStatus(idsJob.get(0).getJobid(), RD);
 				} else {
 					log.debug("Table was not found");
 				}

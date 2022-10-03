@@ -8,7 +8,9 @@ public final class BulkServiceConstants {
 	public enum Status {
 		IP("in-progress"), 
 		PF("processing-finished"), 
-		RR("results-ready");
+		RR("results-ready"),
+		RE("results-exported"),
+		RD("results-deleted");
 		
 		private String status;
 		

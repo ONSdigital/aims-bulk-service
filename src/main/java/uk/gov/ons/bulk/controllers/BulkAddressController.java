@@ -2,7 +2,7 @@ package uk.gov.ons.bulk.controllers;
 
 import static uk.gov.ons.bulk.util.BulkServiceConstants.BIG_QUERY_TABLE_PREFIX;
 import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.IP;
-import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.RR;
+import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.RE;
 
 import java.io.IOException;
 import java.util.List;
@@ -79,7 +79,7 @@ public class BulkAddressController {
 	@GetMapping(value = "/jobs", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
 			@RequestParam(required = false, defaultValue = "") String userid,
-			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready)$", message = "{status.val.message}") String status) {
+			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready|results-exported)$", message = "{status.val.message}") String status) {
 
 		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid, status);
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
@@ -187,7 +187,7 @@ public class BulkAddressController {
 		}
 
 		// Is the jobId downloadable? Check the status.
-		if (bulkInfos.get(0).getStatus().equals(RR.getStatus())) {
+		if (bulkInfos.get(0).getStatus().equals(RE.getStatus())) {
 			String signedUrl;
 			try {
 				signedUrl = downloadService.getSignedUrl(jobId, filename);
@@ -241,7 +241,7 @@ public class BulkAddressController {
 	@GetMapping(value = "/ids/jobs", produces = "application/json")
 	public ResponseEntity<String> getIdsBulkRequestProgress(
 			@RequestParam(required = false, defaultValue = "") String userid,
-			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready)$", message = "{status.val.message}") String status) {
+			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready|results-deleted)$", message = "{status.ids.val.message}") String status) {
 
 		List<IdsBulkInfo> jobsList = bulkStatusService.getIdsJobs(userid, status);
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())

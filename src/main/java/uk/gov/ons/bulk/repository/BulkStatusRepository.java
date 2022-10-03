@@ -16,6 +16,7 @@ import org.springframework.stereotype.Repository;
 
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
+import uk.gov.ons.bulk.util.BulkServiceConstants.Status;
 
 @Repository
 public class BulkStatusRepository {
@@ -28,6 +29,7 @@ public class BulkStatusRepository {
 	private static String IDS_JOB_QUERY = "SELECT * FROM ids_bulkinfo WHERE jobid = ?";
 	private static String IDS_ALL_JOBS_QUERY = "SELECT * FROM ids_bulkinfo WHERE userid like ? AND status like ?";
 	private static String IDS_SINGLE_JOB_QUERY = "SELECT * FROM ids_bulkinfo WHERE idsjobid = ?";
+	private static String IDS_UPDATE_STATUS = "UPDATE ids_bulkinfo SET status = ? WHERE jobid = ?";
 
 	@Autowired
 	public BulkStatusRepository(JdbcTemplate jdbcTemplate) {
@@ -54,6 +56,14 @@ public class BulkStatusRepository {
 		Number id = simpleJdbcInsert.executeAndReturnKey(new BeanPropertySqlParameterSource(idsJob));
 
 		return id.longValue();
+	}
+	
+	public void updateStatus(long jobId, Status status) {
+		
+		jdbcTemplate.update(IDS_UPDATE_STATUS, preparedStatement -> {
+			preparedStatement.setString(1, status.getStatus());
+			preparedStatement.setLong(2, jobId);
+		});
 	}
 	
 	public List<BulkInfo> queryJob(long jobId) {

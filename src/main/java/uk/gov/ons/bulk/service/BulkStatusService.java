@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.repository.BulkStatusRepository;
+import uk.gov.ons.bulk.util.BulkServiceConstants.Status;
 
 import java.util.List;
 
@@ -41,5 +42,9 @@ public class BulkStatusService {
 	
 	public List<IdsBulkInfo> getIdsJob(String idsJobId) {
 		return bulkStatusRepository.getIdsJob(idsJobId);
+	}
+	
+	public void updateStatus(long jobId, Status status) {
+		bulkStatusRepository.updateStatus(jobId, status);
 	}
 }
