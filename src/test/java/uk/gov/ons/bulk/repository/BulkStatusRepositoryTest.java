@@ -16,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
+import uk.gov.ons.bulk.util.BulkServiceConstants.Status;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -24,13 +25,14 @@ class BulkStatusRepositoryTest {
     @Autowired
     private BulkStatusRepository bulkStatusRepository;
     
-    private LocalDateTime ldt = LocalDateTime.parse("2022-07-04T16:36:58.944848");
-
+    private LocalDateTime ldt1 = LocalDateTime.parse("2022-07-04T16:36:58.944848");
+    private LocalDateTime ldt2 = LocalDateTime.parse("2022-07-05T12:42:58.944872");
+    
 	@Test
 	public void testSaveJob() {
 		
 		BulkInfo bulkInfo = new BulkInfo("fred", "in-progress", 107, 0);
-        bulkInfo.setStartdate(ldt);
+        bulkInfo.setStartdate(ldt1);
 		Long result = bulkStatusRepository.saveJob(bulkInfo);
 		
 		assertThat(result == 1L);
@@ -40,7 +42,7 @@ class BulkStatusRepositoryTest {
 	public void testSaveIdsJob() {
 		
 		IdsBulkInfo idsBulkInfo = new IdsBulkInfo("ids-job-xx", "ids-user-xx", "in-progress", 107, 0);
-		idsBulkInfo.setStartdate(ldt);
+		idsBulkInfo.setStartdate(ldt1);
 		Long result = bulkStatusRepository.saveJob(idsBulkInfo);
 		
 		assertThat(result == 1L);
@@ -55,7 +57,7 @@ class BulkStatusRepositoryTest {
 		assertThat(result.getStatus()).isEqualTo("in-progress");
 		assertThat(result.getTotalrecs()).isEqualTo(107);
 		assertThat(result.getRecssofar()).isEqualTo(45);
-		assertThat(result.getStartdate()).isEqualTo(ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+		assertThat(result.getStartdate()).isEqualTo(ldt1.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 	}
 	
 	@Test
@@ -68,7 +70,7 @@ class BulkStatusRepositoryTest {
 		assertThat(result.getStatus()).isEqualTo("in-progress");
 		assertThat(result.getTotalrecs()).isEqualTo(107);
 		assertThat(result.getRecssofar()).isEqualTo(45);
-		assertThat(result.getStartdate()).isEqualTo(ldt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+		assertThat(result.getStartdate()).isEqualTo(ldt1.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 	}
 
 	@Test
@@ -115,5 +117,20 @@ class BulkStatusRepositoryTest {
 		assertEquals(idsBulkInfos.get(0).getStatus(), "in-progress");
 		assertEquals(idsBulkInfos.get(0).getRecssofar(), 2000L);
 		assertEquals(idsBulkInfos.get(0).getTotalrecs(), 348076L);
+	}
+	
+	@Test
+	public void testUpdateStatus() {
+		
+		bulkStatusRepository.updateStatus(2L, Status.RD);
+				
+		IdsBulkInfo result = bulkStatusRepository.queryIdsJob(2L).get(0);
+		assertThat(result.getJobid()).isEqualTo(2L);
+		assertThat(result.getIdsJobId()).isEqualTo("ids-job-2");
+		assertThat(result.getUserid()).isEqualTo("ids-user-y");
+		assertThat(result.getStatus()).isEqualTo("results-deleted");
+		assertThat(result.getTotalrecs()).isEqualTo(348076);
+		assertThat(result.getRecssofar()).isEqualTo(2000);
+		assertThat(result.getStartdate()).isEqualTo(ldt2.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
 	}
 }
