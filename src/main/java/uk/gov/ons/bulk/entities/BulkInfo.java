@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -13,11 +14,16 @@ import lombok.NoArgsConstructor;
 @JsonDeserialize(using = LocalDateDeserializer.class)
 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
 public @Data class BulkInfo {
-	
+
+	@Schema (type="long", example="42")
 	private long jobid;
+	@Schema (type="string", example="smithrm")
 	private String userid;
+	@Schema (type="string", example="in-progress")
 	private String status;
+	@Schema (type="long", example="5000000")
 	private long totalrecs;
+	@Schema (type="long", example="1000000")
 	private long recssofar;
 	private LocalDateTime startdate;
 	private LocalDateTime enddate;

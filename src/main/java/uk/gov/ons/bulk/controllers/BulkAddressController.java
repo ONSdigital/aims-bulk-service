@@ -14,6 +14,13 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +41,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
-import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
 
 import lombok.extern.slf4j.Slf4j;
@@ -76,9 +82,20 @@ public class BulkAddressController {
 	@Value("${aims.project-number}")
 	private String projectNumber;
 
+	@Operation(summary = "Get a list of bulk jobs on the system, can be filtered by user or status")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Jobs list returned OK (can be empty)",
+					content = { @Content(mediaType = "application/json",
+							schema = @Schema(implementation = BulkInfo.class)) }),
+			@ApiResponse(responseCode = "400", description = "Invalid parameter supplied",
+					content = @Content),
+			@ApiResponse(responseCode = "401", description = "JWT missing or invalid",
+					content = @Content) })
 	@GetMapping(value = "/jobs", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
+			@Parameter(description="userid to filter jobs")
 			@RequestParam(required = false, defaultValue = "") String userid,
+			@Parameter(description="status to filter jobs")
 			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready|results-exported)$", message = "{status.val.message}") String status) {
 
 		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid, status);
@@ -94,7 +111,7 @@ public class BulkAddressController {
 			@RequestParam(required = false, defaultValue = "5") @Min(1) @Max(100) String limitperaddress,
 			@RequestParam(required = false) @Pattern(regexp = "^[^*,]+$", message = "{class.val.message}") String classificationfilter,
 			@RequestParam(required = false, defaultValue = "true") @Pattern(regexp = "^(true|false)$", message = "{historical.val.message}") String historical,
-			@RequestParam(required = false, defaultValue = "10") @Min(1) @Max(100) String matchthreshold,
+			@RequestParam(required = false, defaultValue = "10") @Min(0) @Max(100) String matchthreshold,
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{verbose.val.message}") String verbose,
 			@RequestParam(required = false, defaultValue = "${aims.current-epoch}") @Epoch(message = "{epoch.val.message}") String epoch,
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludeengland.val.message}") String excludeengland,
@@ -123,7 +140,7 @@ public class BulkAddressController {
 		try {
 			String tableName = BIG_QUERY_TABLE_PREFIX + newKey;
 
-			Schema schema = Schema.of(
+			com.google.cloud.bigquery.Schema schema = com.google.cloud.bigquery.Schema.of(
 					Field.of("id", StandardSQLTypeName.INT64),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
@@ -140,6 +157,15 @@ public class BulkAddressController {
 		return ResponseEntity.ok(new ObjectMapper().createObjectNode().put("jobId", String.valueOf(newKey)).toString());
 	}
 
+	@Operation(summary = "Return the status table values for a named job")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Jobs list returned OK (can be empty)",
+					content = { @Content(mediaType = "application/json",
+							schema = @Schema(implementation = BulkInfo.class)) }),
+			@ApiResponse(responseCode = "400", description = "Invalid parameter supplied",
+					content = @Content),
+			@ApiResponse(responseCode = "401", description = "JWT missing or invalid",
+					content = @Content) })
 	@GetMapping(value = "/bulk-progress/{jobid}", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
 			@PathVariable(required = true, name = "jobid") @Pattern(regexp = "^[0-9]+$", message = "{jobid.val.message}") String jobid) {
@@ -173,6 +199,7 @@ public class BulkAddressController {
 
 	@GetMapping(value = "/bulk-result/{jobid}", produces = "application/json")
 	public ResponseEntity<String> getBulkResults(
+			@Parameter(description = "Numeric id of job")
 			@PathVariable(required = true, name = "jobid") @Pattern(regexp = "^[0-9]+$", message = "{jobid.val.message}") String jobId) {
 
 		String filename = String.format("%s%s.csv.gz", BIG_QUERY_TABLE_PREFIX, jobId);
@@ -206,7 +233,7 @@ public class BulkAddressController {
 					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 	}
-	
+	@Operation(description="IDS version of progress endpoint", hidden = true)
 	@GetMapping(value = "/ids/bulk-progress/{idsjobid}", produces = "application/json")
 	public ResponseEntity<String> getIdsBulkRequestProgress(
 			@PathVariable(required = true, name = "idsjobid") @NotBlank(message = "{idsjobid.val.message}") String idsjobid) {
@@ -238,6 +265,8 @@ public class BulkAddressController {
 		return ResponseEntity.ok(output);
 	}
 	
+
+	@Operation(description="IDS version of jobs list", hidden = true)
 	@GetMapping(value = "/ids/jobs", produces = "application/json")
 	public ResponseEntity<String> getIdsBulkRequestProgress(
 			@RequestParam(required = false, defaultValue = "") String userid,
