@@ -106,17 +106,36 @@ public class BulkAddressController {
 		return ResponseEntity.ok(objectMapper.createObjectNode().set("jobs", objectMapper.valueToTree(jobsList)).toString());
 	}
 
+	@Operation(summary = "Submit a bulk matching job to the system")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Job id returned to indicate successful submission",
+					content = { @Content(mediaType = "application/json",
+							schema = @Schema(type="string", example="jobId = 42")) }),
+			@ApiResponse(responseCode = "400", description = "Invalid parameter supplied, such as non-existent job id",
+					content = @Content),
+			@ApiResponse(responseCode = "401", description = "JWT missing or invalid",
+					content = @Content) })
 	@PostMapping(value = "/bulk", produces = "application/json")
 	public ResponseEntity<String> runBulkRequest(@Valid @RequestBody BulkRequestContainer bulkRequestContainer,
+			@Parameter(description = "Maximum number of results per input address")
 			@RequestParam(required = false, defaultValue = "5") @Min(1) @Max(100) String limitperaddress,
+			@Parameter(description = "Classification code single value, list or pattern to filter results")
 			@RequestParam(required = false) @Pattern(regexp = "^[^*,]+$", message = "{class.val.message}") String classificationfilter,
+			@Parameter(description = "Include historical records true or false")
 			@RequestParam(required = false, defaultValue = "true") @Pattern(regexp = "^(true|false)$", message = "{historical.val.message}") String historical,
+			@Parameter(description = "Minimum confidence score for results to be accepted")
 			@RequestParam(required = false, defaultValue = "10") @Min(0) @Max(100) String matchthreshold,
+			@Parameter(description = "Output the full address details for each result true or false")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{verbose.val.message}") String verbose,
+			@Parameter(description = "Epoch number e.g. 95, default is latest available")
 			@RequestParam(required = false, defaultValue = "${aims.current-epoch}") @Epoch(message = "{epoch.val.message}") String epoch,
+			@Parameter(description = "Flag to exclude results from England")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludeengland.val.message}") String excludeengland,
+			@Parameter(description = "Flag to exclude results from Scotland")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludescotland.val.message}") String excludescotland,
+			@Parameter(description = "Flag to exclude results from Wales")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludewales.val.message}") String excludewales,
+			@Parameter(description = "Flag to exclude results from Northern Ireland")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludenorthernireland.val.message}") String excludenorthernireland,
 			@RequestHeader Map<String, String> headersIn) {
 
@@ -159,10 +178,10 @@ public class BulkAddressController {
 
 	@Operation(summary = "Return the status table values for a named job")
 	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "Jobs list returned OK (can be empty)",
+			@ApiResponse(responseCode = "200", description = "Job status fields for one job returned",
 					content = { @Content(mediaType = "application/json",
 							schema = @Schema(implementation = BulkInfo.class)) }),
-			@ApiResponse(responseCode = "400", description = "Invalid parameter supplied",
+			@ApiResponse(responseCode = "400", description = "Invalid parameter supplied, such as non-existant job id",
 					content = @Content),
 			@ApiResponse(responseCode = "401", description = "JWT missing or invalid",
 					content = @Content) })
@@ -197,6 +216,15 @@ public class BulkAddressController {
 		return ResponseEntity.ok(output);
 	}
 
+	@Operation(summary = "Return the results for a job as a signed URL")
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "signed url or message indicating download not available",
+					content = { @Content(mediaType = "application/json",
+							schema = @Schema(implementation = DownloadService.SignedUrlResponse.class)) }),
+			@ApiResponse(responseCode = "400", description = "Job not ready for download or id not on system",
+					content = @Content),
+			@ApiResponse(responseCode = "401", description = "JWT missing or invalid",
+					content = @Content) })
 	@GetMapping(value = "/bulk-result/{jobid}", produces = "application/json")
 	public ResponseEntity<String> getBulkResults(
 			@Parameter(description = "Numeric id of job")
