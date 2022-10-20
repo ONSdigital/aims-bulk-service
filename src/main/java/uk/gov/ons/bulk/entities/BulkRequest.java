@@ -9,7 +9,7 @@ import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public @Data class BulkRequest {
-	@Schema(type="string", example="12345")
+	@Schema(type="string", example="12345ABCDE")
 	@NotBlank(message = "id is mandatory")
 	private String id; // unique within a batch but otherwise free-format, usually a sequential number
 	@Schema(type="string", example="142 Dingle Drive Dimchruch DI1 1NG")

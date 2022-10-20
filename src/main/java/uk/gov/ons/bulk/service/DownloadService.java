@@ -86,7 +86,7 @@ public class DownloadService {
 	}
 	
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	@Schema(type="string", example="https://storage.googleapis.com/results_8_179270555351/results_42.csv.gz")
+	@Schema(type="string", example="https://storage.googleapis.com/results_8_179270555351/results_42.csv.gz?...")
 	public static @Data class SignedUrlResponse {
 		private String signedUrl;
 	}
