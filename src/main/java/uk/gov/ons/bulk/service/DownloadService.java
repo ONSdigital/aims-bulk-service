@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -85,6 +86,7 @@ public class DownloadService {
 	}
 	
 	@JsonIgnoreProperties(ignoreUnknown = true)
+	@Schema(type="string", example="https://storage.googleapis.com/results_8_179270555351/results_42.csv.gz?...")
 	public static @Data class SignedUrlResponse {
 		private String signedUrl;
 	}
