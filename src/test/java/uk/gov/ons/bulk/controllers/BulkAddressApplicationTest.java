@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -418,12 +417,12 @@ public class BulkAddressApplicationTest {
 			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
 
 		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
-				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("matchthreshold", "0")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("matchthreshold", "-1")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("matchthreshold: must be greater than or equal to 1")))
+				.andExpect(jsonPath("$.message", containsString("matchthreshold: must be greater than or equal to 0")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("matchthreshold: must be greater than or equal to 1"))))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("matchthreshold: must be greater than or equal to 0"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
@@ -451,9 +450,9 @@ public class BulkAddressApplicationTest {
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("epoch", "100")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("epoch must be one of 93, 91, 89")))
+				.andExpect(jsonPath("$.message", containsString("epoch must be one of 95, 94, 93, 92")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch must be one of 93, 91, 89"))))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch must be one of 95, 94, 93, 92"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
@@ -523,7 +522,7 @@ public class BulkAddressApplicationTest {
 			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
 		
 		String classError = "runBulkRequest.classificationfilter: classificationfilter may not contain a list and/or a wildcard";
-		String epochError = "runBulkRequest.epoch: epoch must be one of 93, 91, 89";
+		String epochError = "runBulkRequest.epoch: epoch must be one of 95, 94, 93, 92";
 		String excludeenglandError = "runBulkRequest.excludeengland: excludeengland must be true or false";
 		String excludenorthernirelandError = "runBulkRequest.excludenorthernireland: excludenorthernireland must be true or false";
 		
@@ -801,6 +800,15 @@ public class BulkAddressApplicationTest {
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 
+	@Test
+	public void testSwagger() throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/v3/api-docs")
+						.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.openapi", Is.is("3.0.1")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+	
 	@Test
 	public void resultGetRequestMissingJobId() throws Exception {
 		

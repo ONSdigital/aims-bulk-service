@@ -34,7 +34,9 @@ dependencies {
 	implementation 'org.projectlombok:lombok:1.18.24'
 	implementation 'io.micrometer:micrometer-registry-prometheus:1.9.5'
 	implementation 'commons-io:commons-io:2.11.0'
-		
+
+	implementation 'org.springdoc:springdoc-openapi-ui:1.6.12'
+
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
