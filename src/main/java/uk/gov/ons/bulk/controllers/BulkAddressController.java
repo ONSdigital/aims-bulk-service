@@ -5,6 +5,7 @@ import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.IP;
 import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.RE;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -14,8 +15,12 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,13 +30,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Schema;
@@ -75,7 +80,7 @@ public class BulkAddressController {
 
 	@Value("${aims.project-number}")
 	private String projectNumber;
-
+	
 	@GetMapping(value = "/jobs", produces = "application/json")
 	public ResponseEntity<String> getBulkRequestProgress(
 			@RequestParam(required = false, defaultValue = "") String userid,
@@ -108,7 +113,7 @@ public class BulkAddressController {
 				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland);
 
 		// Pass on username and api key headers from CA Gateway
-		HttpHeaders headers = new HttpHeaders();
+		com.google.api.client.http.HttpHeaders headers = new com.google.api.client.http.HttpHeaders();
 		String userName = headersIn.getOrDefault("user", "Anon");
 		headers.set("user", userName);
 		headers.setAuthorization(headersIn.getOrDefault("Authorization", "None"));
@@ -249,5 +254,56 @@ public class BulkAddressController {
 				.setSerializationInclusion(Include.NON_NULL);
 
 		return ResponseEntity.ok(objectMapper.createObjectNode().set("jobs", objectMapper.valueToTree(jobsList)).toString());
+	}
+	
+	@GetMapping(value = "/results", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+	public ResponseEntity<StreamingResponseBody> getResults(
+			@RequestParam(required = true, name = "jobid") @Pattern(regexp = "^[0-9]+$", message = "{jobid.val.message}") String jobId,
+			@RequestParam(required = false, defaultValue = "") String userid) {
+
+		String filename = String.format("%s%s.csv.gz", BIG_QUERY_TABLE_PREFIX, jobId);
+
+		// Does the jobId exist?
+		List<BulkInfo> bulkInfos = bulkStatusService.queryJob(Long.parseLong(jobId));
+		if (bulkInfos.size() == 0) {
+			String response = String.format("Job ID %s not found on the system", jobId);
+			log.info(response);
+			return getErrorResponse(response, HttpStatus.BAD_REQUEST);
+		}
+
+		// Is the jobId downloadable? Check the status.
+		if (bulkInfos.get(0).getStatus().equals(RE.getStatus())) {
+
+			try {
+
+				InputStream in = downloadService.getResultFile(jobId, filename);
+				StreamingResponseBody stream = outputStream -> {
+					IOUtils.copy(in, outputStream);
+				};
+
+				return ResponseEntity.ok()
+						.header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=\"%s\"", filename))
+						.contentType(MediaType.APPLICATION_OCTET_STREAM).body(stream);
+
+			} catch (IOException io) {
+				String response = String.format("/results error: %s", io.getMessage());
+				log.error(response);
+				return getErrorResponse(response, HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+
+		} else {
+			String response = String.format("Job ID %s is not currently downloadable", jobId);
+			log.info(response);
+			return getErrorResponse(response, HttpStatus.BAD_REQUEST);
+		}
+	}
+
+	private ResponseEntity<StreamingResponseBody> getErrorResponse(String response, HttpStatus httpStatus) {
+
+		StreamingResponseBody stream = outputStream -> {
+			outputStream.write(new ObjectMapper().createObjectNode().put("error", response).toString().getBytes());
+		};
+
+		return ResponseEntity.status(httpStatus).contentType(MediaType.APPLICATION_JSON).body(stream);
 	}
 }
