@@ -9,6 +9,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
@@ -53,6 +54,19 @@ public class BulkApiRestExceptionHandler extends ResponseEntityExceptionHandler 
 		BulkApiError apiError = new BulkApiError(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage(), errors);
 		
 		// Log the argument validation errors - may be useful
+		log.error(apiError.toString());
+		
+		return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);
+	}
+	
+	@Override
+	protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex,
+			HttpHeaders headers, HttpStatus status, WebRequest request) {
+			
+		BulkApiError apiError = new BulkApiError(HttpStatus.BAD_REQUEST, 
+				ex.getLocalizedMessage(), String.format("%s parameter is missing", ex.getParameterName()));
+		
+		// Log the error - may be useful
 		log.error(apiError.toString());
 		
 		return handleExceptionInternal(ex, apiError, headers, apiError.getStatus(), request);

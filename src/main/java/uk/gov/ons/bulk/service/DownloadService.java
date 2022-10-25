@@ -3,11 +3,15 @@ package uk.gov.ons.bulk.service;
 import static uk.gov.ons.bulk.util.BulkServiceConstants.BIG_QUERY_TABLE_PREFIX;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -36,6 +40,9 @@ public class DownloadService {
 
 	@Value("${aims.cloud-functions.create-signed-url-function}")
 	private String createSignedUrlFunction;
+	
+	@Autowired
+	private ResourceLoader resourceLoader;
 
 	public String getSignedUrl(String jobId, String filename) throws IOException, BulkAddressException {
 
@@ -89,5 +96,11 @@ public class DownloadService {
 	@Schema(type="string", example="https://storage.googleapis.com/results_8_179270555351/results_42.csv.gz?...")
 	public static @Data class SignedUrlResponse {
 		private String signedUrl;
+	}
+	
+	public InputStream getResultFile(String jobId, String filename) throws IOException {
+		String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
+		Resource gcsFile = resourceLoader.getResource(String.format("gs://%s/%s", gcsResultsBucket, filename));
+		return gcsFile.getInputStream();
 	}
 }

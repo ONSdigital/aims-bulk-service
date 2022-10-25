@@ -5,13 +5,20 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +48,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -780,7 +788,6 @@ public class BulkAddressApplicationTest {
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
-	
 	@Test
 	public void idsBulkProgressNoIdsJobId() throws Exception {
 		
@@ -799,6 +806,120 @@ public class BulkAddressApplicationTest {
 		mockMvc.perform(MockMvcRequestBuilders.get("/v3/api-docs")
 						.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
 				.andExpect(jsonPath("$.openapi", Is.is("3.0.1")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+	
+	@Test
+	public void resultGetRequestMissingJobId() throws Exception {
+		
+		String jobIdMissing = "Required request parameter 'jobid' for method parameter type String is not present";
+		
+		mockMvc.perform(MockMvcRequestBuilders.get("/results")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", Is.is(jobIdMissing)))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem("jobid parameter is missing")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+	
+	@Test
+	public void resultGetRequestInvalidJobId() throws Exception {
+		
+		String jobIdError = "getResults.jobId: jobid is mandatory and must be an integer";
+		
+		mockMvc.perform(MockMvcRequestBuilders.get("/results?jobid=xyz")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", containsString("jobId: jobid is mandatory and must be an integer")))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem("uk.gov.ons.bulk.controllers.BulkAddressController " + jobIdError)))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+	
+	@Test
+    public void runResultRequest() throws Exception {
+    	
+    	String filename = "results_1.csv.gz";
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2);
+        bulkInfo.setStartdate(now);
+        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	bulkInfos.add(bulkInfo);
+    	Path expectedPath = Paths.get("src/test/resources/results_1.csv.gz");
+        
+        when(downloadService.getResultFile("1", filename)).thenReturn(new FileInputStream(expectedPath.toFile()));
+        when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
+
+		MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/results?jobid=1")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(request().asyncStarted())
+				.andReturn();
+			
+		mockMvc.perform(asyncDispatch(mvcResult))
+				.andExpect(status().isOk())
+				.andExpect(content().bytes(Files.readAllBytes(expectedPath)))
+				.andExpect(header().string("Content-Disposition", "attachment; filename=\"results_1.csv.gz\""))
+				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM_VALUE));
+    }
+	
+	@Test
+    public void runResultRequestThrowIOException() throws Exception {
+    	
+    	String filename = String.format("results_%s.csv.gz", 1);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2);
+        bulkInfo.setStartdate(now);
+        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	bulkInfos.add(bulkInfo);
+        
+        when(downloadService.getResultFile("1", filename)).thenThrow(new IOException("An IO Exception"));
+        when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);	
+        
+		MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/results?jobid=1")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(request().asyncStarted())
+				.andReturn();
+		
+		mockMvc.perform(asyncDispatch(mvcResult))
+				.andExpect(status().isInternalServerError())
+				.andExpect(jsonPath("$.error", containsString("An IO Exception")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+	@Test
+    public void runResultRequestNonExistent() throws Exception {
+    	
+    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        when(bulkStatusService.queryJob(99L)).thenReturn(bulkInfos);
+        
+		MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/results?jobid=99&userid=mrrobot")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(request().asyncStarted())
+				.andReturn();
+		
+		mockMvc.perform(asyncDispatch(mvcResult))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s not found on the system", 99L))))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+	@Test
+    public void runResultRequestNotDownloadable() throws Exception {
+
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "processing-finished", 2, 2);
+        bulkInfo.setStartdate(now);
+        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	bulkInfos.add(bulkInfo);
+        
+        when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
+        
+		MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/results?jobid=1&userid=mrrobot")
+				.contentType(MediaType.APPLICATION_JSON))
+				.andExpect(request().asyncStarted())
+				.andReturn();
+		
+		mockMvc.perform(asyncDispatch(mvcResult))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s is not currently downloadable", 1L))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 }
