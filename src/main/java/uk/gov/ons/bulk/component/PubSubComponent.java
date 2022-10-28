@@ -1,12 +1,15 @@
 package uk.gov.ons.bulk.component;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.integration.annotation.MessagingGateway;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.messaging.MessageChannel;
@@ -19,13 +22,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.cloud.spring.pubsub.integration.AckMode;
 import com.google.cloud.spring.pubsub.integration.inbound.PubSubInboundChannelAdapter;
+import com.google.cloud.spring.pubsub.integration.outbound.PubSubMessageHandler;
 import com.google.cloud.spring.pubsub.support.BasicAcknowledgeablePubsubMessage;
 import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
+import uk.gov.ons.bulk.entities.IdsBulkInfo;
+import uk.gov.ons.bulk.entities.IdsError;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 import uk.gov.ons.bulk.exception.BulkAddressException;
+import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.IdsService;
 
 @Slf4j
@@ -42,9 +49,18 @@ public class PubSubComponent {
 	@Value("${ids.pubsub.subscription-download-complete}")
 	private String pubsubSubscriptionDownloadComplete;
 	
+	@Value("${aims.pubsub.error-topic}")
+	private String pubsubErrorTopic;
+	
 	@Autowired
 	private IdsService idsService;
 	
+	@Autowired
+	private BulkStatusService bulkStatusService;
+	
+	@Autowired
+	private PubsubOutboundGateway messagingGateway;
+		
 	@Bean
 	public MessageChannel pubsubInputChannelNewIdsJob() {
 		return new DirectChannel();
@@ -82,20 +98,30 @@ public class PubSubComponent {
 	public MessageHandler messageNewIdsJobReceiver() {
 		return message -> {
 			log.debug("Message arrived! Payload: " + new String((byte[]) message.getPayload()));
-			
+					
 			try {
 				NewIdsJobMessage msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
 						.readValue((byte[]) message.getPayload(), NewIdsJobMessage.class);
 				log.debug(String.format("Message: %s", msg.toString()));
 				
-				// Read the BigQuery table in IDS and start creating Cloud Tasks
-				idsService.createTasks(msg.getPayload());
-				
-				// Send ACK
-				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
-						.get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
-				originalMessage.ack();	
-							
+				// Does the idsjobId already exist?
+				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
+				if (idsBulkInfos.size() == 0) {
+					
+					// Read the BigQuery table in IDS and start creating Cloud Tasks
+					idsService.createTasks(msg.getPayload());
+					
+					// Send ACK
+					BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
+							.get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
+					originalMessage.ack();	
+
+				} else {
+					// IDS id already used send an error message to the PubSub topic
+					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsError(msg.getPayload().getIdsJobId(), 
+							LocalDateTime.now().toString(), errorMessage)));
+				}	
 			} catch (IOException ioe) {
 				log.error(String.format("Unable to read message: %s", ioe));
 
@@ -137,5 +163,17 @@ public class PubSubComponent {
 				log.error(String.format("Problem deleting IDS result table: %s", e));
 			}
 		};
+	}
+	
+	@Bean
+	@ServiceActivator(inputChannel = "pubsubOutputChannel")
+	public MessageHandler messageSender(PubSubTemplate pubsubTemplate) {
+		return new PubSubMessageHandler(pubsubTemplate, pubsubErrorTopic);
+	}
+	
+	@MessagingGateway(defaultRequestChannel = "pubsubOutputChannel")
+	public interface PubsubOutboundGateway {
+
+		void sendToPubsub(String text);
 	}
 }
