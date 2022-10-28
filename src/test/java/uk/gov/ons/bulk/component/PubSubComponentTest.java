@@ -1,6 +1,6 @@
 package uk.gov.ons.bulk.component;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -21,6 +21,7 @@ import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.cloud.spring.pubsub.support.AcknowledgeablePubsubMessage;
 
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
+import uk.gov.ons.bulk.entities.IdsError;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 
 @SpringBootTest()
@@ -58,6 +59,21 @@ class PubSubComponentTest {
 
 		List<AcknowledgeablePubsubMessage> messages = template.pull("ids-table-available-test", 1, false);
 		NewIdsJobMessage actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), NewIdsJobMessage.class);
+
+		assertEquals(expectedMsg, actualMessage);
+	}
+	
+	@Test
+	public void testPubSubErrorMessage() throws Exception {
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+		IdsError expectedMsg = objectMapper.readValue(new File("src/test/resources/message-error.json"),
+				IdsError.class);
+
+		template.publish("aims-ids-error", Files.readString(Path.of("src/test/resources/message-error.json")));
+
+		List<AcknowledgeablePubsubMessage> messages = template.pull("aims-errors", 1, false);
+		IdsError actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), IdsError.class);
 
 		assertEquals(expectedMsg, actualMessage);
 	}

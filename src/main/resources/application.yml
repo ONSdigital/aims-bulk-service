@@ -62,6 +62,8 @@ aims:
   current-epoch: 95
   # Update the records processed at every n% of completion
   report-frequency: 5
+  pubsub:
+    error-topic: aims-ids-error 
 ids:
   cloud:
     gcp:
