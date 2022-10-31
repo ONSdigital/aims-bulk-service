@@ -107,21 +107,22 @@ public class PubSubComponent {
 				// Does the idsjobId already exist?
 				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
 				if (idsBulkInfos.size() == 0) {
-					
 					// Read the BigQuery table in IDS and start creating Cloud Tasks
 					idsService.createTasks(msg.getPayload());
 					
-					// Send ACK
-					BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
-							.get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
-					originalMessage.ack();	
-
 				} else {
 					// IDS id already used send an error message to the PubSub topic
 					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
+					log.info(errorMessage);
 					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsError(msg.getPayload().getIdsJobId(), 
 							LocalDateTime.now().toString(), errorMessage)));
 				}	
+				
+				// Send ACK
+				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
+						.get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
+				originalMessage.ack();	
+				
 			} catch (IOException ioe) {
 				log.error(String.format("Unable to read message: %s", ioe));
 

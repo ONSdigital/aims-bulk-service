@@ -120,6 +120,13 @@ class BulkStatusRepositoryTest {
 	}
 	
 	@Test
+	public void testgetNonExistentIdsJob() {
+
+		List<IdsBulkInfo> idsBulkInfos = bulkStatusRepository.getIdsJob("ids-job-99");
+		assertEquals(0, idsBulkInfos.size());
+	}
+	
+	@Test
 	public void testUpdateStatus() {
 		
 		bulkStatusRepository.updateStatus(2L, Status.RD);
