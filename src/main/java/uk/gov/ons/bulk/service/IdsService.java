@@ -111,7 +111,7 @@ public class IdsService {
 
 		if (idsJob == null || idsJob.size() != 1) {
 			throw new BulkAddressException(
-					String.format("Problem getting details of idsjobid %s from status table.", payload.getIdsJobId()));
+					String.format("Unable to get details of idsjobid: %s. The job does not exist.", payload.getIdsJobId()));
 		} else {
 
 			String tableName = BIG_QUERY_IDS_TABLE_PREFIX + idsJob.get(0).getJobid();

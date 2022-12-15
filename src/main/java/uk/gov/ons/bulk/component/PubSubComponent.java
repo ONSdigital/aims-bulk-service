@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.cloud.spring.pubsub.integration.AckMode;
@@ -140,10 +141,14 @@ public class PubSubComponent {
 		return message -> {
 			log.debug("Message arrived! Payload: " + new String((byte[]) message.getPayload()));
 			
+			String idsJobId = "";
+			
 			try {
 				DownloadCompleteMessage msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
 						.readValue((byte[]) message.getPayload(), DownloadCompleteMessage.class);
 				log.debug(String.format("Message: %s", msg.toString()));
+				
+				idsJobId = msg.getPayload().getIdsJobId();
 				
 				// Delete the Big Query Table associated with this IDS job
 				idsService.deleteIdsResultTable(msg.getPayload());
@@ -161,7 +166,21 @@ public class PubSubComponent {
 						.get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
 				originalMessage.nack();	
 			} catch (BulkAddressException e) {
-				log.error(String.format("Problem deleting IDS result table: %s", e));
+				
+				String errorMessage = String.format("Problem deleting IDS result table: %s", e);
+				log.error(errorMessage);
+
+				try {
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsError(idsJobId, 
+							LocalDateTime.now().toString(), errorMessage)));
+				} catch (JsonProcessingException jpe) {
+					log.error(String.format("Problem creating JSON: %s", jpe));
+				}
+				
+				// Send ACK
+				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
+						.get(GcpPubSubHeaders.ORIGINAL_MESSAGE, BasicAcknowledgeablePubsubMessage.class);
+				originalMessage.ack();	
 			}
 		};
 	}
