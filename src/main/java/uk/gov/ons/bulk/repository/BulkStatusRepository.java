@@ -52,7 +52,7 @@ public class BulkStatusRepository {
 		simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
 		simpleJdbcInsert.withTableName("ids_bulkinfo")
 			.usingGeneratedKeyColumns("jobid")
-			.usingColumns("idsjobid", "userid", "status", "totalrecs", "recssofar");
+			.usingColumns("idsjobid", "userid", "status", "totalrecs", "recssofar", "test");
 		Number id = simpleJdbcInsert.executeAndReturnKey(new BeanPropertySqlParameterSource(idsJob));
 
 		return id.longValue();

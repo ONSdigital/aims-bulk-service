@@ -707,8 +707,8 @@ public class BulkAddressApplicationTest {
     	
 		long newKey1 = 99;
 		long newKey2 = 88;
-		IdsBulkInfo idsBulkInfo1 = new IdsBulkInfo("ids-job-xyz", "mrrobot", "processing-finished", 2, 2);
-		IdsBulkInfo idsBulkInfo2 = new IdsBulkInfo("ids-job-xyzz", "mrrobot", "processing-finished", 5, 5);
+		IdsBulkInfo idsBulkInfo1 = new IdsBulkInfo("ids-job-xyz", "mrrobot", "processing-finished", 2, 2, false);
+		IdsBulkInfo idsBulkInfo2 = new IdsBulkInfo("ids-job-xyzz", "mrrobot", "processing-finished", 5, 5, true);
         idsBulkInfo1.setJobid(newKey1);
         idsBulkInfo2.setJobid(newKey2);
         idsBulkInfo1.setStartdate(now);
@@ -730,6 +730,7 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.jobs[0].totalrecs", Is.is(2)))
 				.andExpect(jsonPath("$.jobs[0].recssofar", Is.is(2)))
 				.andExpect(jsonPath("$.jobs[0].startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+				.andExpect(jsonPath("$.jobs[0].test", Is.is(false)))
 				.andExpect(jsonPath("$.jobs[1].jobid", Is.is(88)))
 				.andExpect(jsonPath("$.jobs[1].idsjobid", Is.is("ids-job-xyzz")))
 				.andExpect(jsonPath("$.jobs[1].userid", Is.is("mrrobot")))
@@ -737,6 +738,7 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.jobs[1].totalrecs", Is.is(5)))
 				.andExpect(jsonPath("$.jobs[1].recssofar", Is.is(5)))
 				.andExpect(jsonPath("$.jobs[1].startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+				.andExpect(jsonPath("$.jobs[1].test", Is.is(true)))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
@@ -745,7 +747,7 @@ public class BulkAddressApplicationTest {
 	public void testGetIdsBulkRequestProgressInProgress(@PathVariable(required = true, name = "idsjobid") String idsjobid)
 			throws Exception {
 
-		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "in-progress", 107, 45);
+		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "in-progress", 107, 45, false);
         idsBulkInfo.setJobid(22);
         idsBulkInfo.setStartdate(now);
 		List<IdsBulkInfo> idsBulkInfos = Arrays.asList(idsBulkInfo);
@@ -760,6 +762,7 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
 				.andExpect(jsonPath("$.recssofar", Is.is(45)))
 				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+				.andExpect(jsonPath("$.test", Is.is(false)))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
@@ -768,7 +771,7 @@ public class BulkAddressApplicationTest {
 	public void testGetIdsBulkRequestProgressFinished(@PathVariable(required = true, name = "idsjobid") String idsjobid)
 			throws Exception {
 
-		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "finished", 107, 107);
+		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "finished", 107, 107, true);
         idsBulkInfo.setJobid(77);
         idsBulkInfo.setStartdate(now);
         idsBulkInfo.setEnddate(now.plusHours(2));
@@ -785,6 +788,7 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.recssofar", Is.is(107)))
 				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
 				.andExpect(jsonPath("$.enddate", Is.is(now.plusHours(2).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+				.andExpect(jsonPath("$.test", Is.is(true)))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	

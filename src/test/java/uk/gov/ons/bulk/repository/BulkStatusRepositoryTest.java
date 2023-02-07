@@ -41,7 +41,7 @@ class BulkStatusRepositoryTest {
 	@Test
 	public void testSaveIdsJob() {
 		
-		IdsBulkInfo idsBulkInfo = new IdsBulkInfo("ids-job-xx", "ids-user-xx", "in-progress", 107, 0);
+		IdsBulkInfo idsBulkInfo = new IdsBulkInfo("ids-job-xx", "ids-user-xx", "in-progress", 107, 0, false);
 		idsBulkInfo.setStartdate(ldt1);
 		Long result = bulkStatusRepository.saveJob(idsBulkInfo);
 		
