@@ -142,6 +142,7 @@ public class BulkStatusRepository {
 			idsBulkInfo.setTotalrecs(rs.getLong("totalrecs"));
 			idsBulkInfo.setRecssofar(correctedRecs);
 			idsBulkInfo.setStartdate(rs.getTimestamp("startdate").toLocalDateTime());
+			idsBulkInfo.setTest(rs.getBoolean("test"));
 			
 			Timestamp endDateTimestamp = rs.getTimestamp("enddate");
 			
