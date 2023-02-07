@@ -52,7 +52,7 @@ public class BulkStatusRepository {
 		simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
 		simpleJdbcInsert.withTableName("ids_bulkinfo")
 			.usingGeneratedKeyColumns("jobid")
-			.usingColumns("idsjobid", "userid", "status", "totalrecs", "recssofar");
+			.usingColumns("idsjobid", "userid", "status", "totalrecs", "recssofar", "test");
 		Number id = simpleJdbcInsert.executeAndReturnKey(new BeanPropertySqlParameterSource(idsJob));
 
 		return id.longValue();
@@ -142,6 +142,7 @@ public class BulkStatusRepository {
 			idsBulkInfo.setTotalrecs(rs.getLong("totalrecs"));
 			idsBulkInfo.setRecssofar(correctedRecs);
 			idsBulkInfo.setStartdate(rs.getTimestamp("startdate").toLocalDateTime());
+			idsBulkInfo.setTest(rs.getBoolean("test"));
 			
 			Timestamp endDateTimestamp = rs.getTimestamp("enddate");
 			

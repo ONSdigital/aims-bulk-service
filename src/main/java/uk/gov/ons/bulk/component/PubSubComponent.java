@@ -109,7 +109,7 @@ public class PubSubComponent {
 				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
 				if (idsBulkInfos.size() == 0) {
 					// Read the BigQuery table in IDS and start creating Cloud Tasks
-					idsService.createTasks(msg.getPayload());
+					idsService.createTasks(msg);
 					
 				} else {
 					// IDS id already used send an error message to the PubSub topic

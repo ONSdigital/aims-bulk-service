@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.entities.IdsRequest;
-import uk.gov.ons.bulk.entities.NewIdsJobPayload;
+import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 import uk.gov.ons.bulk.entities.Payload;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.util.QueryFuncs;
@@ -56,7 +56,7 @@ public class IdsService {
 	
 	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM %s.%s.%s";
 	
-	public void createTasks(NewIdsJobPayload newIdsJobPayload) {
+	public void createTasks(NewIdsJobMessage newIdsJobMessage) {
 
 		TableResult results;
 		
@@ -65,13 +65,18 @@ public class IdsService {
 			List<IdsRequest> idsRequests = new ArrayList<IdsRequest>();
 			
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(
-					String.format(QUERY_IDS_DATASET_TABLE, idsProjectId, newIdsJobPayload.getBigQueryDataset(), newIdsJobPayload.getBigQueryTable())).build();
+					String.format(QUERY_IDS_DATASET_TABLE, idsProjectId, newIdsJobMessage.getPayload().getBigQueryDataset(), newIdsJobMessage.getPayload().getBigQueryTable())).build();
 			
 			// How many rows can this method handle?		
 			results = bigQuery.query(queryConfig);
 			
 			// Create a status row for this IDS job
-			IdsBulkInfo idsBulkInfo = new IdsBulkInfo(newIdsJobPayload.getIdsJobId(), newIdsJobPayload.getIdsUserId(), IP.getStatus(), results.getTotalRows(), 0);
+			IdsBulkInfo idsBulkInfo = new IdsBulkInfo(newIdsJobMessage.getPayload().getIdsJobId(), 
+													  newIdsJobMessage.getPayload().getIdsUserId(),
+													  IP.getStatus(), 
+													  results.getTotalRows(), 
+													  0,
+													  newIdsJobMessage.isTest());
 			long newKey = bulkStatusService.saveIdsJob(idsBulkInfo);
 			
 			// Create a results table in AIMS BigQuery for this IDS job
@@ -90,14 +95,14 @@ public class IdsService {
 			
 			// These parameters need to be validated. Probably in the POJO.
 			// Some are hardcoded here - how many do we want IDS to be able to set?
-			BulkRequestParams bulkRequestParams = new BulkRequestParams(newIdsJobPayload.getAddressLimit(), null, "true",
-					newIdsJobPayload.getQualityMatchThreshold(), "false", currentEpoch, "", "", "", "");
+			BulkRequestParams bulkRequestParams = new BulkRequestParams(newIdsJobMessage.getPayload().getAddressLimit(), null, "true",
+					newIdsJobMessage.getPayload().getQualityMatchThreshold(), "false", currentEpoch, "", "", "", "");
 			
 			HttpHeaders headers = new HttpHeaders();
-			headers.set("user", newIdsJobPayload.getIdsUserId());
+			headers.set("user", newIdsJobMessage.getPayload().getIdsUserId());
 			headers.setAuthorization("None");
 			
-			cloudTaskService.createIdsTasks(newKey, newIdsJobPayload.getIdsJobId(), idsRequests, results.getTotalRows(), bulkRequestParams, headers);
+			cloudTaskService.createIdsTasks(newKey, newIdsJobMessage.getPayload().getIdsJobId(), idsRequests, results.getTotalRows(), bulkRequestParams, headers);
 		} catch (JobException | InterruptedException e) {
 			log.error(String.format("Problem querying BigQuery: %s", e.getMessage()));
 		} catch (IOException e) {

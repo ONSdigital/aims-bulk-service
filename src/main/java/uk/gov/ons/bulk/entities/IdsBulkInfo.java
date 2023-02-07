@@ -17,9 +17,11 @@ public @Data class IdsBulkInfo extends BulkInfo {
 	
 	@JsonProperty("idsjobid")
 	private String idsJobId;
+	private boolean test;
 
-	public IdsBulkInfo(String idsJobId, String userid, String status, long totalrecs, long recssofar) {
+	public IdsBulkInfo(String idsJobId, String userid, String status, long totalrecs, long recssofar, boolean test) {
 		this.idsJobId = idsJobId;
+		this.test = test;
 		super.setUserid(userid);
 		super.setStatus(status);
 		super.setTotalrecs(totalrecs);
