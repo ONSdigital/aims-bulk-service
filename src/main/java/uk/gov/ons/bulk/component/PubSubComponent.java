@@ -31,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.entities.IdsError;
+import uk.gov.ons.bulk.entities.IdsErrorMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.service.BulkStatusService;
@@ -115,8 +116,8 @@ public class PubSubComponent {
 					// IDS id already used send an error message to the PubSub topic
 					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
 					log.info(errorMessage);
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsError(msg.getPayload().getIdsJobId(), 
-							LocalDateTime.now().toString(), errorMessage)));
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(msg.getPayload().getIdsJobId(), 
+							LocalDateTime.now().toString(), errorMessage))));
 				}	
 				
 				// Send ACK
@@ -171,8 +172,8 @@ public class PubSubComponent {
 				log.error(errorMessage);
 
 				try {
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsError(idsJobId, 
-							LocalDateTime.now().toString(), errorMessage)));
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(idsJobId, 
+							LocalDateTime.now().toString(), errorMessage))));
 				} catch (JsonProcessingException jpe) {
 					log.error(String.format("Problem creating JSON: %s", jpe));
 				}
