@@ -63,7 +63,7 @@ aims:
   # Update the records processed at every n% of completion
   report-frequency: 5
   pubsub:
-    error-topic: aims-ids-error 
+    error-topic: ids-table-ready
 ids:
   cloud:
     gcp:

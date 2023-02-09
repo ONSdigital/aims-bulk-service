@@ -22,6 +22,7 @@ import com.google.cloud.spring.pubsub.support.AcknowledgeablePubsubMessage;
 
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
 import uk.gov.ons.bulk.entities.IdsError;
+import uk.gov.ons.bulk.entities.IdsErrorMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 
 @SpringBootTest()
@@ -67,13 +68,13 @@ class PubSubComponentTest {
 	public void testPubSubErrorMessage() throws Exception {
 		
 		ObjectMapper objectMapper = new ObjectMapper();
-		IdsError expectedMsg = objectMapper.readValue(new File("src/test/resources/message-error.json"),
-				IdsError.class);
+		IdsErrorMessage expectedMsg = objectMapper.readValue(new File("src/test/resources/message-error.json"),
+				IdsErrorMessage.class);
 
 		template.publish("aims-ids-error", Files.readString(Path.of("src/test/resources/message-error.json")));
 
 		List<AcknowledgeablePubsubMessage> messages = template.pull("aims-errors", 1, false);
-		IdsError actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), IdsError.class);
+		IdsErrorMessage actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), IdsErrorMessage.class);
 
 		assertEquals(expectedMsg, actualMessage);
 	}
