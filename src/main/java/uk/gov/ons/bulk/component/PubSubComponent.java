@@ -42,8 +42,8 @@ import uk.gov.ons.bulk.service.IdsService;
 @Profile("!test")
 public class PubSubComponent {
 	
-	@Value("${ids.cloud.gcp.project-id}")
-	private String idsGcpProject;
+	@Value("${spring.cloud.gcp.project-id}")
+	private String projectId;
 	
 	@Value("${ids.pubsub.subscription-new-ids-job}")
 	private String pubsubSubscriptionNewIdsJob;
@@ -77,7 +77,7 @@ public class PubSubComponent {
 	public PubSubInboundChannelAdapter messageNewIdsJobChannelAdapter(
 			@Qualifier("pubsubInputChannelNewIdsJob") MessageChannel inputChannel, PubSubTemplate pubSubTemplate) {
 		PubSubInboundChannelAdapter adapter = new PubSubInboundChannelAdapter(pubSubTemplate,
-				String.format("projects/%s/subscriptions/%s", idsGcpProject, pubsubSubscriptionNewIdsJob));
+				String.format("projects/%s/subscriptions/%s", projectId, pubsubSubscriptionNewIdsJob));
 		adapter.setOutputChannel(inputChannel);
 		adapter.setAckMode(AckMode.MANUAL);
 
@@ -88,7 +88,7 @@ public class PubSubComponent {
 	public PubSubInboundChannelAdapter messageDownloadCompleteChannelAdapter(
 			@Qualifier("pubsubInputChannelDownloadComplete") MessageChannel inputChannel, PubSubTemplate pubSubTemplate) {
 		PubSubInboundChannelAdapter adapter = new PubSubInboundChannelAdapter(pubSubTemplate,
-				String.format("projects/%s/subscriptions/%s", idsGcpProject, pubsubSubscriptionDownloadComplete));
+				String.format("projects/%s/subscriptions/%s", projectId, pubsubSubscriptionDownloadComplete));
 		adapter.setOutputChannel(inputChannel);
 		adapter.setAckMode(AckMode.MANUAL);
 
