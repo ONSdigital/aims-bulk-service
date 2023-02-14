@@ -48,8 +48,8 @@ public class IdsService {
 	@Value("${ids.cloud.gcp.bigquery.dataset-name}")
 	private String idsDatasetName;
 	
-	@Value("${ids.cloud.gcp.project-id}")
-	private String idsProjectId;
+	@Value("${spring.cloud.gcp.project-id}")
+	private String projectId;
 	
 	@Value("${aims.current-epoch}")
 	private String currentEpoch;
@@ -65,7 +65,7 @@ public class IdsService {
 			List<IdsRequest> idsRequests = new ArrayList<IdsRequest>();
 			
 			QueryJobConfiguration queryConfig = QueryJobConfiguration.newBuilder(
-					String.format(QUERY_IDS_DATASET_TABLE, idsProjectId, newIdsJobMessage.getPayload().getBigQueryDataset(), newIdsJobMessage.getPayload().getBigQueryTable())).build();
+					String.format(QUERY_IDS_DATASET_TABLE, projectId, newIdsJobMessage.getPayload().getBigQueryDataset(), newIdsJobMessage.getPayload().getBigQueryTable())).build();
 			
 			// How many rows can this method handle?		
 			results = bigQuery.query(queryConfig);
