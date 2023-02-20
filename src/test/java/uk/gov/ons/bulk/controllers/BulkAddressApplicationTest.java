@@ -395,6 +395,21 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.errors", hasItem(containsString("historical must be true or false"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestInvalidBulkRequestParameterWrongPafdefault(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+						.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("pafdefault", "xyz")
+						.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", containsString("pafdefault must be true or false")))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("pafdefault must be true or false"))))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
 	
 	@ParameterizedTest
 	@MethodSource("bulkRequestObject")
