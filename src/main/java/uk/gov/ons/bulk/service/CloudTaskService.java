@@ -153,6 +153,7 @@ public class CloudTaskService {
 			job.put("sboost", bulkRequestParams.getSboost());
 			job.put("wboost", bulkRequestParams.getWboost());
 			job.put("nboost", bulkRequestParams.getNboost());
+			job.put("pafdefault", bulkRequestParams.getPafdefault());
 		}
 	}
 }
