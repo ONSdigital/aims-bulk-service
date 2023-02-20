@@ -27,6 +27,7 @@ public @Data class BulkRequestParams {
 	private	String excludescotland;
 	private	String excludewales;
 	private	String excludenorthernireland;
+	private	String pafdefault; // Choose PAF address over NAG Default: False
 	@Setter(AccessLevel.NONE)
 	private	String eboost; // Set to 0 to exclude addresses in England Default: 1.0
 	@Setter(AccessLevel.NONE)
@@ -38,7 +39,7 @@ public @Data class BulkRequestParams {
 	
 	public BulkRequestParams(String limitperaddress, String classificationfilter, String historical, String matchthreshold, String verbose,
 			String epoch, String excludeengland, String excludescotland, String excludewales,
-			String excludenorthernireland) {
+			String excludenorthernireland, String pafdefault) {
 		
 		this.limitperaddress = limitperaddress;
 		if (classificationfilter != null) this.classificationfilter = classificationfilter;
@@ -54,5 +55,6 @@ public @Data class BulkRequestParams {
 		if(excludescotland.equals("true")) this.sboost = "0";
 		if(excludewales.equals("true")) this.wboost = "0";
 		if(excludenorthernireland.equals("true")) this.nboost = "0";
+		this.pafdefault = pafdefault;
 	}
 }

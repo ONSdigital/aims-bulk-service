@@ -96,7 +96,7 @@ public class IdsService {
 			// These parameters need to be validated. Probably in the POJO.
 			// Some are hardcoded here - how many do we want IDS to be able to set?
 			BulkRequestParams bulkRequestParams = new BulkRequestParams(newIdsJobMessage.getPayload().getAddressLimit(), null, "true",
-					newIdsJobMessage.getPayload().getQualityMatchThreshold(), "false", currentEpoch, "", "", "", "");
+					newIdsJobMessage.getPayload().getQualityMatchThreshold(), "false", currentEpoch, "", "", "", "", "false");
 			
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("user", newIdsJobMessage.getPayload().getIdsUserId());
