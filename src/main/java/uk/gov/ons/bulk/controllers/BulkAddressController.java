@@ -141,11 +141,13 @@ public class BulkAddressController {
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludewales.val.message}") String excludewales,
 			@Parameter(description = "Flag to exclude results from Northern Ireland")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludenorthernireland.val.message}") String excludenorthernireland,
+			@Parameter(description = "Return PAF address if present instead of NAG")
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{pafdefault.val.message}") String pafdefault,
 			@RequestHeader Map<String, String> headersIn) {
 
 		// set the bulk parameters object using the valid input parameters
 		BulkRequestParams bulkRequestParams = new BulkRequestParams(limitperaddress, classificationfilter, historical,
-				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland);
+				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland, pafdefault);
 
 		// Pass on username and api key headers from CA Gateway
 		com.google.api.client.http.HttpHeaders headers = new com.google.api.client.http.HttpHeaders();
