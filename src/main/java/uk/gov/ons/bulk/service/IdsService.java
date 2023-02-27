@@ -6,6 +6,7 @@ import static uk.gov.ons.bulk.util.BulkServiceConstants.Status.RD;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,9 @@ public class IdsService {
 	
 	@Value("${aims.current-epoch}")
 	private String currentEpoch;
+
+	@Value("${aims.epochs}")
+	private String epochs;
 	
 	private String QUERY_IDS_DATASET_TABLE = "SELECT * FROM %s.%s.%s";
 	
@@ -95,8 +99,22 @@ public class IdsService {
 			
 			// These parameters need to be validated. Probably in the POJO.
 			// Some are hardcoded here - how many do we want IDS to be able to set?
-			BulkRequestParams bulkRequestParams = new BulkRequestParams(newIdsJobMessage.getPayload().getAddressLimit(), null, "true",
-					newIdsJobMessage.getPayload().getQualityMatchThreshold(), "false", currentEpoch, "", "", "", "", "false");
+            String[] validEpochs = epochs.split("|");
+			String epoch = currentEpoch;
+			String newEpoch = newIdsJobMessage.getPayload().getEpoch();
+			if (!newEpoch.isEmpty())
+			{
+				if (Arrays.asList(validEpochs).contains(newEpoch)) {
+					epoch = newIdsJobMessage.getPayload().getEpoch();
+				}
+			}
+			String historical = "true";
+			if (!newIdsJobMessage.getPayload().getHistorical().isEmpty())
+			{
+				historical = newIdsJobMessage.getPayload().getHistorical();
+			}
+			BulkRequestParams bulkRequestParams = new BulkRequestParams(newIdsJobMessage.getPayload().getAddressLimit(), null, historical,
+					newIdsJobMessage.getPayload().getQualityMatchThreshold(), "false", epoch, "", "", "", "", "false");
 			
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("user", newIdsJobMessage.getPayload().getIdsUserId());

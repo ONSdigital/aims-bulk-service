@@ -22,4 +22,8 @@ public @Data class NewIdsJobPayload extends Payload {
 	private String addressLimit;
 	@JsonProperty("quality_match_threshold")
 	private String qualityMatchThreshold;
+	@JsonProperty("epoch_number")
+	private String epoch;
+	@JsonProperty("historical_flag")
+	private String historical;
 }
