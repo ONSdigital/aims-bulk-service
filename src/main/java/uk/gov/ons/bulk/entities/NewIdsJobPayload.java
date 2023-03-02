@@ -31,7 +31,7 @@ public @Data class NewIdsJobPayload extends Payload {
 	private String qualityMatchThreshold;
 	@JsonProperty("epoch_number")
 	@Value("${aims.current-epoch}")
-	@Epoch(message = "{epoch.val.message}")
+	//@Epoch(message = "{epoch.val.message}")
 	private String epoch;
 	@JsonProperty("historical_flag")
 	@Value("true")

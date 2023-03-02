@@ -8,7 +8,9 @@ import javax.validation.ConstraintValidatorContext;
 
 import org.springframework.beans.factory.annotation.Value;
 
-class EpochValidator implements ConstraintValidator<Epoch, String> {
+public class EpochValidator implements ConstraintValidator<Epoch, String> {
+
+	public EpochValidator(){}
 
 	@Value("${aims.epochs}")
 	private String epochs;
