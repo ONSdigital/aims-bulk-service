@@ -99,22 +99,15 @@ public class IdsService {
 			
 			// These parameters need to be validated. Probably in the POJO.
 			// Some are hardcoded here - how many do we want IDS to be able to set?
-            String[] validEpochs = epochs.split("|");
-			String epoch = currentEpoch;
-			String newEpoch = newIdsJobMessage.getPayload().getEpoch();
-			if (!newEpoch.isEmpty())
-			{
-				if (Arrays.asList(validEpochs).contains(newEpoch)) {
-					epoch = newIdsJobMessage.getPayload().getEpoch();
-				}
-			}
-			String historical = "true";
-			if (!newIdsJobMessage.getPayload().getHistorical().isEmpty())
-			{
-				historical = newIdsJobMessage.getPayload().getHistorical();
-			}
-			BulkRequestParams bulkRequestParams = new BulkRequestParams(newIdsJobMessage.getPayload().getAddressLimit(), null, historical,
-					newIdsJobMessage.getPayload().getQualityMatchThreshold(), "false", epoch, "", "", "", "", "false");
+			BulkRequestParams bulkRequestParams = new BulkRequestParams(
+					newIdsJobMessage.getPayload().getAddressLimit(),
+					null,
+					newIdsJobMessage.getPayload().getHistorical(),
+					newIdsJobMessage.getPayload().getQualityMatchThreshold(),
+					"false",
+					newIdsJobMessage.getPayload().getEpoch(),
+					"", "", "", "",
+					"false");
 			
 			HttpHeaders headers = new HttpHeaders();
 			headers.set("user", newIdsJobMessage.getPayload().getIdsUserId());

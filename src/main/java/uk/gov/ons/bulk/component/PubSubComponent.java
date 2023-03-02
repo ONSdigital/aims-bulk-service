@@ -3,6 +3,7 @@ package uk.gov.ons.bulk.component;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,9 +34,15 @@ import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.entities.IdsError;
 import uk.gov.ons.bulk.entities.IdsErrorMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
+import uk.gov.ons.bulk.entities.NewIdsJobPayload;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.IdsService;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 
 @Slf4j
 @Component
@@ -105,19 +112,35 @@ public class PubSubComponent {
 				NewIdsJobMessage msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
 						.readValue((byte[]) message.getPayload(), NewIdsJobMessage.class);
 				log.debug(String.format("Message: %s", msg.toString()));
+
+				ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+				Validator validator = factory.getValidator();
+				Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(msg.getPayload());
+				StringBuilder validationErrorMessages = new StringBuilder("");
+				for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
+					log.info(violation.getMessage());
+					validationErrorMessages.append(violation.getMessage());
+					validationErrorMessages.append("\n");
+				}
 				
 				// Does the idsjobId already exist?
 				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
 				if (idsBulkInfos.size() == 0) {
+					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
+					log.info(errorMessage);
+					validationErrorMessages.append(errorMessage);
+				}
+
+				String combinedErrorMessage = validationErrorMessages.toString();
+
+				if (combinedErrorMessage.isBlank()) {
 					// Read the BigQuery table in IDS and start creating Cloud Tasks
 					idsService.createTasks(msg);
 					
 				} else {
-					// IDS id already used send an error message to the PubSub topic
-					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
-					log.info(errorMessage);
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(msg.getPayload().getIdsJobId(), 
-							LocalDateTime.now().toString(), errorMessage))));
+					// One or more problems found so send message to the PubSub topic
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(msg.getPayload().getIdsJobId(),
+							LocalDateTime.now().toString(), combinedErrorMessage))));
 				}	
 				
 				// Send ACK
