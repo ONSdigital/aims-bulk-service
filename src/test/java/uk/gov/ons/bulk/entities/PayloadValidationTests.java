@@ -47,6 +47,15 @@ public class PayloadValidationTests {
     @Value("${aims.current-epoch}")
     private String currentEpoch;
 
+    @Value("${aims.default-threshold}")
+    private String defaultThreshold;
+
+    @Value("${aims.default-limit}")
+    private String defaultLimit;
+
+    @Value("${aims.default-historical}")
+    private String defaultHistorical;
+
     @Value("${aims.epochs}")
     private String epochs;
 
@@ -69,7 +78,6 @@ public class PayloadValidationTests {
         Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
-            System.out.println(violation.getMessage());
             validationErrorMessages.append(violation.getMessage());
             validationErrorMessages.append("\n");
         }
@@ -81,26 +89,89 @@ public class PayloadValidationTests {
     }
 
     @Test
-    public void testPayloadValidatorSad() throws Exception {
+    public void testPayloadValidatorWrongEpoch() throws Exception {
 
         epochValidator.setEpochs(epochs);
         ObjectMapper objectMapper = new ObjectMapper();
-        NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-sad.json"),
+        NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-epoch.json"),
                 NewIdsJobPayload.class);
 
         Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
-            System.out.println(violation.getMessage());
             validationErrorMessages.append(violation.getMessage());
             validationErrorMessages.append("\n");
         }
 
-        String expectedMsg = "historical must be true or false\n{epoch.val.message}\n";
+        String expectedMsg =  "{epoch.val.message}\n";
         String actualMessage = validationErrorMessages.toString();
 
         assertEquals(expectedMsg, actualMessage);
     }
+
+    @Test
+    public void testPayloadValidatorWrongLimit() throws Exception {
+
+        epochValidator.setEpochs(epochs);
+        ObjectMapper objectMapper = new ObjectMapper();
+        NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-limit.json"),
+                NewIdsJobPayload.class);
+
+        Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
+        StringBuilder validationErrorMessages = new StringBuilder("");
+        for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
+            validationErrorMessages.append(violation.getMessage());
+            validationErrorMessages.append("\n");
+        }
+
+        String expectedMsg =  "Number of matches per input address should be an integer between 1 and 100 (5 is default)\n";
+        String actualMessage = validationErrorMessages.toString();
+
+        assertEquals(expectedMsg, actualMessage);
+    }
+
+    @Test
+    public void testPayloadValidatorWrongThreshold() throws Exception {
+
+        epochValidator.setEpochs(epochs);
+        ObjectMapper objectMapper = new ObjectMapper();
+        NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-threshold.json"),
+                NewIdsJobPayload.class);
+
+        Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
+        StringBuilder validationErrorMessages = new StringBuilder("");
+        for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
+            validationErrorMessages.append(violation.getMessage());
+            validationErrorMessages.append("\n");
+        }
+
+        String expectedMsg =  "Match quality threshold should be decimal number between 0 and 100 (10 is default)\n";
+        String actualMessage = validationErrorMessages.toString();
+
+        assertEquals(expectedMsg, actualMessage);
+    }
+
+    @Test
+    public void testPayloadValidatorWrongHistorical() throws Exception {
+
+        epochValidator.setEpochs(epochs);
+        ObjectMapper objectMapper = new ObjectMapper();
+        NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-historical.json"),
+                NewIdsJobPayload.class);
+
+        Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
+        StringBuilder validationErrorMessages = new StringBuilder("");
+        for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
+            validationErrorMessages.append(violation.getMessage());
+            validationErrorMessages.append("\n");
+        }
+
+        String expectedMsg = "historical must be true or false\n";
+        String actualMessage = validationErrorMessages.toString();
+
+        assertEquals(expectedMsg, actualMessage);
+    }
+
 
     @Test
     public void testPayloadValidatorDefaults() throws Exception {
@@ -111,11 +182,13 @@ public class PayloadValidationTests {
                 NewIdsJobPayload.class);
 
         testPayload.setEpoch(currentEpoch);
+        testPayload.setAddressLimit(defaultLimit);
+        testPayload.setQualityMatchThreshold(defaultThreshold);
+        testPayload.setHistorical(defaultHistorical);
 
         Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
-            System.out.println(violation.getMessage());
             validationErrorMessages.append(violation.getMessage());
             validationErrorMessages.append("\n");
         }

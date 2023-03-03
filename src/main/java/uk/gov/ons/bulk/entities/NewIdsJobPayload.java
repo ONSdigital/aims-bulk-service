@@ -8,6 +8,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.springframework.beans.factory.annotation.Value;
 import uk.gov.ons.bulk.validator.Epoch;
+import uk.gov.ons.bulk.validator.Limit;
+import uk.gov.ons.bulk.validator.Threshold;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
@@ -24,10 +26,10 @@ public @Data class NewIdsJobPayload extends Payload {
 	@NotEmpty(message = "IDS user id must be supplied")
 	private String idsUserId;
 	@JsonProperty("address_limit")
-	@Size(min = 1, max = 100, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
+	@Limit(message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
 	private String addressLimit;
 	@JsonProperty("quality_match_threshold")
-	@Size(min = 0, max = 100, message = "Match quality threshold should be an integer between 0 and 100 (10 is default)")
+	@Threshold(message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	private String qualityMatchThreshold;
 	@JsonProperty("epoch_number")
 	@Epoch(message = "{epoch.val.message}")
