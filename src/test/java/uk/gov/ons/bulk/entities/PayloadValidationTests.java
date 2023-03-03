@@ -50,41 +50,22 @@ public class PayloadValidationTests {
     @Value("${aims.epochs}")
     private String epochs;
 
-     private final List<ConstraintValidator<?,?>> customConstraintValidators =
-            Collections.singletonList(new EpochValidator(epochs));
+    private EpochValidator epochValidator = new EpochValidator();
+
+    private final List<ConstraintValidator<?,?>> customConstraintValidators =
+            Collections.singletonList(epochValidator);
     private final ValidatorFactory customValidatorFactory =
             new CustomLocalValidatorFactoryBean(customConstraintValidators);
     private final Validator validator = customValidatorFactory.getValidator();
 
-   // private static Validator validator;
-
-   // @Autowired
-   // private static IdsService idsservice;
-
-//    @BeforeClass
-//    public static void setUp() {
-//        ConstraintValidatorFactory cvf = mock(ConstraintValidatorFactory.class);
-//        when(cvf.getInstance(EpochValidator.class)).thenReturn(new EpochValidator(idsservice));
-//
-//        validator = Validation.buildDefaultValidatorFactory()
-//                .usingContext()
-//                .constraintValidatorFactory(cvf)
-//                .getValidator();
-//    }
-
     @Test
     public void testPayloadValidatorHappy() throws Exception {
 
-        System.out.println("epochs="+epochs);
-
+        epochValidator.setEpochs(epochs);
         ObjectMapper objectMapper = new ObjectMapper();
         NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-happy.json"),
                 NewIdsJobPayload.class);
 
-//        ConstraintValidatorFactory cvf = mock(ConstraintValidatorFactory.class);
-//        when(cvf.getInstance(EpochValidator.class)).thenReturn(new EpochValidator());
-//
-//        Validator evalidator = Validation.buildDefaultValidatorFactory().usingContext().constraintValidatorFactory(cvf).getValidator();
         Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
@@ -96,18 +77,17 @@ public class PayloadValidationTests {
         String expectedMsg = "";
         String actualMessage = validationErrorMessages.toString();
 
-         assertEquals(expectedMsg, actualMessage);
+        assertEquals(expectedMsg, actualMessage);
     }
 
     @Test
     public void testPayloadValidatorSad() throws Exception {
 
+        epochValidator.setEpochs(epochs);
         ObjectMapper objectMapper = new ObjectMapper();
         NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-sad.json"),
                 NewIdsJobPayload.class);
 
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        Validator validator = factory.getValidator();
         Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
@@ -116,7 +96,7 @@ public class PayloadValidationTests {
             validationErrorMessages.append("\n");
         }
 
-        String expectedMsg = "historical must be true or false\n";
+        String expectedMsg = "historical must be true or false\n{epoch.val.message}\n";
         String actualMessage = validationErrorMessages.toString();
 
         assertEquals(expectedMsg, actualMessage);
@@ -125,16 +105,13 @@ public class PayloadValidationTests {
     @Test
     public void testPayloadValidatorDefaults() throws Exception {
 
+        epochValidator.setEpochs(epochs);
         ObjectMapper objectMapper = new ObjectMapper();
         NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-defaults.json"),
                 NewIdsJobPayload.class);
 
-        System.out.println("epoch = " + currentEpoch);
-
         testPayload.setEpoch(currentEpoch);
 
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        Validator validator = factory.getValidator();
         Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
