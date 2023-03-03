@@ -6,7 +6,6 @@ import javax.validation.constraints.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.springframework.beans.factory.annotation.Value;
 import uk.gov.ons.bulk.validator.Epoch;
 import uk.gov.ons.bulk.validator.Limit;
 import uk.gov.ons.bulk.validator.Threshold;
