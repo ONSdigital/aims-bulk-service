@@ -17,7 +17,9 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 	
 	@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
-		
+
+	//	System.out.println("epochs = " + epochs);
+
 		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(95|94|93|92)$
 		Matcher matcher = pattern.matcher(value);
 		

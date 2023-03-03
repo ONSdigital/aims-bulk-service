@@ -51,6 +51,9 @@ public class PubSubComponent {
 	
 	@Value("${spring.cloud.gcp.project-id}")
 	private String projectId;
+
+	@Value("${aims.current-epoch}")
+	private String currentEpoch;
 	
 	@Value("${ids.pubsub.subscription-new-ids-job}")
 	private String pubsubSubscriptionNewIdsJob;
@@ -112,6 +115,8 @@ public class PubSubComponent {
 				NewIdsJobMessage msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
 						.readValue((byte[]) message.getPayload(), NewIdsJobMessage.class);
 				log.debug(String.format("Message: %s", msg.toString()));
+
+				if (msg.getPayload().getEpoch().isEmpty()) msg.getPayload().setEpoch(currentEpoch);
 
 				ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 				Validator validator = factory.getValidator();
