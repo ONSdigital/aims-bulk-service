@@ -126,9 +126,9 @@ public class PubSubComponent {
 				log.debug(String.format("Message: %s", msg.toString()));
 
 				if (msg.getPayload().getEpoch().isEmpty()) msg.getPayload().setEpoch(currentEpoch);
-				if (msg.getPayload().getAddressLimit().isEmpty()) msg.getPayload().setEpoch(defaultLimit);
-				if (msg.getPayload().getQualityMatchThreshold().isEmpty()) msg.getPayload().setEpoch(defaultThreshold);
-				if (msg.getPayload().getHistorical().isEmpty()) msg.getPayload().setEpoch(defaultHistorical);
+				if (msg.getPayload().getAddressLimit().isEmpty()) msg.getPayload().setAddressLimit(defaultLimit);
+				if (msg.getPayload().getQualityMatchThreshold().isEmpty()) msg.getPayload().setQualityMatchThreshold(defaultThreshold);
+				if (msg.getPayload().getHistorical().isEmpty()) msg.getPayload().setHistorical(defaultHistorical);
 
 				ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 				Validator validator = factory.getValidator();
