@@ -130,7 +130,6 @@ public class PubSubComponent {
 
 				ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 				Validator validator = factory.getValidator();
-//				Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(msg.getPayload());
 				
 				List<String> validationErrorMessages = new ArrayList<>();
 				
@@ -138,11 +137,6 @@ public class PubSubComponent {
 					log.info(violation.getMessage());
 					validationErrorMessages.add(violation.getMessage());
 				});
-				
-//				for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
-//					log.info(violation.getMessage());
-//					validationErrorMessages.add(violation.getMessage());
-//					}
 				
 				// Does the idsjobId already exist?
 				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
@@ -158,15 +152,6 @@ public class PubSubComponent {
 					
 				} else {
 					// One or more problems found so send message to the PubSub topic
-//					List<IdsError> idsErrors = new ArrayList<>();
-//					Iterator iter = validationErrorMessages.iterator();
-//					while (iter.hasNext()) {
-//						IdsError idsError = new IdsError(msg.getPayload().getIdsJobId(),
-//								LocalDateTime.now().toString(), (String) iter.next());
-//						idsErrors.add(idsError);
-//					}
-//					IdsError[] eArray = new IdsError[idsErrors.size()];
-//					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(idsErrors.toArray(eArray))));
 					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage((new IdsErrors(msg.getPayload().getIdsJobId(), 
 							LocalDateTime.now().toString(), validationErrorMessages)))));
 				}	

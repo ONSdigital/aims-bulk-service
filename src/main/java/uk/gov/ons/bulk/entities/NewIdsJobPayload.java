@@ -12,8 +12,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import uk.gov.ons.bulk.validator.Epoch;
-//import uk.gov.ons.bulk.validator.Limit;
-//import uk.gov.ons.bulk.validator.Threshold;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
