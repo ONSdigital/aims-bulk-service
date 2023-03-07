@@ -2,6 +2,8 @@ package uk.gov.ons.bulk.component;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -133,31 +135,35 @@ public class PubSubComponent {
 				ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 				Validator validator = factory.getValidator();
 				Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(msg.getPayload());
-				StringBuilder validationErrorMessages = new StringBuilder("");
+				List<String> validationErrorMessages = new ArrayList<>();
 				for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
 					log.info(violation.getMessage());
-					validationErrorMessages.append(violation.getMessage());
-					validationErrorMessages.append("\n");
-				}
+					validationErrorMessages.add(violation.getMessage());
+					}
 				
 				// Does the idsjobId already exist?
 				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
 				if (idsBulkInfos.size() == 0) {
 					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
 					log.info(errorMessage);
-					validationErrorMessages.append(errorMessage);
+					validationErrorMessages.add(errorMessage);
 				}
 
-				String combinedErrorMessage = validationErrorMessages.toString();
-
-				if (combinedErrorMessage.isBlank()) {
+				if (validationErrorMessages.isEmpty()) {
 					// Read the BigQuery table in IDS and start creating Cloud Tasks
 					idsService.createTasks(msg);
 					
 				} else {
 					// One or more problems found so send message to the PubSub topic
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(msg.getPayload().getIdsJobId(),
-							LocalDateTime.now().toString(), combinedErrorMessage))));
+					List<IdsError> idsErrors = new ArrayList<>();
+					Iterator iter = validationErrorMessages.iterator();
+					while (iter.hasNext()) {
+						IdsError idsError = new IdsError(msg.getPayload().getIdsJobId(),
+								LocalDateTime.now().toString(), (String) iter.next());
+						idsErrors.add(idsError);
+					}
+					IdsError[] eArray = new IdsError[idsErrors.size()];
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(idsErrors.toArray(eArray))));
 				}	
 				
 				// Send ACK

@@ -67,7 +67,6 @@ public class PayloadValidationTests {
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
             validationErrorMessages.append(violation.getMessage());
-            validationErrorMessages.append("\n");
         }
 
         String expectedMsg = "";
@@ -88,10 +87,9 @@ public class PayloadValidationTests {
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
             validationErrorMessages.append(violation.getMessage());
-            validationErrorMessages.append("\n");
         }
 
-        String expectedMsg =  "{epoch.val.message}\n";
+        String expectedMsg =  "{epoch.val.message}";
         String actualMessage = validationErrorMessages.toString();
 
         assertEquals(expectedMsg, actualMessage);
@@ -109,10 +107,9 @@ public class PayloadValidationTests {
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
             validationErrorMessages.append(violation.getMessage());
-            validationErrorMessages.append("\n");
         }
 
-        String expectedMsg =  "Number of matches per input address should be an integer between 1 and 100 (5 is default)\n";
+        String expectedMsg =  "Number of matches per input address should be an integer between 1 and 100 (5 is default)";
         String actualMessage = validationErrorMessages.toString();
 
         assertEquals(expectedMsg, actualMessage);
@@ -130,10 +127,9 @@ public class PayloadValidationTests {
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
             validationErrorMessages.append(violation.getMessage());
-            validationErrorMessages.append("\n");
         }
 
-        String expectedMsg =  "Match quality threshold should be decimal number between 0 and 100 (10 is default)\n";
+        String expectedMsg =  "Match quality threshold should be decimal number between 0 and 100 (10 is default)";
         String actualMessage = validationErrorMessages.toString();
 
         assertEquals(expectedMsg, actualMessage);
@@ -151,10 +147,9 @@ public class PayloadValidationTests {
         StringBuilder validationErrorMessages = new StringBuilder("");
         for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
             validationErrorMessages.append(violation.getMessage());
-            validationErrorMessages.append("\n");
         }
 
-        String expectedMsg = "historical must be true or false\n";
+        String expectedMsg = "historical must be true or false";
         String actualMessage = validationErrorMessages.toString();
 
         assertEquals(expectedMsg, actualMessage);
