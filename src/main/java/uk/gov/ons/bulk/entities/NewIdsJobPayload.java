@@ -30,12 +30,10 @@ public @Data class NewIdsJobPayload extends Payload {
 	@NotEmpty(message = "IDS user id must be supplied")
 	private String idsUserId;
 	@JsonProperty("address_limit")
-//	@Limit(message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
 	@Min(value = 1, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
 	@Max(value = 100, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
 	private String addressLimit;
 	@JsonProperty("quality_match_threshold")
-//	@Threshold(message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	@Min(value = 0, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	@Max(value = 100, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	private String qualityMatchThreshold;
