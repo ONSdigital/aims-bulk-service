@@ -114,6 +114,26 @@ public class PayloadValidationTests {
 
         assertEquals(expectedMsg, actualMessage);
     }
+    
+    @Test
+    public void testPayloadValidatorWrongLimitLow() throws Exception {
+
+        epochValidator.setEpochs(epochs);
+        ObjectMapper objectMapper = new ObjectMapper();
+        NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-limit-low.json"),
+                NewIdsJobPayload.class);
+
+        Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
+        StringBuilder validationErrorMessages = new StringBuilder("");
+        for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
+            validationErrorMessages.append(violation.getMessage());
+        }
+
+        String expectedMsg =  "Number of matches per input address should be an integer between 1 and 100 (5 is default)";
+        String actualMessage = validationErrorMessages.toString();
+
+        assertEquals(expectedMsg, actualMessage);
+    }
 
     @Test
     public void testPayloadValidatorWrongThreshold() throws Exception {
@@ -121,6 +141,26 @@ public class PayloadValidationTests {
         epochValidator.setEpochs(epochs);
         ObjectMapper objectMapper = new ObjectMapper();
         NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-threshold.json"),
+                NewIdsJobPayload.class);
+
+        Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
+        StringBuilder validationErrorMessages = new StringBuilder("");
+        for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
+            validationErrorMessages.append(violation.getMessage());
+        }
+
+        String expectedMsg =  "Match quality threshold should be decimal number between 0 and 100 (10 is default)";
+        String actualMessage = validationErrorMessages.toString();
+
+        assertEquals(expectedMsg, actualMessage);
+    }
+    
+    @Test
+    public void testPayloadValidatorWrongThresholdHigh() throws Exception {
+
+        epochValidator.setEpochs(epochs);
+        ObjectMapper objectMapper = new ObjectMapper();
+        NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-threshold-high.json"),
                 NewIdsJobPayload.class);
 
         Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);

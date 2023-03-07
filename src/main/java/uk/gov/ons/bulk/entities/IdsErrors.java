@@ -1,5 +1,7 @@
 package uk.gov.ons.bulk.entities;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -9,13 +11,13 @@ import lombok.NonNull;
 
 @AllArgsConstructor
 @NoArgsConstructor
-public @Data class IdsError {
+public @Data class IdsErrors {
 	@NonNull
 	@JsonProperty("ids_job_id")
 	private String idsJobId;
 	@NonNull
 	private String timestamp;
 	@NonNull
-	private String message;
+	private List<String> messages;
 }
 

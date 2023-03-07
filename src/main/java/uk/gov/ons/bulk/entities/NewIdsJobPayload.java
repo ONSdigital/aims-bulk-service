@@ -1,14 +1,19 @@
 package uk.gov.ons.bulk.entities;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.Pattern;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import javax.validation.constraints.*;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import uk.gov.ons.bulk.validator.Epoch;
-import uk.gov.ons.bulk.validator.Limit;
-import uk.gov.ons.bulk.validator.Threshold;
+//import uk.gov.ons.bulk.validator.Limit;
+//import uk.gov.ons.bulk.validator.Threshold;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
@@ -25,10 +30,14 @@ public @Data class NewIdsJobPayload extends Payload {
 	@NotEmpty(message = "IDS user id must be supplied")
 	private String idsUserId;
 	@JsonProperty("address_limit")
-	@Limit(message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
+//	@Limit(message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
+	@Min(value = 1, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
+	@Max(value = 100, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
 	private String addressLimit;
 	@JsonProperty("quality_match_threshold")
-	@Threshold(message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
+//	@Threshold(message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
+	@Min(value = 0, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
+	@Max(value = 100, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	private String qualityMatchThreshold;
 	@JsonProperty("epoch_number")
 	@Epoch(message = "{epoch.val.message}")

@@ -21,7 +21,7 @@ import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.cloud.spring.pubsub.support.AcknowledgeablePubsubMessage;
 
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
-import uk.gov.ons.bulk.entities.IdsError;
+import uk.gov.ons.bulk.entities.IdsErrors;
 import uk.gov.ons.bulk.entities.IdsErrorMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 

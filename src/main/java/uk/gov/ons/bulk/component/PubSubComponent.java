@@ -3,9 +3,11 @@ package uk.gov.ons.bulk.component;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,18 +35,12 @@ import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
-import uk.gov.ons.bulk.entities.IdsError;
 import uk.gov.ons.bulk.entities.IdsErrorMessage;
+import uk.gov.ons.bulk.entities.IdsErrors;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
-import uk.gov.ons.bulk.entities.NewIdsJobPayload;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.IdsService;
-
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 
 @Slf4j
 @Component
@@ -134,12 +130,19 @@ public class PubSubComponent {
 
 				ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 				Validator validator = factory.getValidator();
-				Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(msg.getPayload());
+//				Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(msg.getPayload());
+				
 				List<String> validationErrorMessages = new ArrayList<>();
-				for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
+				
+				validator.validate(msg.getPayload()).forEach(violation -> {
 					log.info(violation.getMessage());
 					validationErrorMessages.add(violation.getMessage());
-					}
+				});
+				
+//				for (ConstraintViolation<NewIdsJobPayload> violation : violations) {
+//					log.info(violation.getMessage());
+//					validationErrorMessages.add(violation.getMessage());
+//					}
 				
 				// Does the idsjobId already exist?
 				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
@@ -155,15 +158,17 @@ public class PubSubComponent {
 					
 				} else {
 					// One or more problems found so send message to the PubSub topic
-					List<IdsError> idsErrors = new ArrayList<>();
-					Iterator iter = validationErrorMessages.iterator();
-					while (iter.hasNext()) {
-						IdsError idsError = new IdsError(msg.getPayload().getIdsJobId(),
-								LocalDateTime.now().toString(), (String) iter.next());
-						idsErrors.add(idsError);
-					}
-					IdsError[] eArray = new IdsError[idsErrors.size()];
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(idsErrors.toArray(eArray))));
+//					List<IdsError> idsErrors = new ArrayList<>();
+//					Iterator iter = validationErrorMessages.iterator();
+//					while (iter.hasNext()) {
+//						IdsError idsError = new IdsError(msg.getPayload().getIdsJobId(),
+//								LocalDateTime.now().toString(), (String) iter.next());
+//						idsErrors.add(idsError);
+//					}
+//					IdsError[] eArray = new IdsError[idsErrors.size()];
+//					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(idsErrors.toArray(eArray))));
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage((new IdsErrors(msg.getPayload().getIdsJobId(), 
+							LocalDateTime.now().toString(), validationErrorMessages)))));
 				}	
 				
 				// Send ACK
@@ -218,8 +223,8 @@ public class PubSubComponent {
 				log.error(errorMessage);
 
 				try {
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(idsJobId, 
-							LocalDateTime.now().toString(), errorMessage))));
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsErrors(idsJobId, 
+							LocalDateTime.now().toString(), List.of(errorMessage)))));
 				} catch (JsonProcessingException jpe) {
 					log.error(String.format("Problem creating JSON: %s", jpe));
 				}
