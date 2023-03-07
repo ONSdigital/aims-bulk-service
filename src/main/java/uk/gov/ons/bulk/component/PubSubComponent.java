@@ -33,7 +33,7 @@ import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
-import uk.gov.ons.bulk.entities.IdsError;
+import uk.gov.ons.bulk.entities.IdsErrors;
 import uk.gov.ons.bulk.entities.IdsErrorMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobPayload;
@@ -155,16 +155,10 @@ public class PubSubComponent {
 					
 				} else {
 					// One or more problems found so send message to the PubSub topic
-					List<IdsError> idsErrors = new ArrayList<>();
-					Iterator iter = validationErrorMessages.iterator();
-					while (iter.hasNext()) {
-						IdsError idsError = new IdsError(msg.getPayload().getIdsJobId(),
-								LocalDateTime.now().toString(), (String) iter.next());
-						idsErrors.add(idsError);
-					}
-					IdsError[] eArray = new IdsError[idsErrors.size()];
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(idsErrors.toArray(eArray))));
-				}	
+					String[] eArray = new String[validationErrorMessages.size()];
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsErrors(msg.getPayload().getIdsJobId(),
+							LocalDateTime.now().toString(),validationErrorMessages.toArray(eArray)))));
+				}
 				
 				// Send ACK
 				BasicAcknowledgeablePubsubMessage originalMessage = message.getHeaders()
@@ -216,10 +210,11 @@ public class PubSubComponent {
 				
 				String errorMessage = String.format("Problem deleting IDS result table: %s", e);
 				log.error(errorMessage);
+				String[] messArray = {errorMessage};
 
 				try {
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(idsJobId, 
-							LocalDateTime.now().toString(), errorMessage))));
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsErrors(idsJobId,
+							LocalDateTime.now().toString(), messArray))));
 				} catch (JsonProcessingException jpe) {
 					log.error(String.format("Problem creating JSON: %s", jpe));
 				}
