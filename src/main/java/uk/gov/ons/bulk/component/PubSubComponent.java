@@ -2,7 +2,12 @@ package uk.gov.ons.bulk.component;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,8 +35,8 @@ import com.google.cloud.spring.pubsub.support.GcpPubSubHeaders;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
 import uk.gov.ons.bulk.entities.IdsBulkInfo;
-import uk.gov.ons.bulk.entities.IdsError;
 import uk.gov.ons.bulk.entities.IdsErrorMessage;
+import uk.gov.ons.bulk.entities.IdsErrors;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.service.BulkStatusService;
@@ -44,6 +49,18 @@ public class PubSubComponent {
 	
 	@Value("${spring.cloud.gcp.project-id}")
 	private String projectId;
+
+	@Value("${aims.current-epoch}")
+	private String currentEpoch;
+
+	@Value("${aims.default-threshold}")
+	private String defaultThreshold;
+
+	@Value("${aims.default-limit}")
+	private String defaultLimit;
+
+	@Value("${aims.default-historical}")
+	private String defaultHistorical;
 	
 	@Value("${ids.pubsub.subscription-new-ids-job}")
 	private String pubsubSubscriptionNewIdsJob;
@@ -105,19 +122,38 @@ public class PubSubComponent {
 				NewIdsJobMessage msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
 						.readValue((byte[]) message.getPayload(), NewIdsJobMessage.class);
 				log.debug(String.format("Message: %s", msg.toString()));
+
+				if (msg.getPayload().getEpoch().isEmpty()) msg.getPayload().setEpoch(currentEpoch);
+				if (msg.getPayload().getAddressLimit().isEmpty()) msg.getPayload().setAddressLimit(defaultLimit);
+				if (msg.getPayload().getQualityMatchThreshold().isEmpty()) msg.getPayload().setQualityMatchThreshold(defaultThreshold);
+				if (msg.getPayload().getHistorical().isEmpty()) msg.getPayload().setHistorical(defaultHistorical);
+
+				ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+				Validator validator = factory.getValidator();
+				
+				List<String> validationErrorMessages = new ArrayList<>();
+				
+				validator.validate(msg.getPayload()).forEach(violation -> {
+					log.info(violation.getMessage());
+					validationErrorMessages.add(violation.getMessage());
+				});
 				
 				// Does the idsjobId already exist?
 				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
 				if (idsBulkInfos.size() == 0) {
+					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
+					log.info(errorMessage);
+					validationErrorMessages.add(errorMessage);
+				}
+
+				if (validationErrorMessages.isEmpty()) {
 					// Read the BigQuery table in IDS and start creating Cloud Tasks
 					idsService.createTasks(msg);
 					
 				} else {
-					// IDS id already used send an error message to the PubSub topic
-					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
-					log.info(errorMessage);
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(msg.getPayload().getIdsJobId(), 
-							LocalDateTime.now().toString(), errorMessage))));
+					// One or more problems found so send message to the PubSub topic
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage((new IdsErrors(msg.getPayload().getIdsJobId(), 
+							LocalDateTime.now().toString(), validationErrorMessages)))));
 				}	
 				
 				// Send ACK
@@ -172,8 +208,8 @@ public class PubSubComponent {
 				log.error(errorMessage);
 
 				try {
-					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsError(idsJobId, 
-							LocalDateTime.now().toString(), errorMessage))));
+					messagingGateway.sendToPubsub(new ObjectMapper().writeValueAsString(new IdsErrorMessage(new IdsErrors(idsJobId, 
+							LocalDateTime.now().toString(), List.of(errorMessage)))));
 				} catch (JsonProcessingException jpe) {
 					log.error(String.format("Problem creating JSON: %s", jpe));
 				}

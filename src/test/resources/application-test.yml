@@ -7,3 +7,9 @@ spring:
         enabled: false
   datasource:
     url: jdbc:h2:mem:test
+aims:
+  epochs: 93|94|95|96|97|98
+  current-epoch: 95
+  default-limit: 5
+  default-threshold: 10
+  default-historical: true

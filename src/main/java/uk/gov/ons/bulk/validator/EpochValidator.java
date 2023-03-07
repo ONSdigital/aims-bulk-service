@@ -8,15 +8,22 @@ import javax.validation.ConstraintValidatorContext;
 
 import org.springframework.beans.factory.annotation.Value;
 
-class EpochValidator implements ConstraintValidator<Epoch, String> {
+public class EpochValidator implements ConstraintValidator<Epoch, String> {
+
+	public EpochValidator(){
+	}
 
 	@Value("${aims.epochs}")
-	private String epochs;
-	
-	@Override
+	public String epochs;
+
+	public void setEpochs(String epochs) {
+		this.epochs = epochs;
+	}
+
+		@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
-		
-		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(95|94|93|92)$
+
+		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(98|97|96|95|94|93)$
 		Matcher matcher = pattern.matcher(value);
 		
 		return matcher.matches();

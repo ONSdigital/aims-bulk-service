@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public @Data class IdsErrorMessage {
-	private IdsError error;
+	private IdsErrors errors;
 }
