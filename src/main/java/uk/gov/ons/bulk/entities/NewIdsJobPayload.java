@@ -36,7 +36,7 @@ public @Data class NewIdsJobPayload extends Payload {
 	@Max(value = 100, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	private String qualityMatchThreshold;
 	@JsonProperty("epoch_number")
-	@Epoch(message = "{epoch.val.message}")
+	@Epoch(message = "epoch must be one of 98, 97, 96, 95, 94, 93")
 	private String epoch;
 	@JsonProperty("historical_flag")
 	@Pattern(regexp = "^true$|^false$", message = "historical must be true or false")

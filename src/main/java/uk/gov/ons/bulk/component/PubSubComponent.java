@@ -140,7 +140,7 @@ public class PubSubComponent {
 				
 				// Does the idsjobId already exist?
 				List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(msg.getPayload().getIdsJobId());
-				if (idsBulkInfos.size() == 0) {
+				if (idsBulkInfos.size() > 0) {
 					String errorMessage = String.format("A job with the id %s already exists. ids_job_id must be unique.", msg.getPayload().getIdsJobId());
 					log.info(errorMessage);
 					validationErrorMessages.add(errorMessage);
