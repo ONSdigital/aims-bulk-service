@@ -89,7 +89,7 @@ public class PayloadValidationTests {
             validationErrorMessages.append(violation.getMessage());
         }
 
-        String expectedMsg =  "epoch must be one of 98, 97, 96, 95, 94, 93";
+        String expectedMsg =  "epoch must be one of 99, 97, 95";
         String actualMessage = validationErrorMessages.toString();
 
         assertEquals(expectedMsg, actualMessage);

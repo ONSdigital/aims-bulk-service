@@ -40,7 +40,7 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 		if (epochs == null) this.init();
 
-		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(98|97|96|95|94|93)$
+		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(99|97|95)$
 		Matcher matcher = pattern.matcher(value);
 		
 		return matcher.matches();
