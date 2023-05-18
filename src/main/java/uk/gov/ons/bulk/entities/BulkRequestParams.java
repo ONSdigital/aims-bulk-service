@@ -22,7 +22,6 @@ public @Data class BulkRequestParams {
 	private	String matchthreshold; // Minimum confidence score (percentage) for match to be included in results. Default: 5
 	private	String verbose; // Include the full address details in the response (including relatives, crossRefs, paf and nag). Default: False
 	private	String epoch; // Select a specific AddressBase Epoch to search.
-	private	String includeauxiliarysearch; // Search in the auxiliary index, if available Default: false
 	private	String excludeengland;
 	private	String excludescotland;
 	private	String excludewales;

@@ -60,7 +60,7 @@ aims:
   project-number: YOUR-GCP-PROJECT-NUMBER-HERE
   epochs: 95|97|99
   current-epoch: 99
-  default-limit: 5
+  default-limit: 1
   default-threshold: 10
   default-historical: true
   # Update the records processed at every n% of completion
