@@ -11,13 +11,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import uk.gov.ons.bulk.util.PropertiesLoader;
 import uk.gov.ons.bulk.validator.Epoch;
+
+import java.io.IOException;
+import java.util.Properties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public @Data class NewIdsJobPayload extends Payload {
-	
+
 	@JsonProperty("big_query_dataset")
 	@NotEmpty(message = "big query dataset name must be supplied")
 	private String bigQueryDataset;
@@ -30,15 +34,25 @@ public @Data class NewIdsJobPayload extends Payload {
 	@JsonProperty("address_limit")
 	@Min(value = 1, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
 	@Max(value = 100, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
-	private String addressLimit;
+	private String addressLimit = getProperty("aims.default-limit");
 	@JsonProperty("quality_match_threshold")
 	@Min(value = 0, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	@Max(value = 100, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
-	private String qualityMatchThreshold;
+	private String qualityMatchThreshold = getProperty("aims.default-threshold");
 	@JsonProperty("epoch_number")
 	@Epoch(message = "epoch must be one of 99, 97, 95")
-	private String epoch;
+	private String epoch = getProperty("aims.current-epoch");
 	@JsonProperty("historical_flag")
 	@Pattern(regexp = "^true$|^false$", message = "historical must be true or false")
-	private String historical;
+	private String historical = getProperty("aims.default-historical");
+
+	private String getProperty(String property) {
+	 try {
+		Properties properties = PropertiesLoader.loadProperties("defaults.properties");
+		return properties.getProperty(property).replace(", ", "|");
+	 } catch(IOException e)
+	   {
+		throw new RuntimeException(e);
+	   }
+     }
 }
