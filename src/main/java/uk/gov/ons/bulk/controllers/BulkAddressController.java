@@ -122,7 +122,7 @@ public class BulkAddressController {
 	@PostMapping(value = "/bulk", produces = "application/json")
 	public ResponseEntity<String> runBulkRequest(@Valid @RequestBody BulkRequestContainer bulkRequestContainer,
 			@Parameter(description = "Maximum number of results per input address")
-			@RequestParam(required = false, defaultValue = "5") @Min(1) @Max(100) String limitperaddress,
+			@RequestParam(required = false, defaultValue = "1") @Min(1) @Max(100) String limitperaddress,
 			@Parameter(description = "Classification code single value, list or pattern to filter results")
 			@RequestParam(required = false) @Pattern(regexp = "^[^*,]+$", message = "{class.val.message}") String classificationfilter,
 			@Parameter(description = "Include historical records true or false")
