@@ -49,7 +49,7 @@ public @Data class NewIdsJobPayload extends Payload {
 	private String getProperty(String property) {
 	 try {
 		Properties properties = PropertiesLoader.loadProperties("defaults.properties");
-		return properties.getProperty(property).replace(", ", "|");
+		return properties.getProperty(property);
 	 } catch(IOException e)
 	   {
 		throw new RuntimeException(e);
