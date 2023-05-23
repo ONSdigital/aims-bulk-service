@@ -49,7 +49,10 @@ dependencies {
 	testImplementation 'org.mockito:mockito-inline:4.8.1'
 	testImplementation 'com.h2database:h2'
 	testImplementation 'org.springframework.cloud:spring-cloud-starter-bootstrap:3.1.4'
-	testImplementation 'com.playtika.testcontainers:embedded-google-pubsub:2.2.10'
+	
+	if (!project.hasProperty('excludeTests')) {
+		testImplementation 'com.playtika.testcontainers:embedded-google-pubsub:2.2.10'
+	}
 
 	// Resolves the java.lang.NoClassDefFoundError: org/junit/platform/engine/EngineDiscoveryListener in Eclipse	
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -64,4 +67,9 @@ dependencyManagement {
 
 test {
 	useJUnitPlatform()
+	
+	if (project.hasProperty('excludeTests')) {
+        exclude project.property('excludeTests')
+        exclude '*bootstrap.properties'
+    }
 }
