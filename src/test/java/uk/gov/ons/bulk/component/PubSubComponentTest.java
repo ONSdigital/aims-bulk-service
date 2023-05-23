@@ -27,7 +27,7 @@ import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 @SpringBootTest()
 @ExtendWith(SpringExtension.class)
 @TestInstance(Lifecycle.PER_CLASS)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "test-integration"})
 class PubSubComponentTest {
 
 	@Autowired
