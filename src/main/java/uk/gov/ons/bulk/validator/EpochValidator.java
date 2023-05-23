@@ -10,7 +10,9 @@ import javax.validation.ConstraintValidatorContext;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import uk.gov.ons.bulk.util.PropertiesLoader;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
+import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 
 @Slf4j
 public class EpochValidator implements ConstraintValidator<Epoch, String> {
@@ -27,11 +29,11 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 	public void init() {
 		try {
-			Properties properties = PropertiesLoader.loadProperties("messages.properties");
+			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
 			this.epochs = properties.getProperty("aims.epochs").replace(", ","|");
 			log.info("epochs = " + epochs);
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			throw new BulkAddressRuntimeException(e);
 		}
 	}
 

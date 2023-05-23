@@ -52,9 +52,6 @@ public class IdsService {
 	@Value("${spring.cloud.gcp.project-id}")
 	private String projectId;
 	
-	@Value("${aims.current-epoch}")
-	private String currentEpoch;
-
 	@Value("${aims.epochs}")
 	private String epochs;
 	

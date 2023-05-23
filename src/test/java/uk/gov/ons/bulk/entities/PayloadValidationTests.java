@@ -32,18 +32,6 @@ import uk.gov.ons.bulk.validator.EpochValidator;
 @ActiveProfiles("test")
 public class PayloadValidationTests {
 
-    @Value("${aims.current-epoch}")
-    private String currentEpoch;
-
-    @Value("${aims.default-threshold}")
-    private String defaultThreshold;
-
-    @Value("${aims.default-limit}")
-    private String defaultLimit;
-
-    @Value("${aims.default-historical}")
-    private String defaultHistorical;
-
     @Value("${aims.epochs}")
     private String epochs;
 
@@ -203,11 +191,6 @@ public class PayloadValidationTests {
         ObjectMapper objectMapper = new ObjectMapper();
         NewIdsJobPayload testPayload = objectMapper.readValue(new File("src/test/resources/message-new-ids-payload-defaults.json"),
                 NewIdsJobPayload.class);
-
-        testPayload.setEpoch(currentEpoch);
-        testPayload.setAddressLimit(defaultLimit);
-        testPayload.setQualityMatchThreshold(defaultThreshold);
-        testPayload.setHistorical(defaultHistorical);
 
         Set<ConstraintViolation<NewIdsJobPayload>> violations = validator.validate(testPayload);
         StringBuilder validationErrorMessages = new StringBuilder("");

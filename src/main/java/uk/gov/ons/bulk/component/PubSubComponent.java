@@ -50,18 +50,6 @@ public class PubSubComponent {
 	@Value("${spring.cloud.gcp.project-id}")
 	private String projectId;
 
-	@Value("${aims.current-epoch}")
-	private String currentEpoch;
-
-	@Value("${aims.default-threshold}")
-	private String defaultThreshold;
-
-	@Value("${aims.default-limit}")
-	private String defaultLimit;
-
-	@Value("${aims.default-historical}")
-	private String defaultHistorical;
-	
 	@Value("${ids.pubsub.subscription-new-ids-job}")
 	private String pubsubSubscriptionNewIdsJob;
 	
@@ -122,11 +110,6 @@ public class PubSubComponent {
 				NewIdsJobMessage msg = new ObjectMapper().setDefaultSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY))
 						.readValue((byte[]) message.getPayload(), NewIdsJobMessage.class);
 				log.debug(String.format("Message: %s", msg.toString()));
-
-				if (msg.getPayload().getEpoch().isEmpty()) msg.getPayload().setEpoch(currentEpoch);
-				if (msg.getPayload().getAddressLimit().isEmpty()) msg.getPayload().setAddressLimit(defaultLimit);
-				if (msg.getPayload().getQualityMatchThreshold().isEmpty()) msg.getPayload().setQualityMatchThreshold(defaultThreshold);
-				if (msg.getPayload().getHistorical().isEmpty()) msg.getPayload().setHistorical(defaultHistorical);
 
 				ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 				Validator validator = factory.getValidator();
