@@ -11,7 +11,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import uk.gov.ons.bulk.util.PropertiesLoader;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
+import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 import uk.gov.ons.bulk.validator.Epoch;
 
 import java.io.IOException;
@@ -47,12 +49,12 @@ public @Data class NewIdsJobPayload extends Payload {
 	private String historical = getProperty("aims.default-historical");
 
 	private String getProperty(String property) {
-	 try {
-		Properties properties = PropertiesLoader.loadProperties("defaults.properties");
-		return properties.getProperty(property);
-	 } catch(IOException e)
-	   {
-		throw new RuntimeException(e);
-	   }
-     }
+		try {
+			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
+		    return properties.getProperty(property);
+		}
+	    catch (IOException e) {
+		    throw new BulkAddressRuntimeException(e);
+	    }
+	}
 }
