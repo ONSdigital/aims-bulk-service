@@ -62,6 +62,21 @@ class PubSubComponentTest {
 
 		assertEquals(expectedMsg, actualMessage);
 	}
+
+	@Test
+	public void testPubSubNewIdsJobWithDefaults() throws Exception {
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		NewIdsJobMessage expectedMsg = objectMapper.readValue(new File("src/test/resources/message-new-ids-job.json"),
+				NewIdsJobMessage.class);
+
+		template.publish("table-available-test", Files.readString(Path.of("src/test/resources/message-new-ids-default-job.json")));
+
+		List<AcknowledgeablePubsubMessage> messages = template.pull("ids-table-available-test", 1, false);
+		NewIdsJobMessage actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), NewIdsJobMessage.class);
+
+		assertEquals(expectedMsg, actualMessage);
+	}
 	
 	@Test
 	public void testPubSubErrorMessage() throws Exception {
