@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.context.MessageSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -30,6 +31,7 @@ import uk.gov.ons.bulk.validator.EpochValidator;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ImportAutoConfiguration(MessageSourceAutoConfiguration.class)
 @ActiveProfiles("test")
+@DirtiesContext
 public class PayloadValidationTests {
 
     @Value("${aims.epochs}")
