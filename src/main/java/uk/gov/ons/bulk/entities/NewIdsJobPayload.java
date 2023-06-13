@@ -49,7 +49,7 @@ public @Data class NewIdsJobPayload extends Payload {
 	@JsonProperty("epoch_number")
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Epoch(message = "epoch must be one of 99, 97, 95")
-	private String epoch = "99";
+	private String epoch = getProperty("aims.current-epoch");
 	@JsonProperty("historical_flag")
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Pattern(regexp = "^true$|^false$", message = "historical must be true or false")
