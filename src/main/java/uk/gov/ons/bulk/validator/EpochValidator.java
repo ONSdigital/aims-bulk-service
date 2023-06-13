@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
@@ -18,19 +17,24 @@ import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 @Slf4j
 public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
-	@Value("${aims.epochs}")
-	public String epochs;// = "99|97|95";
+	public String epochs;
 	
 	@Override
 	public void initialize(Epoch epoch) {
+		try {
+			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
+			
+			if (epochs == null) {
+				epochs = properties.getProperty("aims.epochs");
+			}
+		} catch (IOException e) {
+			throw new BulkAddressRuntimeException(e);
+		}
 	}
 
 	@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
-		
-//		if (value == null) {
-//			value = getProperty("aims.current-epoch");
-//		}
+
 		log.debug("Epochs: " + epochs);
 
 		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(99|97|95)$
@@ -38,14 +42,4 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 		
 		return matcher.matches();
 	}
-	
-//	private String getProperty(String property) {
-//		try {
-//			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
-//		    return properties.getProperty(property);
-//		}
-//	    catch (IOException e) {
-//		    throw new BulkAddressRuntimeException(e);
-//	    }
-//	}
 }
