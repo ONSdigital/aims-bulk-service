@@ -116,7 +116,7 @@ public class PubSubComponent {
 				
 				List<String> validationErrorMessages = new ArrayList<>();
 				
-				validator.validate(msg.getPayload()).forEach(violation -> {
+				validator.validate(msg).forEach(violation -> {
 					log.info(violation.getMessage());
 					validationErrorMessages.add(violation.getMessage());
 				});

@@ -1,29 +1,32 @@
 package uk.gov.ons.bulk.entities;
 
+import java.io.IOException;
+import java.util.Properties;
+
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
 
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
 import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 import uk.gov.ons.bulk.validator.Epoch;
-
-import java.io.IOException;
-import java.util.Properties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public @Data class NewIdsJobPayload extends Payload {
-
+	
 	@JsonProperty("big_query_dataset")
 	@NotEmpty(message = "big query dataset name must be supplied")
 	private String bigQueryDataset;
@@ -34,17 +37,21 @@ public @Data class NewIdsJobPayload extends Payload {
 	@NotEmpty(message = "IDS user id must be supplied")
 	private String idsUserId;
 	@JsonProperty("address_limit")
-	@Min(value = 1, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
-	@Max(value = 100, message = "Number of matches per input address should be an integer between 1 and 100 (5 is default)")
+	@JsonSetter(nulls = Nulls.SKIP)
+	@Min(value = 1, message = "Number of matches per input address should be an integer between 1 and 100 (1 is default)")
+	@Max(value = 100, message = "Number of matches per input address should be an integer between 1 and 100 (1 is default)")
 	private String addressLimit = getProperty("aims.default-limit");
 	@JsonProperty("quality_match_threshold")
+	@JsonSetter(nulls = Nulls.SKIP)
 	@Min(value = 0, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	@Max(value = 100, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
 	private String qualityMatchThreshold = getProperty("aims.default-threshold");
 	@JsonProperty("epoch_number")
+	@JsonSetter(nulls = Nulls.SKIP)
 	@Epoch(message = "epoch must be one of 99, 97, 95")
 	private String epoch = getProperty("aims.current-epoch");
 	@JsonProperty("historical_flag")
+	@JsonSetter(nulls = Nulls.SKIP)
 	@Pattern(regexp = "^true$|^false$", message = "historical must be true or false")
 	private String historical = getProperty("aims.default-historical");
 
