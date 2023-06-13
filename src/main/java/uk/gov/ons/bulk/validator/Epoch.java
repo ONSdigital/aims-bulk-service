@@ -1,6 +1,6 @@
 package uk.gov.ons.bulk.validator;
 
-import uk.gov.ons.bulk.entities.Payload;
+import javax.validation.Payload;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

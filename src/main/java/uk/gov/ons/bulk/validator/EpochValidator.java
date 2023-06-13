@@ -18,13 +18,17 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 	@Value("${aims.epochs}")
 	public String epochs;// = "99|97|95";
+	
+	@Override
+	public void initialize(Epoch epoch) {
+	}
 
 	@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
 		
-		if (value == null) {
-			value = getProperty("aims.current-epoch");
-		}
+//		if (value == null) {
+//			value = getProperty("aims.current-epoch");
+//		}
 
 		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(99|97|95)$
 		Matcher matcher = pattern.matcher(value);
@@ -32,13 +36,13 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 		return matcher.matches();
 	}
 	
-	private String getProperty(String property) {
-		try {
-			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
-		    return properties.getProperty(property);
-		}
-	    catch (IOException e) {
-		    throw new BulkAddressRuntimeException(e);
-	    }
-	}
+//	private String getProperty(String property) {
+//		try {
+//			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
+//		    return properties.getProperty(property);
+//		}
+//	    catch (IOException e) {
+//		    throw new BulkAddressRuntimeException(e);
+//	    }
+//	}
 }

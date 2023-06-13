@@ -11,7 +11,7 @@ import lombok.Data;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public @Data class NewIdsJobMessage {
-	@NotNull
+	@NotNull(message = "payload cannot be empty")
 	@Valid
 	private NewIdsJobPayload payload;
 	@JsonSetter(nulls = Nulls.SKIP)
