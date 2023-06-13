@@ -12,8 +12,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
+import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 
+@Slf4j
 public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 	@Value("${aims.epochs}")
@@ -29,6 +31,7 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 //		if (value == null) {
 //			value = getProperty("aims.current-epoch");
 //		}
+		log.debug("Epochs: " + epochs);
 
 		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(99|97|95)$
 		Matcher matcher = pattern.matcher(value);
