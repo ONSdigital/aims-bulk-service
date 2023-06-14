@@ -1,6 +1,8 @@
 {
+  "payload": {
     "ids_job_id": "ids-id-1",
     "big_query_dataset": "ids-dataset",
     "big_query_table": "ids-table",
     "ids_user_id": "ids-user-1"
+  }
 }
