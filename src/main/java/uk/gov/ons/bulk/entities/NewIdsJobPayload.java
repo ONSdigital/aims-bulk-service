@@ -28,31 +28,31 @@ import uk.gov.ons.bulk.validator.Epoch;
 public @Data class NewIdsJobPayload extends Payload {
 	
 	@JsonProperty("big_query_dataset")
-	@NotEmpty(message = "big query dataset name must be supplied")
+	@NotEmpty(message = "big_query_dataset name must be supplied")
 	private String bigQueryDataset;
 	@JsonProperty("big_query_table")
-	@NotEmpty(message = "big query table name must be supplied")
+	@NotEmpty(message = "big_query_table name must be supplied")
 	private String bigQueryTable;
 	@JsonProperty("ids_user_id")
-	@NotEmpty(message = "IDS user id must be supplied")
+	@NotEmpty(message = "ids_user_id must be supplied")
 	private String idsUserId;
 	@JsonProperty("address_limit")
 	@JsonSetter(nulls = Nulls.SKIP)
-	@Min(value = 1, message = "Number of matches per input address should be an integer between 1 and 100 (1 is default)")
-	@Max(value = 100, message = "Number of matches per input address should be an integer between 1 and 100 (1 is default)")
+	@Min(value = 1, message = "address_limit should be an integer between 1 and 100 (1 is default)")
+	@Max(value = 100, message = "address_limit should be an integer between 1 and 100 (1 is default)")
 	private String addressLimit = getProperty("aims.default-limit");
 	@JsonProperty("quality_match_threshold")
 	@JsonSetter(nulls = Nulls.SKIP)
-	@Min(value = 0, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
-	@Max(value = 100, message = "Match quality threshold should be decimal number between 0 and 100 (10 is default)")
+	@Min(value = 0, message = "quality_match_threshold should be decimal number between 0 and 100 (10 is default)")
+	@Max(value = 100, message = "quality_match_threshold should be decimal number between 0 and 100 (10 is default)")
 	private String qualityMatchThreshold = getProperty("aims.default-threshold");
 	@JsonProperty("epoch_number")
 	@JsonSetter(nulls = Nulls.SKIP)
-	@Epoch(message = "epoch must be one of 99, 97, 95")
+	@Epoch(message = "epoch_number must be one of 99, 97, 95")
 	private String epoch = getProperty("aims.current-epoch");
 	@JsonProperty("historical_flag")
 	@JsonSetter(nulls = Nulls.SKIP)
-	@Pattern(regexp = "^true$|^false$", message = "historical must be true or false")
+	@Pattern(regexp = "^true$|^false$", message = "historical_flag must be true or false")
 	private String historical = getProperty("aims.default-historical");
 
 	private String getProperty(String property) {

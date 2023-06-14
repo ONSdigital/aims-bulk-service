@@ -39,7 +39,7 @@ public class PayloadValidationTests {
 	private static Validator validator;
 	private static EpochValidator epochValidator;
 	private static ObjectMapper objectMapper;
-	private static ValidatorFactory factory;
+	private static ValidatorFactory factory;	
 	
     @Value("${aims.epochs}")
     private String epochs;
@@ -88,7 +88,7 @@ public class PayloadValidationTests {
 			validationErrorMessages.add(violation.getMessage());
 		});
 
-        String expectedMsg =  "epoch must be one of 99, 97, 95";
+        String expectedMsg =  "epoch_number must be one of 99, 97, 95";
         assertEquals(1, validationErrorMessages.size());
         assertTrue(validationErrorMessages.contains(expectedMsg));
     }
@@ -105,7 +105,7 @@ public class PayloadValidationTests {
 			validationErrorMessages.add(violation.getMessage());
 		});
 
-        String expectedMsg =  "Number of matches per input address should be an integer between 1 and 100 (1 is default)";
+        String expectedMsg =  "address_limit should be an integer between 1 and 100 (1 is default)";
         assertEquals(1, validationErrorMessages.size());
         assertTrue(validationErrorMessages.contains(expectedMsg));
     }
@@ -122,7 +122,7 @@ public class PayloadValidationTests {
 			validationErrorMessages.add(violation.getMessage());
 		});
 
-        String expectedMsg =  "Number of matches per input address should be an integer between 1 and 100 (1 is default)";
+        String expectedMsg =  "address_limit should be an integer between 1 and 100 (1 is default)";
         assertEquals(1, validationErrorMessages.size());
         assertTrue(validationErrorMessages.contains(expectedMsg));
     }
@@ -139,7 +139,7 @@ public class PayloadValidationTests {
 			validationErrorMessages.add(violation.getMessage());
 		});
 
-        String expectedMsg =  "Match quality threshold should be decimal number between 0 and 100 (10 is default)";
+        String expectedMsg =  "quality_match_threshold should be decimal number between 0 and 100 (10 is default)";
         assertEquals(1, validationErrorMessages.size());
         assertTrue(validationErrorMessages.contains(expectedMsg));
     }
@@ -156,7 +156,7 @@ public class PayloadValidationTests {
 			validationErrorMessages.add(violation.getMessage());
 		});
 
-        String expectedMsg =  "Match quality threshold should be decimal number between 0 and 100 (10 is default)";
+        String expectedMsg =  "quality_match_threshold should be decimal number between 0 and 100 (10 is default)";
         assertEquals(1, validationErrorMessages.size());
         assertTrue(validationErrorMessages.contains(expectedMsg));
     }
@@ -173,7 +173,7 @@ public class PayloadValidationTests {
 			validationErrorMessages.add(violation.getMessage());
 		});
 
-        String expectedMsg = "historical must be true or false";
+        String expectedMsg = "historical_flag must be true or false";
         assertEquals(1, validationErrorMessages.size());
         assertTrue(validationErrorMessages.contains(expectedMsg));
     }
@@ -229,5 +229,22 @@ public class PayloadValidationTests {
 
 		assertTrue(validationErrorMessages.isEmpty());
         assertEquals(true, msg.isTest());
+    }
+    
+    @Test
+    public void testPayloadValidatorMissingPayloadTest() throws Exception {
+
+        NewIdsJobMessage msg = objectMapper.readValue("{}",	NewIdsJobMessage.class);
+        
+		List<String> validationErrorMessages = new ArrayList<>();
+		
+		validator.validate(msg).forEach(violation -> {
+			validationErrorMessages.add(violation.getMessage());
+		});
+		
+		String expectedMsg = "payload cannot be empty";
+
+		assertEquals(1, validationErrorMessages.size());
+        assertTrue(validationErrorMessages.contains(expectedMsg));
     }
 }
