@@ -84,7 +84,7 @@ public class IdsService {
 			String tableName = BIG_QUERY_IDS_TABLE_PREFIX + newKey;
 
 			Schema schema = Schema.of(
-					Field.of("id", StandardSQLTypeName.INT64),
+					Field.of("id", StandardSQLTypeName.STRING),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigQuery, idsDatasetName, tableName, schema);

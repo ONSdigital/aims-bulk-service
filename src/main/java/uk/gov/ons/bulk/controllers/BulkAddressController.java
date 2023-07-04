@@ -166,7 +166,7 @@ public class BulkAddressController {
 			String tableName = BIG_QUERY_TABLE_PREFIX + newKey;
 
 			com.google.cloud.bigquery.Schema schema = com.google.cloud.bigquery.Schema.of(
-					Field.of("id", StandardSQLTypeName.INT64),
+					Field.of("id", StandardSQLTypeName.STRING),
 					Field.of("inputaddress", StandardSQLTypeName.STRING),
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
