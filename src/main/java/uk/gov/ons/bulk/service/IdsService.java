@@ -103,7 +103,7 @@ public class IdsService {
 					newIdsJobMessage.getPayload().getQualityMatchThreshold(),
 					"false",
 					newIdsJobMessage.getPayload().getEpoch(),
-					"", "", "", "",
+					"", "", "", "","", "", "",
 					"false");
 			
 			HttpHeaders headers = new HttpHeaders();

@@ -141,13 +141,20 @@ public class BulkAddressController {
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludewales.val.message}") String excludewales,
 			@Parameter(description = "Flag to exclude results from Northern Ireland")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludenorthernireland.val.message}") String excludenorthernireland,
+			@Parameter(description = "Flag to exclude results from Channel Islands")
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludechannelislands.val.message}") String excludechannelislands,
+			@Parameter(description = "Flag to exclude results from Isle of Man")
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludeislofman.val.message}") String excludeisleofman,
+			@Parameter(description = "Flag to exclude other results (e.g. offshore)")
+			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{excludeoffshore.val.message}") String excludeoffshore,
 			@Parameter(description = "Return PAF address if present instead of NAG")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{pafdefault.val.message}") String pafdefault,
 			@RequestHeader Map<String, String> headersIn) {
 
 		// set the bulk parameters object using the valid input parameters
 		BulkRequestParams bulkRequestParams = new BulkRequestParams(limitperaddress, classificationfilter, historical,
-				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland, pafdefault);
+				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland,
+				excludechannelislands, excludeisleofman, excludeoffshore, pafdefault);
 
 		// Pass on username and api key headers from CA Gateway
 		com.google.api.client.http.HttpHeaders headers = new com.google.api.client.http.HttpHeaders();

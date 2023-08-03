@@ -26,6 +26,9 @@ public @Data class BulkRequestParams {
 	private	String excludescotland;
 	private	String excludewales;
 	private	String excludenorthernireland;
+	private	String excludechannelislands;
+	private	String excludeisleofman;
+	private	String excludeoffshore;
 	private	String pafdefault; // Choose PAF address over NAG Default: False
 	@Setter(AccessLevel.NONE)
 	private	String eboost; // Set to 0 to exclude addresses in England Default: 1.0
@@ -35,10 +38,17 @@ public @Data class BulkRequestParams {
 	private	String sboost; // Set to 0 to exclude addresses in Scotland	Optional Default: 1.0
 	@Setter(AccessLevel.NONE)
 	private	String wboost; // Set to 0 to exclude addresses in Wales Default: 1.0
+	@Setter(AccessLevel.NONE)
+	private	String lboost; // Set to 0 to exclude addresses in Channel Islands Default: 1.0
+	@Setter(AccessLevel.NONE)
+	private	String mboost; // Set to 0 to exclude addresses in Isle of Man Default: 1.0
+	@Setter(AccessLevel.NONE)
+	private	String jboost; // Set to 0 to exclude other addresses (e.g. offshore) Default: 1.0
 	
-	public BulkRequestParams(String limitperaddress, String classificationfilter, String historical, String matchthreshold, String verbose,
-			String epoch, String excludeengland, String excludescotland, String excludewales,
-			String excludenorthernireland, String pafdefault) {
+	public BulkRequestParams(String limitperaddress, String classificationfilter, String historical, String matchthreshold,
+							 String verbose, String epoch, String excludeengland, String excludescotland, String excludewales,
+							 String excludenorthernireland, String excludechannelislands, String excludeisleofman,
+							 String excludeoffshore, String pafdefault) {
 		
 		this.limitperaddress = limitperaddress;
 		if (classificationfilter != null) this.classificationfilter = classificationfilter;
@@ -50,10 +60,16 @@ public @Data class BulkRequestParams {
 		this.excludescotland = excludescotland;
 		this.excludewales = excludewales;
 		this.excludenorthernireland = excludenorthernireland;
+		this.excludechannelislands = excludechannelislands;
+		this.excludeisleofman = excludeisleofman;
+		this.excludeoffshore = excludeoffshore;
 		if(excludeengland.equals("true")) this.eboost = "0";
 		if(excludescotland.equals("true")) this.sboost = "0";
 		if(excludewales.equals("true")) this.wboost = "0";
 		if(excludenorthernireland.equals("true")) this.nboost = "0";
+		if(excludechannelislands.equals("true")) this.lboost = "0";
+		if(excludeisleofman.equals("true")) this.mboost = "0";
+		if(excludeoffshore.equals("true")) this.jboost = "0";
 		this.pafdefault = pafdefault;
 	}
 }
