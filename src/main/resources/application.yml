@@ -59,7 +59,7 @@ aims:
     create-signed-url-function: https://europe-west2-YOUR-GCP-PROJECT-ID-HERE.cloudfunctions.net/create-signed-url-function
   project-number: YOUR-GCP-PROJECT-NUMBER-HERE
   epochs: 95|97|99|101|102|103|104
-  current-epoch: 99
+  current-epoch: 103
   # Update the records processed at every n% of completion
   report-frequency: 5
   pubsub:
