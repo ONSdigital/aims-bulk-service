@@ -6,4 +6,4 @@ spring:
   datasource:
     url: jdbc:h2:mem:test
 aims:
-  epochs: 95|97|99|101
+  epochs: 95|97|99|101|102|103|104
