@@ -110,7 +110,7 @@ public class CloudTaskService {
 			HttpContent content = new JsonHttpContent(new GsonFactory(), bjr.getJob());
 			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
 			request.setUnsuccessfulResponseHandler(new HttpBackOffUnsuccessfulResponseHandler(backoff));
-			request.setHeaders(headers);
+//			request.setHeaders(headers);
 			request.execute();
 		}
 	}
