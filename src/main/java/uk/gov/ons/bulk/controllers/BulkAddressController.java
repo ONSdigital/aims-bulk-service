@@ -160,7 +160,7 @@ public class BulkAddressController {
 		com.google.api.client.http.HttpHeaders headers = new com.google.api.client.http.HttpHeaders();
 		String userName = headersIn.getOrDefault("user", "Anon");
 		headers.set("user", userName);
-		headers.setAuthorization(headersIn.getOrDefault("Authorization", "None"));
+//		headers.setAuthorization(headersIn.getOrDefault("Authorization", "None"));
 
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
