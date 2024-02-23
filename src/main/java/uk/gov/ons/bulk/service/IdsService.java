@@ -106,11 +106,9 @@ public class IdsService {
 					"", "", "", "","", "", "",
 					"false");
 			
-			HttpHeaders headers = new HttpHeaders();
-			headers.set("user", newIdsJobMessage.getPayload().getIdsUserId());
-			headers.setAuthorization("None");
+			String userName = newIdsJobMessage.getPayload().getIdsUserId();
 			
-			cloudTaskService.createIdsTasks(newKey, newIdsJobMessage.getPayload().getIdsJobId(), idsRequests, results.getTotalRows(), bulkRequestParams, headers);
+			cloudTaskService.createIdsTasks(newKey, newIdsJobMessage.getPayload().getIdsJobId(), idsRequests, results.getTotalRows(), bulkRequestParams, userName);
 		} catch (JobException | InterruptedException e) {
 			log.error(String.format("Problem querying BigQuery: %s", e.getMessage()));
 		} catch (IOException e) {
