@@ -248,11 +248,10 @@ public class BulkAddressApplicationTest {
         testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
         BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
         
-	    HttpHeaders headers = new HttpHeaders();
-	    headers.set("user","bigqueryboy");
+	    String userName = "bigqueryboy";
 
         when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
-        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, headers);
+        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName);
         
 		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))

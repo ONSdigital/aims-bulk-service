@@ -156,11 +156,8 @@ public class BulkAddressController {
 				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland,
 				excludechannelislands, excludeisleofman, excludeoffshore, pafdefault);
 
-		// Pass on username and api key headers from CA Gateway
-		com.google.api.client.http.HttpHeaders headers = new com.google.api.client.http.HttpHeaders();
+		// Pass on username
 		String userName = headersIn.getOrDefault("user", "Anon");
-		headers.set("user", userName);
-//		headers.setAuthorization(headersIn.getOrDefault("Authorization", "None"));
 
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
@@ -178,7 +175,7 @@ public class BulkAddressController {
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 
-			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams, headers);
+			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams, userName);
 		} catch (IOException ex) {
 			String response = String.format("/bulk error: %s", ex.getMessage());
 			log.error(response);
