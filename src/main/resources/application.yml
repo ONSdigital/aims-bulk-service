@@ -75,13 +75,13 @@ ids:
 async:
   executor:
     thread:
-      core_pool_size: 5
+      core_pool_size: 8
       # Configure the maximum number of threads
       max_pool_size: 5
       # Configure queue size
       queue_capacity: 100
       # Configure the maximum idle time of threads
-      keep_alive_seconds: 60
+      keep_alive_seconds: 90
       # Configure the name prefix of threads in the thread pool
       name:
         prefix: bulk-async-

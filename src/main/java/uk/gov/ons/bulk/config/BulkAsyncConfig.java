@@ -35,9 +35,9 @@ public class BulkAsyncConfig implements AsyncConfigurer {
         // Set the number of core threads
         executor.setCorePoolSize(corePoolSize);
         // Set the maximum number of threads. Threads exceeding the number of core threads will be applied only after the buffer queue is full
-        executor.setMaxPoolSize(maxPoolSize);
+        // executor.setMaxPoolSize(maxPoolSize); Allow Default Integer.MAX_VALUE
         // Set buffer queue size
-        executor.setQueueCapacity(queueCapacity);
+        // executor.setQueueCapacity(queueCapacity); Allow Default Integer.MAX_VALUE
         // Set the maximum idle time of threads. Threads that exceed the number of core threads will be destroyed after the idle time arrives
         executor.setKeepAliveSeconds(keepAliveSeconds);
         // Set the prefix of thread name. After setting, it is convenient for us to locate the thread pool where the processing task is located
@@ -64,6 +64,9 @@ public class BulkAsyncConfig implements AsyncConfigurer {
             log.error(String.format("Exception with message : %s", ex.getMessage()));
             log.error(String.format("Method : %s", method.toString()));
             log.error(String.format("Number of parameters : %s",  params.length));
+            for (Object param : params) {
+            	log.error(String.format("Parameter value : %s",  param));
+            }
         };
 	}
 }
