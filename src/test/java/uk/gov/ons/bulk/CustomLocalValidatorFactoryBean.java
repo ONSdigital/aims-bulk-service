@@ -3,9 +3,9 @@ package uk.gov.ons.bulk;
 import org.hibernate.validator.HibernateValidator;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import javax.validation.Configuration;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorFactory;
+import jakarta.validation.Configuration;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorFactory;
 import java.util.List;
 
 public class CustomLocalValidatorFactoryBean extends LocalValidatorFactoryBean {

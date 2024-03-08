@@ -55,7 +55,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.http.HttpHeaders;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.FieldValueList;
 
@@ -92,6 +91,12 @@ public class BulkAddressApplicationTest {
 
     @Value("${aims.cloud-functions.create-cloud-task-function}")
     private String createTaskFunction;
+    
+	@Value("${aims.max-records-per-job}")
+	private int maxRecordsPerJob;
+	
+	@Value("${aims.min-records-per-job}")
+	private int minRecordsPerJob;
 
     @Autowired
     private MockMvc mockMvc;
@@ -166,6 +171,43 @@ public class BulkAddressApplicationTest {
 		address2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
 		BulkRequestContainer bulkRequestContainer = new BulkRequestContainer();
 		bulkRequestContainer.setAddresses(new BulkRequest[] { address1, address2 });
+		
+		return Stream.of(bulkRequestContainer);
+    }
+    
+    private static Stream<BulkRequestContainer> bulkRequestObjectOverMax() {
+    	
+		BulkRequest address1 = new BulkRequest();
+		address1.setId("1");
+		address1.setAddress("4 Gate Reach Exeter EX2 6GA");
+		BulkRequest address2 = new BulkRequest();
+		address2.setId("2");
+		address2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
+		BulkRequest address3 = new BulkRequest();
+		address3.setId("3");
+		address3.setAddress("4 Gate Reach Exeter EX2 6GA");
+		BulkRequest address4 = new BulkRequest();
+		address4.setId("4");
+		address4.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
+		BulkRequest address5 = new BulkRequest();
+		address5.setId("5");
+		address5.setAddress("4 Gate Reach Exeter EX2 6GA");
+		BulkRequest address6 = new BulkRequest();
+		address6.setId("6");
+		address6.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
+		BulkRequestContainer bulkRequestContainer = new BulkRequestContainer();
+		bulkRequestContainer.setAddresses(new BulkRequest[] { address1, address2, address3, address4, address5, address6 });
+		
+		return Stream.of(bulkRequestContainer);
+    }
+    
+    private static Stream<BulkRequestContainer> bulkRequestObjectUnderMin() {
+    	
+		BulkRequest address1 = new BulkRequest();
+		address1.setId("1");
+		address1.setAddress("4 Gate Reach Exeter EX2 6GA");
+		BulkRequestContainer bulkRequestContainer = new BulkRequestContainer();
+		bulkRequestContainer.setAddresses(new BulkRequest[] { address1 });
 		
 		return Stream.of(bulkRequestContainer);
     }
@@ -606,7 +648,7 @@ public class BulkAddressApplicationTest {
         when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
         
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/1")
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isInternalServerError())
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isServiceUnavailable())
 				.andExpect(jsonPath("$.error", containsString("An IO Exception")))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
@@ -624,7 +666,7 @@ public class BulkAddressApplicationTest {
         when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
         
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/1")
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isInternalServerError())
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isServiceUnavailable())
 				.andExpect(jsonPath("$.error", containsString("Signed URL is empty")))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
@@ -821,7 +863,7 @@ public class BulkAddressApplicationTest {
 	@Test
 	public void testSwagger() throws Exception {
 
-		mockMvc.perform(MockMvcRequestBuilders.get("/v3/api-docs")
+		mockMvc.perform(MockMvcRequestBuilders.get("/api-docs")
 						.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
 				.andExpect(jsonPath("$.openapi", Is.is("3.0.1")))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
@@ -898,7 +940,7 @@ public class BulkAddressApplicationTest {
 				.andReturn();
 		
 		mockMvc.perform(asyncDispatch(mvcResult))
-				.andExpect(status().isInternalServerError())
+				.andExpect(status().isServiceUnavailable())
 				.andExpect(jsonPath("$.error", containsString("An IO Exception")))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
@@ -940,4 +982,164 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.error", Is.is(String.format("Job ID %s is not currently downloadable", 1L))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
+	
+    @ParameterizedTest
+    @MethodSource("bulkRequestObject")
+    public void runBulkRequestNoCapacity(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+    	
+    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	for (long i = 1; i < 11; i++) {
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 100000, 10000);
+    		bulkInfo.setJobid(i);
+    		bulkInfos.add(bulkInfo);
+    	}
+	    
+	    when(bulkStatusService.getJobs("", "in-progress")).thenReturn(bulkInfos);       
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isServiceUnavailable())
+		 		.andExpect(jsonPath("$.error", Is.is("/bulk error: Too many jobs. The service is at capacity. Please wait before sending your request. Check the Splunk dashboard.")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+    
+    @ParameterizedTest
+    @MethodSource("bulkRequestObject")
+    public void runBulkRequestMaxJobsButCapacity(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+    	
+    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	for (long i = 1; i < 11; i++) {
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 4, 2);
+    		bulkInfo.setJobid(i);
+    		bulkInfos.add(bulkInfo);
+    	}
+   	
+    	long newKey = 102;
+        
+		BulkInfo bulkInfo = new BulkInfo("bigqueryboy", "in-progress", 2, 0);
+        bulkInfo.setJobid(newKey);
+        bulkInfo.setStartdate(now);
+        
+        BulkRequest testBulkRequest1 = new BulkRequest();
+        testBulkRequest1.setId("1");
+        testBulkRequest1.setAddress("4 Gate Reach Exeter EX2 6GA");
+        BulkRequest testBulkRequest2 = new BulkRequest();
+        testBulkRequest2.setId("2");
+        testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
+        BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
+        
+	    String userName = "bigqueryboy";
+    	    
+	    when(bulkStatusService.getJobs("", "in-progress")).thenReturn(bulkInfos);    
+	    when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
+        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName);
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.jobId", Is.is("102")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+    @ParameterizedTest
+    @MethodSource("bulkRequestObject")
+    public void runBulkRequestMaxJobsNoCapacity(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+    	
+    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	for (long i = 1; i < 10; i++) {
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 5, 2);
+    		bulkInfo.setJobid(i);
+    		bulkInfos.add(bulkInfo);
+    	}
+    	
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 4, 1);
+		bulkInfo.setJobid(10);
+		bulkInfos.add(bulkInfo);
+    	    
+	    when(bulkStatusService.getJobs("", "in-progress")).thenReturn(bulkInfos);
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isServiceUnavailable())
+		 		.andExpect(jsonPath("$.error", Is.is("/bulk error: Too many jobs. The service is at capacity. Please wait before sending your request. Check the Splunk dashboard.")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+    @ParameterizedTest
+    @MethodSource("bulkRequestObject")
+    public void runBulkRequestMaxJobsButCapacityEdgeCase(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+    	
+    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	for (long i = 1; i < 10; i++) {
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 5, 2);
+    		bulkInfo.setJobid(i);
+    		bulkInfos.add(bulkInfo);
+    	}
+    	
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 3, 1);
+		bulkInfo.setJobid(10);
+		bulkInfos.add(bulkInfo);
+   	
+    	long newKey = 102;
+        
+        BulkRequest testBulkRequest1 = new BulkRequest();
+        testBulkRequest1.setId("1");
+        testBulkRequest1.setAddress("4 Gate Reach Exeter EX2 6GA");
+        BulkRequest testBulkRequest2 = new BulkRequest();
+        testBulkRequest2.setId("2");
+        testBulkRequest2.setAddress("Costa Coffee, 12 Bedford Street, Exeter");
+        BulkRequest[] bulkRequests = {testBulkRequest1, testBulkRequest2};
+        
+	    String userName = "bigqueryboy";
+    	    
+	    when(bulkStatusService.getJobs("", "in-progress")).thenReturn(bulkInfos);    
+	    when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
+        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName);
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.jobId", Is.is("102")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+    @ParameterizedTest
+    @MethodSource("bulkRequestObject")
+    public void runBulkRequestAvailableJobsNoCapacity(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+    	
+    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	for (long i = 1; i < 5; i++) {
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 250000, 10000);
+    		bulkInfo.setJobid(i);
+    		bulkInfos.add(bulkInfo);
+    	}
+    	    
+	    when(bulkStatusService.getJobs("", "in-progress")).thenReturn(bulkInfos);
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isServiceUnavailable())
+		
+				.andDo(MockMvcResultHandlers.print()) 		
+				.andExpect(jsonPath("$.error", Is.is("/bulk error: Too many jobs. The service is at capacity. Please wait before sending your request. Check the Splunk dashboard.")))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+    @ParameterizedTest
+    @MethodSource("bulkRequestObjectUnderMin")
+    public void runBulkRequestJobRecordsUnderMin(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())		
+				.andExpect(jsonPath("$.error", Is.is(String.format("/bulk error: Bulk match records under minimum. The current minimum records per job is: %d. Condider using the UI for bulks this small.", minRecordsPerJob))))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
+    
+    @ParameterizedTest
+    @MethodSource("bulkRequestObjectOverMax")
+    public void runBulkRequestJobRecordsOverMax(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())		
+				.andExpect(jsonPath("$.error", Is.is(String.format("/bulk error: Bulk match records over maximum. The current maximum records per job is: %d.", maxRecordsPerJob))))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+    }
 }

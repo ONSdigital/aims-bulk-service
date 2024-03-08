@@ -30,6 +30,8 @@ spring:
     password: YOUR-DATABASE-PASSWORD
 springdoc:
   writer-with-default-pretty-printer: true
+  api-docs:
+    path: /api-docs
 management:
   endpoints:
     web:
@@ -58,12 +60,16 @@ aims:
     create-cloud-task-function: https://europe-west2-YOUR-GCP-PROJECT-ID-HERE.cloudfunctions.net/create-cloud-task-function
     create-signed-url-function: https://europe-west2-YOUR-GCP-PROJECT-ID-HERE.cloudfunctions.net/create-signed-url-function
   project-number: YOUR-GCP-PROJECT-NUMBER-HERE
-  epochs: 95|97|99|101|102|103|104|105|106
+  epochs: 104|105|106
   current-epoch: 106
   # Update the records processed at every n% of completion
   report-frequency: 5
   pubsub:
     error-topic: ids-table-ready
+  data-node-count: 24
+  capacity-scale-factor: 0.42 # Equates to the current theory of 10 concurrent jobs of 100K on 24 data nodes
+  max-records-per-job: 100000
+  min-records-per-job: 500
 ids:
   cloud:
     gcp:

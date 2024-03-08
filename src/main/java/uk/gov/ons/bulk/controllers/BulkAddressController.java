@@ -9,12 +9,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +41,11 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
@@ -85,6 +84,19 @@ public class BulkAddressController {
 
 	@Value("${aims.project-number}")
 	private String projectNumber;
+	
+	@Value("${aims.data-node-count}")
+	private int dataNodeCount;
+	
+	@Value("${aims.capacity-scale-factor}")
+	private double capacityScaleFactor;
+	
+	@Value("${aims.max-records-per-job}")
+	private int maxRecordsPerJob;
+	
+	@Value("${aims.min-records-per-job}")
+	private int minRecordsPerJob;
+	
 	
 	@Operation(summary = "Get a list of bulk jobs on the system, can be filtered by user or status")
 	@ApiResponses(value = {
@@ -161,6 +173,30 @@ public class BulkAddressController {
 
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
+				
+		// Check Job record count
+		if (recs < minRecordsPerJob) {
+			String response = String.format("/bulk error: Bulk match records under minimum. The current minimum records per job is: %d. Condider using the UI for bulks this small.", minRecordsPerJob);
+			log.error(response);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
+		}
+		
+		if (recs > maxRecordsPerJob) {
+			String response = String.format("/bulk error: Bulk match records over maximum. The current maximum records per job is: %d.", maxRecordsPerJob);
+			log.error(response);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
+		}
+		
+		// Capacity check
+		List<BulkInfo> jobsList = bulkStatusService.getJobs("", IP.getStatus());
+		if (!checkCapacity(jobsList, recs)) {
+			String response = "/bulk error: Too many jobs. The service is at capacity. Please wait before sending your request. Check the Splunk dashboard.";
+			log.error(response);
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
+		}
 
 		BulkInfo bulkInfo = new BulkInfo(userName, IP.getStatus(), recs, 0);
 
@@ -179,7 +215,7 @@ public class BulkAddressController {
 		} catch (IOException ex) {
 			String response = String.format("/bulk error: %s", ex.getMessage());
 			log.error(response);
-			return ResponseEntity.internalServerError()
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
 					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 
@@ -219,7 +255,7 @@ public class BulkAddressController {
 		} catch (JsonProcessingException e) {
 			String response = String.format("/bulk-progress/%s error: %s", jobid, e.getMessage());
 			log.error(response);
-			return ResponseEntity.internalServerError()
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
 					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 
@@ -263,7 +299,7 @@ public class BulkAddressController {
 			} catch (IOException | BulkAddressException ex) {
 				String response = String.format("/bulk-result/%s error: %s", jobId, ex.getMessage());
 				log.error(response);
-				return ResponseEntity.internalServerError()
+				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
 						.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 			}
 		} else {
@@ -299,7 +335,7 @@ public class BulkAddressController {
 		} catch (JsonProcessingException e) {
 			String response = String.format("/ids/bulk-progress/%s error: %s", idsjobid, e.getMessage());
 			log.error(response);
-			return ResponseEntity.internalServerError()
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
 					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 
@@ -363,7 +399,7 @@ public class BulkAddressController {
 			} catch (IOException io) {
 				String response = String.format("/results error: %s", io.getMessage());
 				log.error(response);
-				return getErrorResponse(response, HttpStatus.INTERNAL_SERVER_ERROR);
+				return getErrorResponse(response, HttpStatus.SERVICE_UNAVAILABLE);
 			}
 
 		} else {
@@ -380,5 +416,22 @@ public class BulkAddressController {
 		};
 
 		return ResponseEntity.status(httpStatus).contentType(MediaType.APPLICATION_JSON).body(stream);
+	}
+	
+	private boolean checkCapacity(List<BulkInfo> jobs, long nextJobTotalRecords) {
+
+		int maxJobs = (int)(dataNodeCount * capacityScaleFactor);
+		int maxRecords = maxJobs * maxRecordsPerJob;
+		long totalRecords = 0;
+		
+		for (BulkInfo job : jobs) {
+			totalRecords = totalRecords + job.getTotalrecs();
+		}
+
+		if (nextJobTotalRecords + totalRecords > maxRecords) {
+			return false;
+		} else {
+			return true;
+		}
 	}
 }
