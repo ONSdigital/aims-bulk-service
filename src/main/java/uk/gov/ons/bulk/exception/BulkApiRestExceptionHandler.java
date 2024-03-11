@@ -3,10 +3,9 @@ package uk.gov.ons.bulk.exception;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.validation.ConstraintViolationException;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -36,10 +36,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @ControllerAdvice
 public class BulkApiRestExceptionHandler extends ResponseEntityExceptionHandler {
-
+	
 	@Override
 	protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-			HttpHeaders headers, HttpStatus status, WebRequest request) {
+			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
 		
 		List<String> errors = new ArrayList<String>();
 		
@@ -61,8 +61,8 @@ public class BulkApiRestExceptionHandler extends ResponseEntityExceptionHandler 
 	
 	@Override
 	protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex,
-			HttpHeaders headers, HttpStatus status, WebRequest request) {
-			
+			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+		
 		BulkApiError apiError = new BulkApiError(HttpStatus.BAD_REQUEST, 
 				ex.getLocalizedMessage(), String.format("%s parameter is missing", ex.getParameterName()));
 		

@@ -1,6 +1,6 @@
 package uk.gov.ons.bulk.validator;
 
-import javax.validation.Payload;
+import jakarta.validation.Payload;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -8,7 +8,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.validation.Constraint;
+import jakarta.validation.Constraint;
 
 @Target({ ElementType.FIELD, ElementType.PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)

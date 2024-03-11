@@ -1,6 +1,6 @@
 package uk.gov.ons.bulk.entities;
 
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
