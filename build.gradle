@@ -43,6 +43,8 @@ dependencies {
 	testImplementation('org.springframework.boot:spring-boot-starter-test') {
 		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
 	}
+	
+	testImplementation 'org.junit.platform:junit-platform-runner:1.10.2'
 
 	// Required for MockMvc autoconfigure
 	testImplementation 'org.springframework.boot:spring-boot-starter-web'
@@ -70,6 +72,11 @@ dependencyManagement {
 
 test {
 	useJUnitPlatform()
+	
+	// listen to events in the test execution lifecycle
+	beforeTest { descriptor ->
+		logger.lifecycle("Running test: " + descriptor)
+	}
 	
 	if (project.hasProperty('excludeTests')) {
         exclude project.property('excludeTests')
