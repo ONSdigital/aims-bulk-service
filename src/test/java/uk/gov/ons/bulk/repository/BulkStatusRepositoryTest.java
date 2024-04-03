@@ -10,9 +10,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.junit.platform.suite.api.Suite;
+import org.junit.platform.suite.api.SuiteDisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
 import uk.gov.ons.bulk.entities.BulkInfo;
@@ -21,7 +23,9 @@ import uk.gov.ons.bulk.util.BulkServiceConstants.Status;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@DirtiesContext
+@Suite
+@SuiteDisplayName("Repository Test Suite")
+@AutoConfigureTestDatabase
 class BulkStatusRepositoryTest {
 	
     @Autowired
