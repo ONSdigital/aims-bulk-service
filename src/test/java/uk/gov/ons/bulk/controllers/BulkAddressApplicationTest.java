@@ -578,7 +578,7 @@ public class BulkAddressApplicationTest {
 			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
 		
 		String classError = "runBulkRequest.classificationfilter: classificationfilter may not contain a list and/or a wildcard";
-		String epochError = "runBulkRequest.epoch: epoch must be one of 106, 105, 104, 103, 102, 101, 99, 97, 95";
+		String epochError = "runBulkRequest.epoch: epoch must be one of 107, 106, 105, 103, 102, 101, 99, 97, 95";
 		String excludeenglandError = "runBulkRequest.excludeengland: excludeengland must be true or false";
 		String excludenorthernirelandError = "runBulkRequest.excludenorthernireland: excludenorthernireland must be true or false";
 		
