@@ -506,9 +506,9 @@ public class BulkAddressApplicationTest {
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("epoch", "100")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("epoch must be one of 106, 105, 104, 103, 102, 101, 99, 97, 95")))
+				.andExpect(jsonPath("$.message", containsString("epoch must be one of 107, 106, 105, 103, 102, 101, 99, 97, 95")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch must be one of 106, 105, 104, 103, 102, 101, 99, 97, 95"))))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch must be one of 107, 106, 105, 103, 102, 101, 99, 97, 95"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
