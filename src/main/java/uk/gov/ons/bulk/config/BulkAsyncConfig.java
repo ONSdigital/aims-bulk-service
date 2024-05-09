@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import lombok.extern.slf4j.Slf4j;
+import uk.gov.ons.bulk.entities.BulkRequest;
 
 @Slf4j
 @Configuration
@@ -65,7 +66,12 @@ public class BulkAsyncConfig implements AsyncConfigurer {
             log.error(String.format("Method : %s", method.toString()));
             log.error(String.format("Number of parameters : %s",  params.length));
             for (Object param : params) {
-            	log.error(String.format("Parameter value : %s",  param));
+
+                if (param instanceof BulkRequest) {
+                    log.error(String.format("BulkRequest parameter value : %s", ((BulkRequest) param).toString()));
+                } else {
+                    log.error(String.format("Parameter value : %s",  param));
+                }
             }
         };
 	}
