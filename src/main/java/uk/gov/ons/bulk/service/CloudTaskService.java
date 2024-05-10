@@ -1,6 +1,8 @@
 package uk.gov.ons.bulk.service;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -110,8 +112,17 @@ public class CloudTaskService {
 			try {
 				log.debug(String.format("Response Status Code: %s", response.getStatusCode()));
 				log.debug(String.format("Response Status Message: %s", response.getStatusMessage()));
-				log.debug(String.format("Response Object: %s", response.toString()));
-				log.debug(String.format("Request Content: %s", response.getRequest().getContent()));
+
+				InputStream is = response.getContent();
+				try {
+					log.debug(String.format("Response Object: %s", new String(is.readAllBytes(), StandardCharsets.UTF_8)));
+				} finally {
+					is.close();
+				}
+
+				if (response.getRequest().getContent() instanceof  JsonHttpContent) {
+					log.debug(String.format("Request Content: %s", ((JsonHttpContent) response.getRequest().getContent()).getData()));
+				}
 			} finally {
 				response.disconnect();
 			}
