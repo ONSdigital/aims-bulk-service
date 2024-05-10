@@ -6,15 +6,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.api.client.http.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpBackOffUnsuccessfulResponseHandler;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.http.json.JsonHttpContent;
 import com.google.api.client.json.gson.GsonFactory;
@@ -109,7 +105,16 @@ public class CloudTaskService {
 			HttpContent content = new JsonHttpContent(new GsonFactory(), bjr.getJob());
 			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
 			request.setUnsuccessfulResponseHandler(new HttpBackOffUnsuccessfulResponseHandler(backoff));
-			request.execute();
+			HttpResponse response = request.execute();
+
+			try {
+				log.debug(String.format("Response Status Code: %s", response.getStatusCode()));
+				log.debug(String.format("Response Status Message: %s", response.getStatusMessage()));
+				log.debug(String.format("Response Object: %s", response.toString()));
+				log.debug(String.format("Request Content: %s", response.getRequest().getContent()));
+			} finally {
+				response.disconnect();
+			}
 		}
 	}
 
@@ -138,7 +143,16 @@ public class CloudTaskService {
 			HttpContent content = new JsonHttpContent(new GsonFactory(), bjr.getJob());
 			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
 			request.setUnsuccessfulResponseHandler(new HttpBackOffUnsuccessfulResponseHandler(backoff));
-			request.execute();
+			HttpResponse response = request.execute();
+
+			try {
+				log.debug(String.format("Response Status Code: %s", response.getStatusCode()));
+				log.debug(String.format("Response Status Message: %s", response.getStatusMessage()));
+				log.debug(String.format("Response Object: %s", response.toString()));
+				log.debug(String.format("Request: %s", response.getRequest().toString()));
+			} finally {
+				response.disconnect();
+			}
 		}
 	}
 

@@ -52,9 +52,9 @@ logging:
     root: INFO
     uk:
       gov:
-        ons: INFO
+        ons: DEBUG
     reactor:
-      netty: INFO
+      netty: DEBUG
 aims:
   cloud-functions:
     create-cloud-task-function: https://europe-west2-YOUR-GCP-PROJECT-ID-HERE.cloudfunctions.net/create-cloud-task-function
