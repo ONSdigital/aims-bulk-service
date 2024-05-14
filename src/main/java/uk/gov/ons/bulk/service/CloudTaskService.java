@@ -1,20 +1,18 @@
 package uk.gov.ons.bulk.service;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.api.client.http.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpBackOffUnsuccessfulResponseHandler;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.http.json.JsonHttpContent;
 import com.google.api.client.json.gson.GsonFactory;
@@ -109,7 +107,28 @@ public class CloudTaskService {
 			HttpContent content = new JsonHttpContent(new GsonFactory(), bjr.getJob());
 			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
 			request.setUnsuccessfulResponseHandler(new HttpBackOffUnsuccessfulResponseHandler(backoff));
-			request.execute();
+			HttpResponse response = request.execute();
+
+			try {
+				log.debug(String.format("Response Status Code: %s", response.getStatusCode()));
+				log.debug(String.format("Response Status Message: %s", response.getStatusMessage()));
+
+				if (log.isDebugEnabled())
+				{
+					InputStream is = response.getContent();
+					try {
+						log.debug(String.format("Response Object: %s", new String(is.readAllBytes(), StandardCharsets.UTF_8)));
+					} finally {
+						is.close();
+					}
+
+					if (response.getRequest().getContent() instanceof  JsonHttpContent) {
+						log.debug(String.format("Request Content: %s", ((JsonHttpContent) response.getRequest().getContent()).getData()));
+					}
+				}
+			} finally {
+				response.disconnect();
+			}
 		}
 	}
 
@@ -138,7 +157,28 @@ public class CloudTaskService {
 			HttpContent content = new JsonHttpContent(new GsonFactory(), bjr.getJob());
 			HttpRequest request = transport.createRequestFactory(adapter).buildPostRequest(genericUrl, content);
 			request.setUnsuccessfulResponseHandler(new HttpBackOffUnsuccessfulResponseHandler(backoff));
-			request.execute();
+			HttpResponse response = request.execute();
+
+			try {
+				log.debug(String.format("Response Status Code: %s", response.getStatusCode()));
+				log.debug(String.format("Response Status Message: %s", response.getStatusMessage()));
+
+				if (log.isDebugEnabled())
+				{
+					InputStream is = response.getContent();
+					try {
+						log.debug(String.format("Response Object: %s", new String(is.readAllBytes(), StandardCharsets.UTF_8)));
+					} finally {
+						is.close();
+					}
+
+					if (response.getRequest().getContent() instanceof  JsonHttpContent) {
+						log.debug(String.format("Request Content: %s", ((JsonHttpContent) response.getRequest().getContent()).getData()));
+					}
+				}
+			} finally {
+				response.disconnect();
+			}
 		}
 	}
 

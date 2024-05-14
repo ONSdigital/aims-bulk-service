@@ -27,7 +27,7 @@ public class BulkAsyncConfig implements AsyncConfigurer {
     private int keepAliveSeconds;
     @Value("${async.executor.thread.name.prefix}")
     private String namePrefix;
-    
+
     @Bean(name = "asyncServiceExecutor")
     public Executor asyncServiceExecutor() {
 
@@ -53,26 +53,21 @@ public class BulkAsyncConfig implements AsyncConfigurer {
 
         return executor;
     }
-	
-	@Override
-	public Executor getAsyncExecutor() {
-		return asyncServiceExecutor();
-	}
 
-	@Override
-	public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
-		return (ex, method, params) -> {
+    @Override
+    public Executor getAsyncExecutor() {
+        return asyncServiceExecutor();
+    }
+
+    @Override
+    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+        return (ex, method, params) -> {
             log.error(String.format("Exception with message : %s", ex.getMessage()));
             log.error(String.format("Method : %s", method.toString()));
-            log.error(String.format("Number of parameters : %s",  params.length));
+            log.error(String.format("Number of parameters : %s", params.length));
             for (Object param : params) {
-
-                if (param instanceof BulkRequest) {
-                    log.error(String.format("BulkRequest parameter value : %s", ((BulkRequest) param).toString()));
-                } else {
-                    log.error(String.format("Parameter value : %s",  param));
-                }
+                log.error(String.format("Parameter value : %s", param));
             }
         };
-	}
+    }
 }
