@@ -88,7 +88,7 @@ public class PayloadValidationTests {
 			validationErrorMessages.add(violation.getMessage());
 		});
 
-        String expectedMsg =  "epoch_number must be one of 107, 106, 105";
+        String expectedMsg =  "epoch_number must be one of 108, 107, 106";
         assertEquals(1, validationErrorMessages.size());
         assertTrue(validationErrorMessages.contains(expectedMsg));
     }
@@ -193,7 +193,7 @@ public class PayloadValidationTests {
 		assertTrue(validationErrorMessages.isEmpty());
         assertEquals("1", msg.getPayload().getAddressLimit());
         assertEquals("10", msg.getPayload().getQualityMatchThreshold());
-        assertEquals("107", msg.getPayload().getEpoch());
+        assertEquals("108", msg.getPayload().getEpoch());
         assertEquals("true", msg.getPayload().getHistorical());
         assertEquals(false, msg.isTest());
     }

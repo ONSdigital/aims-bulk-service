@@ -6,6 +6,6 @@ spring:
   datasource:
     url: jdbc:h2:mem:test
 aims:
-  epochs: 105|106|107
+  epochs: 106|107|108
   max-records-per-job: 5
   min-records-per-job: 2
