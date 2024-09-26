@@ -112,7 +112,7 @@ public class BulkAddressController {
 			@Parameter(description="userid to filter jobs")
 			@RequestParam(required = false, defaultValue = "") String userid,
 			@Parameter(description="status to filter jobs")
-			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready|results-exported)$", message = "{status.val.message}") String status) {
+			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready|results-exported|failed)$", message = "{status.val.message}") String status) {
 
 		List<BulkInfo> jobsList = bulkStatusService.getJobs(userid, status);
 		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
