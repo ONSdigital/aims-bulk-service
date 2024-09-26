@@ -705,9 +705,9 @@ public class BulkAddressApplicationTest {
 		mockMvc.perform(MockMvcRequestBuilders.get("/jobs?status=xyz&userid=mrrobot")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-exported or blank")))
+				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-exported, failed or blank")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-exported or blank"))))		
+				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-exported, failed or blank"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
