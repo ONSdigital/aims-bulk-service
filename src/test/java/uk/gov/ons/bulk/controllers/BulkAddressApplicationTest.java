@@ -618,7 +618,7 @@ public class BulkAddressApplicationTest {
 	
 	@Test
     public void runBulkResultRequest() throws Exception {
-    	
+
     	String filename = String.format("results_%s.csv.gz", 1);
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2);
         bulkInfo.setStartdate(now);
@@ -752,9 +752,9 @@ public class BulkAddressApplicationTest {
 		mockMvc.perform(MockMvcRequestBuilders.get("/ids/jobs?status=xyz&userid=mrrobot")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted or blank")))
+				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted, failed or blank")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted or blank"))))		
+				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted, failed or blank"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
