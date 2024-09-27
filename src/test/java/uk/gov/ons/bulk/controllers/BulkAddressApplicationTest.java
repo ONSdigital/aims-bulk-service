@@ -618,7 +618,7 @@ public class BulkAddressApplicationTest {
 	
 	@Test
     public void runBulkResultRequest() throws Exception {
-    	
+
     	String filename = String.format("results_%s.csv.gz", 1);
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2);
         bulkInfo.setStartdate(now);
@@ -705,9 +705,9 @@ public class BulkAddressApplicationTest {
 		mockMvc.perform(MockMvcRequestBuilders.get("/jobs?status=xyz&userid=mrrobot")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-exported or blank")))
+				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-exported, failed or blank")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-exported or blank"))))		
+				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-exported, failed or blank"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
@@ -752,9 +752,9 @@ public class BulkAddressApplicationTest {
 		mockMvc.perform(MockMvcRequestBuilders.get("/ids/jobs?status=xyz&userid=mrrobot")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted or blank")))
+				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted, failed or blank")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted or blank"))))		
+				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted, failed or blank"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
@@ -840,6 +840,32 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.idsjobid", Is.is("ids-job-xyz")))
 				.andExpect(jsonPath("$.userid", Is.is("bob")))
 				.andExpect(jsonPath("$.status", Is.is("finished")))
+				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
+				.andExpect(jsonPath("$.recssofar", Is.is(107)))
+				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+				.andExpect(jsonPath("$.enddate", Is.is(now.plusHours(2).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
+				.andExpect(jsonPath("$.test", Is.is(true)))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("addIdsJobIds")
+	public void testGetIdsBulkRequestProgressFailed(@PathVariable(required = true, name = "idsjobid") String idsjobid)
+			throws Exception {
+
+		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "failed", 107, 107, true);
+		idsBulkInfo.setJobid(77);
+		idsBulkInfo.setStartdate(now);
+		idsBulkInfo.setEnddate(now.plusHours(2));
+		List<IdsBulkInfo> bulkInfos = Arrays.asList(idsBulkInfo);
+
+		when(bulkStatusRepository.getIdsJob(Mockito.any(String.class))).thenReturn(bulkInfos);
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/ids/bulk-progress/" + idsjobid)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.jobid", Is.is(77)))
+				.andExpect(jsonPath("$.idsjobid", Is.is("ids-job-xyz")))
+				.andExpect(jsonPath("$.userid", Is.is("bob")))
+				.andExpect(jsonPath("$.status", Is.is("failed")))
 				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
 				.andExpect(jsonPath("$.recssofar", Is.is(107)))
 				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))

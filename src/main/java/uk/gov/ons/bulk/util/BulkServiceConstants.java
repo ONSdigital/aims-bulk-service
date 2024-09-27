@@ -10,6 +10,7 @@ public final class BulkServiceConstants {
 		PF("processing-finished"), 
 		RR("results-ready"),
 		RE("results-exported"),
+		F("failed"),
 		RD("results-deleted");
 		
 		private String status;
