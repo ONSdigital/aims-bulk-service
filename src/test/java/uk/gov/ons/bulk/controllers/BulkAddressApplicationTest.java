@@ -857,7 +857,6 @@ public class BulkAddressApplicationTest {
 		idsBulkInfo.setJobid(77);
 		idsBulkInfo.setStartdate(now);
 		idsBulkInfo.setEnddate(now.plusHours(2));
-		idsBulkInfo.setStatus("failed");
 		List<IdsBulkInfo> bulkInfos = Arrays.asList(idsBulkInfo);
 
 		when(bulkStatusRepository.getIdsJob(Mockito.any(String.class))).thenReturn(bulkInfos);
