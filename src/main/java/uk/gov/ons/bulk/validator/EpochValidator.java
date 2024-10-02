@@ -1,6 +1,9 @@
 package uk.gov.ons.bulk.validator;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +21,7 @@ import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 	private String epochs;
+	private String reversedEpochsList;
 
 	@Override
 	public void initialize(Epoch epoch) {
@@ -40,9 +44,14 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 		boolean matches = matcher.matches();
 		if (!matches) {
-			// Disable default violation message
+			// Manipulate into a reversed array with comma split values
+			String[] epochArray = epochs.split("\\|");
+			List<String> epochList = Arrays.asList(epochArray);
+			Collections.reverse(epochList);
+			reversedEpochsList = String.join(", ", epochList);
+
 			context.disableDefaultConstraintViolation();
-			context.buildConstraintViolationWithTemplate("epoch_number TEST REMOVE ME must be one of " + epochs)
+			context.buildConstraintViolationWithTemplate("epoch_number must be one of " + reversedEpochsList)
 					.addConstraintViolation();
 		}
 		return matches;
