@@ -42,7 +42,7 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 		if (!matches) {
 			// Disable default violation message
 			context.disableDefaultConstraintViolation();
-			context.buildConstraintViolationWithTemplate("epoch_number must be one of " + epochs)
+			context.buildConstraintViolationWithTemplate("epoch_number TEST REMOVE ME must be one of " + epochs)
 					.addConstraintViolation();
 		}
 		return matches;
