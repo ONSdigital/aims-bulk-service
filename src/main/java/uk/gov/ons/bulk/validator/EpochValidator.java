@@ -17,13 +17,12 @@ import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 @Slf4j
 public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
-	public String epochs;
-	
+	private String epochs;
+
 	@Override
 	public void initialize(Epoch epoch) {
 		try {
 			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
-			
 			if (epochs == null) {
 				epochs = properties.getProperty("aims.epochs");
 			}
@@ -34,12 +33,18 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 	@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
-
 		log.debug("Epochs: " + epochs);
 
-		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); //^(10x|10y|10z)$
+		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); // e.g., ^(10x|10y|10z)$
 		Matcher matcher = pattern.matcher(value);
-		
-		return matcher.matches();
+
+		boolean matches = matcher.matches();
+		if (!matches) {
+			// Disable default violation message
+			context.disableDefaultConstraintViolation();
+			context.buildConstraintViolationWithTemplate("epoch_number must be one of " + epochs)
+					.addConstraintViolation();
+		}
+		return matches;
 	}
 }
