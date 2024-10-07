@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
@@ -63,12 +64,19 @@ public @Data class NewIdsJobPayload extends Payload {
 	private String historical = getProperty("aims.default-historical");
 
 	private String getProperty(String property) {
-		try {
-			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
-		    return properties.getProperty(property);
+		YamlPropertiesFactoryBean yamlFactory = new YamlPropertiesFactoryBean();
+		yamlFactory.setResources(new ClassPathResource("application.yml"));
+		Properties properties = yamlFactory.getObject();
+
+		if (properties == null) {
+			throw new BulkAddressRuntimeException("Could not load properties from application.yml");
 		}
-	    catch (IOException e) {
-		    throw new BulkAddressRuntimeException(e);
-	    }
+
+		String value = properties.getProperty(property);
+		if (value == null) {
+			throw new BulkAddressRuntimeException("Property '" + property + "' not found in application.yml");
+		}
+
+		return value;
 	}
 }

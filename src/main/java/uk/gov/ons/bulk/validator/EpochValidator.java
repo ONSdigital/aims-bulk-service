@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 
@@ -25,13 +26,17 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 	@Override
 	public void initialize(Epoch epoch) {
-		try {
-			Properties properties = PropertiesLoaderUtils.loadProperties(new ClassPathResource("defaults.properties"));
-			if (epochs == null) {
-				epochs = properties.getProperty("aims.epochs");
-			}
-		} catch (IOException e) {
-			throw new BulkAddressRuntimeException(e);
+		YamlPropertiesFactoryBean yamlFactory = new YamlPropertiesFactoryBean();
+		yamlFactory.setResources(new ClassPathResource("application.yml"));
+		Properties properties = yamlFactory.getObject();
+
+		if (properties == null) {
+			throw new BulkAddressRuntimeException("Could not load properties from application.yml");
+		}
+
+		epochs = properties.getProperty("aims.epochs");
+		if (epochs == null) {
+			throw new BulkAddressRuntimeException("Property 'aims.epochs' not found in application.yml");
 		}
 	}
 
