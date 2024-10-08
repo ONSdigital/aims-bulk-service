@@ -70,11 +70,10 @@ aims:
   capacity-scale-factor: 0.42 # Equates to the current theory of 10 concurrent jobs of 100K on 24 data nodes
   max-records-per-job: 100000
   min-records-per-job: 500
-  # Moved from defaults.properties
-  default-threshold: 10
-  default-historical: true
-  default-limit: 1
-
+  defaults:
+    default-threshold: 10
+    default-historical: true
+    default-limit: 1
 
 ids:
   cloud:
