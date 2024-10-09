@@ -1,22 +1,15 @@
 package uk.gov.ons.bulk.validator;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
-
 import lombok.extern.slf4j.Slf4j;
-import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 import uk.gov.ons.bulk.util.BulkProperties;
 
 @Slf4j
@@ -27,7 +20,7 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
 	@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
-		epochs = BulkProperties.getProperty("aims.epochs");
+		epochs = BulkProperties.getYamlProperty("aims.epochs");
 
 		log.debug("Epochs: " + epochs);
 

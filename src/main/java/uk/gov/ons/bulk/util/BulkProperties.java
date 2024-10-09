@@ -7,7 +7,7 @@ import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 import java.util.Properties;
 
 public interface BulkProperties {
-  public static String getProperty(String property) {
+  public static String getYamlProperty(String property) {
     YamlPropertiesFactoryBean yamlFactory = new YamlPropertiesFactoryBean();
     yamlFactory.setResources(new ClassPathResource("application.yml"));
     Properties properties = yamlFactory.getObject();

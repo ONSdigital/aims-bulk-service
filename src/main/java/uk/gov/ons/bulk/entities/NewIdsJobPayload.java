@@ -1,17 +1,9 @@
 package uk.gov.ons.bulk.entities;
 
-import java.io.IOException;
-import java.util.Properties;
-
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -21,7 +13,6 @@ import com.fasterxml.jackson.annotation.Nulls;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 import uk.gov.ons.bulk.validator.Epoch;
 import uk.gov.ons.bulk.util.BulkProperties;
 
@@ -46,21 +37,21 @@ public @Data class NewIdsJobPayload extends Payload {
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Min(value = 1, message = "address_limit should be an integer between 1 and 100 (1 is default)")
 	@Max(value = 100, message = "address_limit should be an integer between 1 and 100 (1 is default)")
-	private String addressLimit = BulkProperties.getProperty("aims.default.limit");
+	private String addressLimit = BulkProperties.getYamlProperty("aims.default.limit");
 
 	@JsonProperty("quality_match_threshold")
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Min(value = 0, message = "quality_match_threshold should be decimal number between 0 and 100 (10 is default)")
 	@Max(value = 100, message = "quality_match_threshold should be decimal number between 0 and 100 (10 is default)")
-	private String qualityMatchThreshold = BulkProperties.getProperty("aims.default.threshold");
+	private String qualityMatchThreshold = BulkProperties.getYamlProperty("aims.default.threshold");
 
 	@JsonProperty("epoch_number")
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Epoch // No message attribute here
-	private String epoch = BulkProperties.getProperty("aims.current-epoch");
+	private String epoch = BulkProperties.getYamlProperty("aims.current-epoch");
 
 	@JsonProperty("historical_flag")
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Pattern(regexp = "^true$|^false$", message = "historical_flag must be true or false")
-	private String historical = BulkProperties.getProperty("aims.default.historical");
+	private String historical = BulkProperties.getYamlProperty("aims.default.historical");
 }
