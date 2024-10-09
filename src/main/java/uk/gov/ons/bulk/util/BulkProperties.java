@@ -14,10 +14,10 @@ public interface BulkProperties {
 
     assert properties != null : "Could not load properties from application.yml";
 
-    String value = properties.getProperty(property);
+    String propertyValue = properties.getProperty(property);
 
-    assert value != null : "Property '" + property + "' not found in application.yml";
+    assert propertyValue != null : "Property '" + property + "' not found in application.yml";
 
-    return value;
+    return propertyValue;
   }
 }
