@@ -29,7 +29,6 @@ import uk.gov.ons.bulk.util.BulkProperties;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public @Data class NewIdsJobPayload extends Payload {
-	String value = BulkProperties.getProperty("aims.default-threshold");
 
 	@JsonProperty("big_query_dataset")
 	@NotEmpty(message = "big_query_dataset name must be supplied")

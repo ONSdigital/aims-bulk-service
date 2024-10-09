@@ -17,6 +17,7 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
+import uk.gov.ons.bulk.util.BulkProperties;
 
 @Slf4j
 public class EpochValidator implements ConstraintValidator<Epoch, String> {
@@ -25,23 +26,9 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 	private String reversedEpochsList;
 
 	@Override
-	public void initialize(Epoch epoch) {
-		YamlPropertiesFactoryBean yamlFactory = new YamlPropertiesFactoryBean();
-		yamlFactory.setResources(new ClassPathResource("application.yml"));
-		Properties properties = yamlFactory.getObject();
-
-		if (properties == null) {
-			throw new BulkAddressRuntimeException("Could not load properties from application.yml");
-		}
-
-		epochs = properties.getProperty("aims.epochs");
-		if (epochs == null) {
-			throw new BulkAddressRuntimeException("Property 'aims.epochs' not found in application.yml");
-		}
-	}
-
-	@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
+		epochs = BulkProperties.getProperty("aims.epochs");
+
 		log.debug("Epochs: " + epochs);
 
 		Pattern pattern = Pattern.compile(String.format("^(%s)$", epochs)); // e.g., ^(10x|10y|10z)$
