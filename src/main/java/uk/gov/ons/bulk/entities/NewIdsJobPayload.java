@@ -23,12 +23,14 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 import uk.gov.ons.bulk.validator.Epoch;
+import uk.gov.ons.bulk.util.BulkProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public @Data class NewIdsJobPayload extends Payload {
-	
+	String value = BulkProperties.getProperty("aims.default-threshold");
+
 	@JsonProperty("big_query_dataset")
 	@NotEmpty(message = "big_query_dataset name must be supplied")
 	private String bigQueryDataset;
@@ -45,38 +47,21 @@ public @Data class NewIdsJobPayload extends Payload {
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Min(value = 1, message = "address_limit should be an integer between 1 and 100 (1 is default)")
 	@Max(value = 100, message = "address_limit should be an integer between 1 and 100 (1 is default)")
-	private String addressLimit = getProperty("aims.default-limit");
+	private String addressLimit = BulkProperties.getProperty("aims.default.limit");
 
 	@JsonProperty("quality_match_threshold")
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Min(value = 0, message = "quality_match_threshold should be decimal number between 0 and 100 (10 is default)")
 	@Max(value = 100, message = "quality_match_threshold should be decimal number between 0 and 100 (10 is default)")
-	private String qualityMatchThreshold = getProperty("aims.default-threshold");
+	private String qualityMatchThreshold = BulkProperties.getProperty("aims.default.threshold");
 
 	@JsonProperty("epoch_number")
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Epoch // No message attribute here
-	private String epoch = getProperty("aims.current-epoch");
+	private String epoch = BulkProperties.getProperty("aims.current-epoch");
 
 	@JsonProperty("historical_flag")
 	@JsonSetter(nulls = Nulls.SKIP)
 	@Pattern(regexp = "^true$|^false$", message = "historical_flag must be true or false")
-	private String historical = getProperty("aims.default-historical");
-
-	private String getProperty(String property) {
-		YamlPropertiesFactoryBean yamlFactory = new YamlPropertiesFactoryBean();
-		yamlFactory.setResources(new ClassPathResource("application.yml"));
-		Properties properties = yamlFactory.getObject();
-
-		if (properties == null) {
-			throw new BulkAddressRuntimeException("Could not load properties from application.yml");
-		}
-
-		String value = properties.getProperty(property);
-		if (value == null) {
-			throw new BulkAddressRuntimeException("Property '" + property + "' not found in application.yml");
-		}
-
-		return value;
-	}
+	private String historical = BulkProperties.getProperty("aims.default.historical");
 }
