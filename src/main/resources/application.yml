@@ -71,9 +71,9 @@ aims:
   max-records-per-job: 100000
   min-records-per-job: 500
   defaults:
-    default-threshold: 10
-    default-historical: true
-    default-limit: 1
+    threshold: 10
+    historical: true
+    limit: 1
 
 ids:
   cloud:
