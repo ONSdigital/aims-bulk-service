@@ -79,7 +79,7 @@ test {
 	}
 
 	if (project.hasProperty('excludeTests')) {
-        exclude project.property('excludeTests')
-        exclude '*bootstrap.properties'
-    }
+		exclude project.property('excludeTests')
+		exclude '*bootstrap.properties'
+	}
 }
