@@ -2,7 +2,6 @@ package uk.gov.ons.bulk.util;
 
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.core.io.ClassPathResource;
-import uk.gov.ons.bulk.exception.BulkAddressRuntimeException;
 
 import java.util.Properties;
 

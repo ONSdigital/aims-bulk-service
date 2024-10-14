@@ -24,8 +24,6 @@ import uk.gov.ons.bulk.entities.DownloadCompleteMessage;
 import uk.gov.ons.bulk.entities.IdsErrorMessage;
 import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 
-import uk.gov.ons.bulk.util.BulkProperties;
-
 @SpringBootTest()
 @ExtendWith(SpringExtension.class)
 @TestInstance(Lifecycle.PER_CLASS)
