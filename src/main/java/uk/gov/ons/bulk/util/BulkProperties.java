@@ -6,7 +6,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.util.Properties;
 
 public interface BulkProperties {
-  public static String getYamlProperty(String property) {
+  static String getYamlProperty(String property) {
     YamlPropertiesFactoryBean yamlFactory = new YamlPropertiesFactoryBean();
     yamlFactory.setResources(new ClassPathResource("application.yml"));
     Properties properties = yamlFactory.getObject();
