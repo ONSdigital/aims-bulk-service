@@ -15,8 +15,8 @@ import uk.gov.ons.bulk.util.BulkProperties;
 @Slf4j
 public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
-	private String epochs;
-	private String reversedEpochsList;
+	String epochs;
+	String reversedEpochsList;
 
 	@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
