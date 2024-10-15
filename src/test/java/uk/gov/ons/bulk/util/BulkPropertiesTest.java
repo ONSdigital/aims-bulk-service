@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BulkPropertiesTest implements BulkProperties{
 
   @Test
-  public void missingProperty() {
+  void missingProperty() {
     Throwable exception = assertThrows(AssertionError.class, () -> {
       BulkProperties.getYamlProperty("not.here");
     });
@@ -15,7 +15,7 @@ class BulkPropertiesTest implements BulkProperties{
   }
 
   @Test
-  public void existingProperty() {
+  void existingProperty() {
     assertEquals("aims-bulk-service", BulkProperties.getYamlProperty("spring.application.name"));
   }
 }
