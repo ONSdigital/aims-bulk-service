@@ -52,7 +52,6 @@ public class PayloadValidationTests {
 		factory = 
 	            new CustomLocalValidatorFactoryBean(customConstraintValidators);
 		validator = factory.getValidator();
-		//ReflectionTestUtils.setField(epochValidator, "epochs", epochs);
     	objectMapper = new ObjectMapper();
     }
 	
