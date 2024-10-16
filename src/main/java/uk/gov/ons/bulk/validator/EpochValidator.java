@@ -15,12 +15,9 @@ import uk.gov.ons.bulk.util.BulkProperties;
 @Slf4j
 public class EpochValidator implements ConstraintValidator<Epoch, String> {
 
-	String epochs;
-	String reversedEpochsList;
-
 	@Override
 	public boolean isValid(String value, ConstraintValidatorContext context) {
-		epochs = BulkProperties.getYamlProperty("aims.epochs");
+		String epochs = BulkProperties.getYamlProperty("aims.epochs");
 
 		log.debug("Epochs: " + epochs);
 
@@ -33,7 +30,7 @@ public class EpochValidator implements ConstraintValidator<Epoch, String> {
 			String[] epochArray = epochs.split("\\|");
 			List<String> epochList = Arrays.asList(epochArray);
 			Collections.reverse(epochList);
-			reversedEpochsList = String.join(", ", epochList);
+			String reversedEpochsList = String.join(", ", epochList);
 
 			context.disableDefaultConstraintViolation();
 			context.buildConstraintViolationWithTemplate("epoch_number must be one of " + reversedEpochsList)
