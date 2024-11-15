@@ -65,8 +65,13 @@ public class BulkAsyncConfig implements AsyncConfigurer {
             log.error(String.format("Exception with message : %s", ex.getMessage()));
             log.error(String.format("Method : %s", method.toString()));
             log.error(String.format("Number of parameters : %s", params.length));
+
             for (Object param : params) {
-                log.error(String.format("Parameter value : %s", param));
+                if (param instanceof BulkRequest bulkRequest) {
+                    log.error(String.format("BulkRequest id : %s, address : %s", bulkRequest.getId(), bulkRequest.getAddress()));
+                } else {
+                    log.error(String.format("Parameter value : %s", param));
+                }
             }
         };
     }
