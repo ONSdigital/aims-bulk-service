@@ -66,6 +66,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /*
  * .andDo(MockMvcResultHandlers.print()) helps to debug individual tests
@@ -98,16 +99,16 @@ public class BulkAddressApplicationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private CloudTaskService cloudTaskService;
     
     @Autowired
     private BulkStatusService bulkStatusService;
     
-    @MockBean
+    @MockitoBean
     private BulkStatusRepository bulkStatusRepository;
     
-    @MockBean
+    @MockitoBean
     private DownloadService downloadService;
 
     Properties queryReponse = new Properties();

@@ -22,6 +22,10 @@ ext {
 	set('springCloudVersion', "2024.0.0")
 }
 
+configurations {
+	mockitoAgent
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework.boot:spring-boot-starter-web' 
@@ -55,6 +59,8 @@ dependencies {
 	testImplementation 'org.mockito:mockito-inline:5.2.0'
 	testImplementation 'com.h2database:h2:2.3.232'
 	testImplementation 'org.springframework.cloud:spring-cloud-starter-bootstrap:4.2.0'
+	testImplementation 'org.mockito:mockito-core:5.14.2'
+	mockitoAgent 'org.mockito:mockito-core:5.14.2'
 	
 	if (!project.hasProperty('excludeTests')) {
 		testImplementation 'com.playtika.testcontainers:embedded-google-pubsub:3.1.9'
@@ -62,6 +68,10 @@ dependencies {
 
 	// Resolves the java.lang.NoClassDefFoundError: org/junit/platform/engine/EngineDiscoveryListener in Eclipse	
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.3'
+}
+
+configurations.mockitoAgent {
+    transitive = false
 }
 
 dependencyManagement {
@@ -74,6 +84,10 @@ dependencyManagement {
 test {
 	useJUnitPlatform()
 	
+	doFirst { 
+        jvmArgs("-javaagent:${configurations.mockitoAgent.singleFile}")
+    }
+
 	// listen to events in the test execution lifecycle
 	beforeTest { descriptor ->
 		logger.lifecycle("Running test: " + descriptor)
