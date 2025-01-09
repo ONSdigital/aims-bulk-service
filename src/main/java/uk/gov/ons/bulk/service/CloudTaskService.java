@@ -84,7 +84,7 @@ public class CloudTaskService {
 	 */
 	@Async
 	public void createTasks(long jobId, BulkRequest[] addresses, long totalAddresses,
-			BulkRequestParams bulkRequestParams, String user) throws IOException {
+			BulkRequestParams bulkRequestParams, String user, String topic, String dataset) throws IOException {
 
 		List<Integer> reportAddresses = reportAddresses(addresses.length);
 		reportAddresses.add(addresses.length);
@@ -100,7 +100,7 @@ public class CloudTaskService {
 				log.debug("Reporting: " + (i + 1));
 			}
 
-			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), "", user, addresses[i].getId(),
+			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), "", user, topic, dataset, addresses[i].getId(),
 					addresses[i].getAddress(), String.valueOf(i + 1), String.valueOf(totalAddresses),
 					String.valueOf(reportAddresses.contains(i + 1)), bulkRequestParams);
 
@@ -134,7 +134,7 @@ public class CloudTaskService {
 
 	@Async
 	public void createIdsTasks(long jobId, String idsJobId, List<IdsRequest> addresses, long totalAddresses,
-			BulkRequestParams bulkRequestParams, String user) throws IOException {
+			BulkRequestParams bulkRequestParams, String user, String topic, String dataset) throws IOException {
 
 		List<Integer> reportAddresses = reportAddresses(addresses.size());
 		reportAddresses.add(addresses.size());
@@ -150,7 +150,7 @@ public class CloudTaskService {
 				log.debug("Reporting: " + (i + 1));
 			}
 
-			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), idsJobId, user, addresses.get(i).getId(),
+			BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), idsJobId, user, topic, dataset, addresses.get(i).getId(),
 					addresses.get(i).getAddress(), String.valueOf(i + 1), String.valueOf(totalAddresses),
 					String.valueOf(reportAddresses.contains(i + 1)), bulkRequestParams);
 
@@ -198,13 +198,15 @@ public class CloudTaskService {
 	public @Data class BulkJobRequest {
 		private Map<String, String> job;
 
-		public BulkJobRequest(String jobId, String idsJobId, String user, String id, String address, String addressNumber,
+		public BulkJobRequest(String jobId, String idsJobId, String user, String topic, String dataset, String id, String address, String addressNumber,
 				String totalAddresses, String report, BulkRequestParams bulkRequestParams) {
 			super();
 			job = new HashMap<String, String>();
 			job.put("jobId", jobId);
 			job.put("idsJobId", idsJobId);
 			job.put("user", user);
+			job.put("topic", topic);
+			job.put("dataset", dataset);
 			job.put("id", id);
 			job.put("address", address);
 			job.put("item", addressNumber);
