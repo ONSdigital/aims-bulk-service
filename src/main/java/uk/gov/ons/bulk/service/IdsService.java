@@ -105,8 +105,8 @@ public class IdsService {
 					"false");
 			
 			String userName = newIdsJobMessage.getPayload().getIdsUserId();
-			String topic = "";
-			String dataset = "";
+			String topic = "NA";
+			String dataset = "NA";
 			
 			cloudTaskService.createIdsTasks(newKey, newIdsJobMessage.getPayload().getIdsJobId(), idsRequests, results.getTotalRows(), bulkRequestParams, userName, topic, dataset);
 		} catch (JobException | InterruptedException e) {
