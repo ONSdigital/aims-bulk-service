@@ -168,8 +168,12 @@ public class BulkAddressController {
 				matchthreshold, verbose, epoch, excludeengland, excludescotland, excludewales, excludenorthernireland,
 				excludechannelislands, excludeisleofman, excludeoffshore, pafdefault);
 
-		// Pass on username
+		// Pass on username header
 		String userName = headersIn.getOrDefault("user", "Anon");
+		// Pass on topic header
+		String topic = headersIn.getOrDefault("topic", "NA");
+		// Pass on dataset header
+		String dataset = headersIn.getOrDefault("dataset", "NA");
 
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
@@ -211,7 +215,7 @@ public class BulkAddressController {
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 
-			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams, userName);
+			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams, userName, topic, dataset);
 		} catch (IOException ex) {
 			String response = String.format("/bulk error: %s", ex.getMessage());
 			log.error(response);
