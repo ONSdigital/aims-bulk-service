@@ -173,7 +173,7 @@ public class BulkAddressController {
 		// Pass on topic header
 		String topic = headersIn.getOrDefault("topic", "NA");
 		// Pass on dataset header
-		String dataset = headersIn.getOrDefault("dateset", "NA");
+		String dataset = headersIn.getOrDefault("dataset", "NA");
 
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
