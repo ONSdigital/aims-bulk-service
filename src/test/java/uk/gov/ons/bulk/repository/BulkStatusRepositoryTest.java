@@ -37,7 +37,7 @@ class BulkStatusRepositoryTest {
 	@Test
 	public void testSaveJob() {
 		
-		BulkInfo bulkInfo = new BulkInfo("fred", "bloggs", "jeans", "in-progress", 107, 0);
+		BulkInfo bulkInfo = new BulkInfo("fred","in-progress", 107, 0);
         bulkInfo.setStartdate(ldt1);
 		Long result = bulkStatusRepository.saveJob(bulkInfo);
 		

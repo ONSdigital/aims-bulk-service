@@ -216,7 +216,7 @@ public class BulkAddressApplicationTest {
 	public void testGetBulkRequestProgressInProgress(@PathVariable(required = true, name = "jobid") String jobid)
 			throws Exception {
 
-		BulkInfo bulkInfo = new BulkInfo("bob","prices", "rpi", "in-progress", 107, 45);
+		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 45);
         bulkInfo.setJobid(14);
         bulkInfo.setStartdate(now);
 		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
@@ -238,7 +238,7 @@ public class BulkAddressApplicationTest {
 	public void testGetBulkRequestProgressFinished(@PathVariable(required = true, name = "jobid") String jobid)
 			throws Exception {
 
-		BulkInfo bulkInfo = new BulkInfo("bob","bob","prices","finished", 107, 107);
+		BulkInfo bulkInfo = new BulkInfo("bob","finished", 107, 107);
         bulkInfo.setJobid(14);
         bulkInfo.setStartdate(now);
         bulkInfo.setEnddate(now.plusHours(2));
@@ -275,7 +275,7 @@ public class BulkAddressApplicationTest {
 
     	long newKey = 102;
             
-		BulkInfo bulkInfo = new BulkInfo("bigqueryboy","bob","prices", "in-progress", 2, 0);
+		BulkInfo bulkInfo = new BulkInfo("bigqueryboy","in-progress", 2, 0);
         bulkInfo.setJobid(newKey);
         bulkInfo.setStartdate(now);
         
@@ -619,7 +619,7 @@ public class BulkAddressApplicationTest {
     public void runBulkResultRequest() throws Exception {
 
     	String filename = String.format("results_%s.csv.gz", 1);
-		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "results-exported", 2, 2);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot","results-exported", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
@@ -638,7 +638,7 @@ public class BulkAddressApplicationTest {
     public void runBulkResultThrowIOException() throws Exception {
     	
     	String filename = String.format("results_%s.csv.gz", 1);
-		BulkInfo bulkInfo = new BulkInfo("mrrobot", "bob","prices","results-exported", 2, 2);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
@@ -656,7 +656,7 @@ public class BulkAddressApplicationTest {
     public void runBulkResultThrowBulkAddressException() throws Exception {
     	
     	String filename = String.format("results_%s.csv.gz", 1);
-		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "results-exported", 2, 2);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot","results-exported", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
@@ -685,7 +685,7 @@ public class BulkAddressApplicationTest {
 	@Test
     public void runBulkResultRequestNotDownloadable() throws Exception {
 
-		BulkInfo bulkInfo = new BulkInfo("mrrobot", "bob","prices", "processing-finished", 2, 2);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "processing-finished", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
@@ -715,8 +715,8 @@ public class BulkAddressApplicationTest {
     	
 		long newKey1 = 102;
 		long newKey2 = 44;
-		BulkInfo bulkInfo1 = new BulkInfo("mrrobot","bob","prices", "processing-finished", 2, 2);
-		BulkInfo bulkInfo2 = new BulkInfo("mrrobot","bob","prices", "processing-finished", 10, 10);
+		BulkInfo bulkInfo1 = new BulkInfo("mrrobot","processing-finished", 2, 2);
+		BulkInfo bulkInfo2 = new BulkInfo("mrrobot","processing-finished", 10, 10);
         bulkInfo1.setJobid(newKey1);
         bulkInfo2.setJobid(newKey2);
         bulkInfo1.setStartdate(now);
@@ -926,7 +926,7 @@ public class BulkAddressApplicationTest {
     public void runResultRequest() throws Exception {
     	
     	String filename = "results_1.csv.gz";
-		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "results-exported", 2, 2);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
@@ -951,7 +951,7 @@ public class BulkAddressApplicationTest {
     public void runResultRequestThrowIOException() throws Exception {
     	
     	String filename = String.format("results_%s.csv.gz", 1);
-		BulkInfo bulkInfo = new BulkInfo("mrrobot", "bob","prices","results-exported", 2, 2);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
@@ -990,7 +990,7 @@ public class BulkAddressApplicationTest {
 	@Test
     public void runResultRequestNotDownloadable() throws Exception {
 
-		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "processing-finished", 2, 2);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "processing-finished", 2, 2);
         bulkInfo.setStartdate(now);
         List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	bulkInfos.add(bulkInfo);
@@ -1014,7 +1014,7 @@ public class BulkAddressApplicationTest {
     	
     	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	for (long i = 1; i < 11; i++) {
-    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "bob","prices","in-progress", 100000, 10000);
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 100000, 10000);
     		bulkInfo.setJobid(i);
     		bulkInfos.add(bulkInfo);
     	}
@@ -1034,14 +1034,14 @@ public class BulkAddressApplicationTest {
     	
     	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	for (long i = 1; i < 11; i++) {
-    		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "in-progress", 4, 2);
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot","in-progress", 4, 2);
     		bulkInfo.setJobid(i);
     		bulkInfos.add(bulkInfo);
     	}
    	
     	long newKey = 102;
         
-		BulkInfo bulkInfo = new BulkInfo("bigqueryboy","bob","prices","in-progress", 2, 0);
+		BulkInfo bulkInfo = new BulkInfo("bigqueryboy","in-progress", 2, 0);
         bulkInfo.setJobid(newKey);
         bulkInfo.setStartdate(now);
         
@@ -1073,12 +1073,12 @@ public class BulkAddressApplicationTest {
     	
     	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	for (long i = 1; i < 10; i++) {
-    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "bob","prices", "in-progress", 5, 2);
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 5, 2);
     		bulkInfo.setJobid(i);
     		bulkInfos.add(bulkInfo);
     	}
     	
-		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "in-progress", 4, 1);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 4, 1);
 		bulkInfo.setJobid(10);
 		bulkInfos.add(bulkInfo);
     	    
@@ -1096,12 +1096,12 @@ public class BulkAddressApplicationTest {
     	
     	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	for (long i = 1; i < 10; i++) {
-    		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "in-progress", 5, 2);
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot","in-progress", 5, 2);
     		bulkInfo.setJobid(i);
     		bulkInfos.add(bulkInfo);
     	}
     	
-		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "in-progress", 3, 1);
+		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 3, 1);
 		bulkInfo.setJobid(10);
 		bulkInfos.add(bulkInfo);
    	
@@ -1135,7 +1135,7 @@ public class BulkAddressApplicationTest {
     	
     	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
     	for (long i = 1; i < 5; i++) {
-    		BulkInfo bulkInfo = new BulkInfo("mrrobot","bob","prices", "in-progress", 250000, 10000);
+    		BulkInfo bulkInfo = new BulkInfo("mrrobot","in-progress", 250000, 10000);
     		bulkInfo.setJobid(i);
     		bulkInfos.add(bulkInfo);
     	}

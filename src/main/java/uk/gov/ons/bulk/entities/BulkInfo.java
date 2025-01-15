@@ -19,10 +19,6 @@ public @Data class BulkInfo {
 	private long jobid;
 	@Schema (type="string", example="smithrm")
 	private String userid;
-	@Schema (type="string", example="prices")
-	private String topic;
-	@Schema (type="string", example="rpi")
-	private String dataset;
 	@Schema (type="string", example="in-progress")
 	private String status;
 	@Schema (type="long", example="5000000")
@@ -32,11 +28,9 @@ public @Data class BulkInfo {
 	private LocalDateTime startdate;
 	private LocalDateTime enddate;
 	
-	public BulkInfo(String userid, String topic, String dataset, String status, long totalrecs, long recssofar) {
+	public BulkInfo(String userid, String status, long totalrecs, long recssofar) {
 		super();
 		this.userid = userid;
-		this.topic = topic;
-		this.dataset = dataset;
 		this.status = status;
 		this.totalrecs = totalrecs;
 		this.recssofar = recssofar;
