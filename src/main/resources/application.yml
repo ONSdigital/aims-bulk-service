@@ -98,7 +98,7 @@ async:
         prefix: bulk-async-
 exponential-backoff:
   initial-interval-millis: 500
-  max-elapsed-time-millis: 300000
+  max-elapsed-time-millis: 900000
   max-interval-millis: 60000
   multiplier: 1.5
   randomization-factor: 0.5
