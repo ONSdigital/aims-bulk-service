@@ -100,7 +100,7 @@ public class CloudTaskService {
                     String.valueOf(reportAddresses.contains(i + 1)), bulkRequestParams);
 
             HttpRequest request = createHttpRequest(bjr, backoff);
-            HttpResponse response = request.execute();
+            HttpResponse response = request.setConnectTimeout(60000).execute();
 
             try {
                 log.debug("Response Status Code: {}", response.getStatusCode());
@@ -141,7 +141,7 @@ public class CloudTaskService {
                     String.valueOf(reportAddresses.contains(i + 1)), bulkRequestParams);
 
             HttpRequest request = createHttpRequest(bjr, backoff);
-            HttpResponse response = request.execute();
+            HttpResponse response = request.setConnectTimeout(60000).execute();
 
             try {
                 log.debug("Response Status Code: {}", response.getStatusCode());
