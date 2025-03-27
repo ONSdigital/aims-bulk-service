@@ -290,9 +290,10 @@ public class BulkAddressApplicationTest {
 	    String userName = "bigqueryboy";
 		String topic = "prices";
 		String dataset = "rpi";
+		String uiMetadata = "{export_header_row: True}";
 
         when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
-        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName, topic, dataset);
+        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName, topic, dataset, uiMetadata);
         
 		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
@@ -1056,10 +1057,11 @@ public class BulkAddressApplicationTest {
 	    String userName = "bigqueryboy";
 		String topic = "prices";
 		String dataset = "rpi";
+		String uiMetadata = "{export_header_row: False}";
     	    
 	    when(bulkStatusService.getJobs("", "in-progress")).thenReturn(bulkInfos);    
 	    when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
-        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName, topic, dataset);
+        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName, topic, dataset, uiMetadata);
 		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
@@ -1118,10 +1120,11 @@ public class BulkAddressApplicationTest {
 	    String userName = "bigqueryboy";
 		String topic = "prices";
 		String dataset = "rpi";
+		String uiMetadata = "NA";
     	    
 	    when(bulkStatusService.getJobs("", "in-progress")).thenReturn(bulkInfos);    
 	    when(bulkStatusRepository.saveJob(Mockito.any(BulkInfo.class))).thenReturn(102L);
-        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName, topic, dataset);
+        doNothing().when(cloudTaskService).createTasks(newKey, bulkRequests, 2L, null, userName, topic, dataset, uiMetadata);
 		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer))
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())

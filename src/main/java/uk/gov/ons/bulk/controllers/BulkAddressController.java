@@ -174,6 +174,8 @@ public class BulkAddressController {
 		String topic = headersIn.getOrDefault("topic", "NA");
 		// Pass on dataset header
 		String dataset = headersIn.getOrDefault("dataset", "NA");
+		// Pass on ui metadata header
+		String uiMetadata = headersIn.getOrDefault("uimetadata", "NA");
 
 		BulkRequestContainer bcont = bulkRequestContainer;
 		long recs = bcont.getAddresses().length;
@@ -215,7 +217,7 @@ public class BulkAddressController {
 					Field.of("response", StandardSQLTypeName.STRING));
 			QueryFuncs.createTable(bigquery, datasetName, tableName, schema);
 
-			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams, userName, topic, dataset);
+			cloudTaskService.createTasks(newKey, bcont.getAddresses(), recs, bulkRequestParams, userName, topic, dataset, uiMetadata);
 		} catch (IOException ex) {
 			String response = String.format("/bulk error: %s", ex.getMessage());
 			log.error(response);
