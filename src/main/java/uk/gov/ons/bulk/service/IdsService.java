@@ -107,8 +107,9 @@ public class IdsService {
 			String userName = newIdsJobMessage.getPayload().getIdsUserId();
 			String topic = "NA";
 			String dataset = "NA";
+			String uimetadata = "NA";
 			
-			cloudTaskService.createIdsTasks(newKey, newIdsJobMessage.getPayload().getIdsJobId(), idsRequests, results.getTotalRows(), bulkRequestParams, userName, topic, dataset);
+			cloudTaskService.createIdsTasks(newKey, newIdsJobMessage.getPayload().getIdsJobId(), idsRequests, results.getTotalRows(), bulkRequestParams, userName, topic, dataset, uimetadata);
 		} catch (JobException | InterruptedException e) {
 			log.error(String.format("Problem querying BigQuery: %s", e.getMessage()));
 		} catch (IOException e) {
