@@ -204,7 +204,7 @@ public class BulkAddressController {
 					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
 
-		BulkInfo bulkInfo = new BulkInfo(userName, IP.getStatus(), recs, 0, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
+		BulkInfo bulkInfo = new BulkInfo(userName, IP.getStatus(), recs, 0, topic, dataset, uiMetadata);
 
 		long newKey = bulkStatusService.saveJob(bulkInfo);
 
