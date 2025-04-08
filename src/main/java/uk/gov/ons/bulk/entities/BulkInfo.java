@@ -27,12 +27,24 @@ public @Data class BulkInfo {
 	private long recssofar;
 	private LocalDateTime startdate;
 	private LocalDateTime enddate;
+	@Schema (type="string", example="data set 3")
+	private String dataset;
+	@Schema (type="string", example="topic 1")
+	private String topic;
+	@Schema (type="string", example="{'header_export': 'true'}")
+	private String uimetadata;
 	
-	public BulkInfo(String userid, String status, long totalrecs, long recssofar) {
+
+
+	public BulkInfo(String userid, String status, long totalrecs, long recssofar, String dataset, String topic,
+			String uimetadata) {
 		super();
 		this.userid = userid;
 		this.status = status;
 		this.totalrecs = totalrecs;
 		this.recssofar = recssofar;
+		this.dataset = dataset;
+		this.topic = topic;
+		this.uimetadata = uimetadata;
 	}
 }

@@ -41,7 +41,7 @@ public class BulkStatusRepository {
 		simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
 		simpleJdbcInsert.withTableName("bulkinfo")
 			.usingGeneratedKeyColumns("jobid")
-			.usingColumns("userid", "status", "totalrecs", "recssofar");
+			.usingColumns("userid", "status", "totalrecs", "recssofar", "dataset", "topic", "uimetadata");
 		Number id = simpleJdbcInsert.executeAndReturnKey(new BeanPropertySqlParameterSource(job));
 
 		return id.longValue();
@@ -52,7 +52,7 @@ public class BulkStatusRepository {
 		simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate);
 		simpleJdbcInsert.withTableName("ids_bulkinfo")
 			.usingGeneratedKeyColumns("jobid")
-			.usingColumns("idsjobid", "userid", "status", "totalrecs", "recssofar", "test");
+			.usingColumns("idsjobid", "userid", "status", "totalrecs", "recssofar", "test", "dataset", "topic", "uimetadata");
 		Number id = simpleJdbcInsert.executeAndReturnKey(new BeanPropertySqlParameterSource(idsJob));
 
 		return id.longValue();
@@ -109,6 +109,9 @@ public class BulkStatusRepository {
 			bulkInfo.setStatus(rs.getString("status"));
 			bulkInfo.setTotalrecs(rs.getLong("totalrecs"));
 			bulkInfo.setRecssofar(correctedRecs);
+			bulkInfo.setDataset(rs.getString("dataset"));
+			bulkInfo.setTopic(rs.getString("topic"));
+			bulkInfo.setUimetadata(rs.getString("uimetadata"));
 			bulkInfo.setStartdate(rs.getTimestamp("startdate").toLocalDateTime());
 			
 			Timestamp endDateTimestamp = rs.getTimestamp("enddate");
@@ -141,6 +144,9 @@ public class BulkStatusRepository {
 			idsBulkInfo.setStatus(rs.getString("status"));
 			idsBulkInfo.setTotalrecs(rs.getLong("totalrecs"));
 			idsBulkInfo.setRecssofar(correctedRecs);
+			idsBulkInfo.setDataset(rs.getString("dataset"));
+			idsBulkInfo.setTopic(rs.getString("topic"));
+			idsBulkInfo.setUimetadata(rs.getString("uimetadata"));
 			idsBulkInfo.setStartdate(rs.getTimestamp("startdate").toLocalDateTime());
 			idsBulkInfo.setTest(rs.getBoolean("test"));
 			

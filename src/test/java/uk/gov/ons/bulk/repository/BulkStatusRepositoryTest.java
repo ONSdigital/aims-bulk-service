@@ -37,7 +37,7 @@ class BulkStatusRepositoryTest {
 	@Test
 	public void testSaveJob() {
 		
-		BulkInfo bulkInfo = new BulkInfo("fred","in-progress", 107, 0);
+		BulkInfo bulkInfo = new BulkInfo("fred","in-progress", 107, 0, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
         bulkInfo.setStartdate(ldt1);
 		Long result = bulkStatusRepository.saveJob(bulkInfo);
 		
