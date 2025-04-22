@@ -40,7 +40,6 @@ dependencies {
 
 	// Imports for supporting SQL migrations
 	implementation 'org.flywaydb:flyway-core'
-	implementation 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.13.1'
 
 	implementation 'org.springframework.integration:spring-integration-core:6.4.0'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
