@@ -1,0 +1,4 @@
+ALTER TABLE bulkinfo 
+  ADD COLUMN dataset VARCHAR(255), 
+  ADD COLUMN topic VARCHAR(255), 
+  ADD COLUMN uimetadata TEXT; 
