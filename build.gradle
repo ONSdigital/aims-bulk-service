@@ -39,7 +39,7 @@ dependencies {
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-storage'
 
 	// Imports for supporting SQL migrations
-	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.flywaydb:flyway-core:11.7.2'
 
 	implementation 'org.springframework.integration:spring-integration-core:6.4.0'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
