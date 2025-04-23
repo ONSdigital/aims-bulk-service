@@ -6,9 +6,6 @@ CREATE TABLE bulkinfo (
   recssofar INT NOT NULL,
   startdate DATETIME DEFAULT CURRENT_TIMESTAMP,
   enddate DATETIME ON UPDATE CURRENT_TIMESTAMP,
-  dataset VARCHAR(255),
-  topic VARCHAR(255),
-  uimetadata TEXT,
   PRIMARY KEY (jobid));
   
 CREATE TABLE ids_bulkinfo (
@@ -20,8 +17,5 @@ CREATE TABLE ids_bulkinfo (
   recssofar INT NOT NULL,
   startdate DATETIME DEFAULT CURRENT_TIMESTAMP,
   enddate DATETIME ON UPDATE CURRENT_TIMESTAMP,
-  dataset VARCHAR(255),
-  topic VARCHAR(255),
-  uimetadata TEXT,
   test BOOLEAN,
   PRIMARY KEY (jobid));
