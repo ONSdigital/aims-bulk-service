@@ -1,3 +1,0 @@
-ALTER TABLE bulkinfo ADD COLUMN uimetadata VARCHAR(16383);
-
-ALTER TABLE ids_bulkinfo ADD COLUMN uimetadata VARCHAR(16383);
