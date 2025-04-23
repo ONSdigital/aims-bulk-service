@@ -1,7 +1,5 @@
 ALTER TABLE bulkinfo ADD COLUMN dataset VARCHAR(255);
 ALTER TABLE bulkinfo ADD COLUMN topic VARCHAR(255);
-ALTER TABLE bulkinfo ADD COLUMN uimetadata VARCHAR(20000);
 
 ALTER TABLE ids_bulkinfo ADD COLUMN dataset VARCHAR(255);
 ALTER TABLE ids_bulkinfo ADD COLUMN topic VARCHAR(255);
-ALTER TABLE ids_bulkinfo ADD COLUMN uimetadata VARCHAR(20000);
