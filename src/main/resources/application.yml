@@ -65,8 +65,8 @@ aims:
     create-cloud-task-function: https://europe-west2-YOUR-GCP-PROJECT-ID-HERE.cloudfunctions.net/create-cloud-task-function
     create-signed-url-function: https://europe-west2-YOUR-GCP-PROJECT-ID-HERE.cloudfunctions.net/create-signed-url-function
   project-number: YOUR-GCP-PROJECT-NUMBER-HERE
-  epochs: 109|111|112
-  current-epoch: 112
+  epochs: 111|112|114
+  current-epoch: 114
   # Update the records processed at every n% of completion
   report-frequency: 5
   pubsub:
