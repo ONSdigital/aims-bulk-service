@@ -87,7 +87,7 @@ public class PayloadValidationTests {
 			validationErrorMessages.add(violation.getMessage());
 		});
 
-        String expectedMsg =  "epoch_number must be one of 114, 112 or 111";
+        String expectedMsg =  "epoch_number must be one of 114, 112, 111";
         assertEquals(1, validationErrorMessages.size());
         assertTrue(validationErrorMessages.contains(expectedMsg));
     }
