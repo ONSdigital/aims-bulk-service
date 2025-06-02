@@ -31,6 +31,7 @@ import com.google.auth.oauth2.IdTokenProvider;
 
 import lombok.Data;
 import uk.gov.ons.bulk.exception.BulkAddressException;
+import uk.gov.ons.bulk.validator.DownloadURL;
 
 @Service
 public class DownloadService {
@@ -95,6 +96,7 @@ public class DownloadService {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	@Schema(type="string", example="https://storage.googleapis.com/results_8_179270555351/results_42.csv.gz?...")
 	public static @Data class SignedUrlResponse {
+		@DownloadURL
 		private String signedUrl;
 	}
 	
