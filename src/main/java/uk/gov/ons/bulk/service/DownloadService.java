@@ -30,9 +30,11 @@ import com.google.auth.oauth2.IdTokenCredentials;
 import com.google.auth.oauth2.IdTokenProvider;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.validator.DownloadURL;
 
+@Slf4j
 @Service
 public class DownloadService {
 
@@ -102,7 +104,14 @@ public class DownloadService {
 	
 	public InputStream getResultFile(String jobId, String filename) throws IOException {
 		String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
-		Resource gcsFile = resourceLoader.getResource(String.format("gs://%s/%s", gcsResultsBucket, filename));
+		String gcsFullFilePath = String.format("gs://%s/%s", gcsResultsBucket, filename);
+
+		Resource gcsFile = resourceLoader.getResource(gcsFullFilePath);
+
+		log.debug("gcsResultsBucket: " + gcsResultsBucket);
+		log.debug("gcsFullFilePath: " + gcsFullFilePath);
+		log.debug("gcsFile: " + gcsFile);
+
 		return gcsFile.getInputStream();
 	}
 }
