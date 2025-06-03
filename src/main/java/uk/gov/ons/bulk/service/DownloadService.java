@@ -106,6 +106,8 @@ public class DownloadService {
 		String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
 		String gcsFullFilePath = String.format("gs://%s/%s", gcsResultsBucket, filename);
 
+		// jobId comes from the request from the user .../results?jobId=2334, therefore needs to be sanitized
+
 		Resource gcsFile = resourceLoader.getResource(gcsFullFilePath);
 
 		log.debug("gcsResultsBucket: " + gcsResultsBucket);
