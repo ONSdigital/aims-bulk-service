@@ -116,7 +116,8 @@ public class DownloadService {
 		if (!matcher.matches()) {
 				throw new IllegalArgumentException(
 					"must be a valid GCS download URL like so:\n" +
-					"gs://results_<digits>_<12digits>/results_<same digits>.csv.gz"
+					"gs://results_<digits>_<12digits>/results_<same digits>.csv.gz \n" +
+					" Actually provided: " + gcsFullFilePath
 				);
 		}
 
