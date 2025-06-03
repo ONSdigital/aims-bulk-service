@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,7 @@ import com.google.auth.oauth2.IdTokenProvider;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.exception.BulkAddressException;
+import uk.gov.ons.bulk.validator.DownloadGCS;
 import uk.gov.ons.bulk.validator.DownloadURL;
 
 @Slf4j
@@ -106,14 +109,22 @@ public class DownloadService {
 		String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
 		String gcsFullFilePath = String.format("gs://%s/%s", gcsResultsBucket, filename);
 
-		// jobId comes from the request from the user .../results?jobId=2334, therefore needs to be sanitized
+		String gcsRegex = "^gs://results_(\\\\d+)_(\\\\d{12})/results_\\\\1\\\\.csv\\\\.gz$";
 
-		Resource gcsFile = resourceLoader.getResource(gcsFullFilePath);
+		Pattern pattern = Pattern.compile(gcsRegex);
+		Matcher matcher = pattern.matcher(gcsFullFilePath);
+
+		if (!matcher.matches()) {
+				throw new IllegalArgumentException(
+					"must be a valid GCS download URL like so:\n" +
+					"gs://results_<digits>_<12digits>/results_<same digits>.csv.gz"
+				);
+		}
 
 		log.debug("gcsResultsBucket: " + gcsResultsBucket);
 		log.debug("gcsFullFilePath: " + gcsFullFilePath);
-		log.debug("gcsFile: " + gcsFile);
 
+		Resource gcsFile = resourceLoader.getResource(gcsFullFilePath);
 		return gcsFile.getInputStream();
 	}
 }
