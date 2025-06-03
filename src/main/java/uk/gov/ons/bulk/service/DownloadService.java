@@ -34,7 +34,6 @@ import com.google.auth.oauth2.IdTokenProvider;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.exception.BulkAddressException;
-import uk.gov.ons.bulk.validator.DownloadGCS;
 import uk.gov.ons.bulk.validator.DownloadURL;
 
 @Slf4j
