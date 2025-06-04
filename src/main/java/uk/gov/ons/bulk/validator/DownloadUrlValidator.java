@@ -9,19 +9,19 @@ import jakarta.validation.ConstraintValidatorContext;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class DownloadURLValidator implements ConstraintValidator<DownloadURL, String> {
+public class DownloadUrlValidator implements ConstraintValidator<DownloadUrl, String> {
 
-  private static final String URL_REGEX =
+  private static final String UrlRegex =
     "^(?!.*\\\\.\\\\.)"                       // no “..” anywhere
   + "https://storage\\\\.googleapis\\\\.com/" // must begin with this domain
   + "results_[0-9]+_[0-9]+/"                  // first folder: results_<digits>_<digits>/
   + "results_[0-9]+\\\\.csv\\\\.gz"           // file:      results_<digits>.csv.gz
   + "(?:\\\\?.*)?$";                          // optional “?anything…” until end
 
-  private final Pattern pattern = Pattern.compile(URL_REGEX);
+  private final Pattern pattern = Pattern.compile(UrlRegex);
 
   @Override
-  public void initialize(DownloadURL constraintAnnotation) {
+  public void initialize(DownloadUrl constraintAnnotation) {
     // No special initialization needed.
   }
 

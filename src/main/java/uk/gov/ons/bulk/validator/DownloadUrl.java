@@ -14,7 +14,7 @@ import jakarta.validation.Constraint;
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = DownloadURLValidator.class)
 @Documented
-public @interface DownloadURL{
+public @interface DownloadUrl{
 
   String message() default "{Download.invalid}";
   
