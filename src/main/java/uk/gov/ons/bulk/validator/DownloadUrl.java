@@ -12,7 +12,7 @@ import jakarta.validation.Constraint;
 
 @Target({ ElementType.FIELD, ElementType.PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = DownloadURLValidator.class)
+@Constraint(validatedBy = DownloadUrlValidator.class)
 @Documented
 public @interface DownloadUrl{
 
