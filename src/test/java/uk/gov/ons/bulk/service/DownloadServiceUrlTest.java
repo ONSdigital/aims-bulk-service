@@ -32,10 +32,10 @@ public class DownloadServiceUrlTest {
         + "results_987_654/"
         + "results_987.csv.gz";
 
-        SignedUrlResponse dto = new SignedUrlResponse();
-        dto.setSignedUrl(goodUrl);
+        SignedUrlResponse responseObject= new SignedUrlResponse();
+        responseObject.setSignedUrl(goodUrl);
 
-        Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(dto);
+        Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(responseObject);
 
         assertTrue(violations.isEmpty(), 
             () -> "Expected no constraint violations for valid URL, but found: " + violations);
@@ -52,10 +52,10 @@ public class DownloadServiceUrlTest {
             + "&X-Goog-Date=20231001T120000Z"
             + "&X-Goog-Expires=3600"; // Bunch of random parameters that shouldn't affect validation
 
-        SignedUrlResponse dto = new SignedUrlResponse();
-        dto.setSignedUrl(goodUrl);
+        SignedUrlResponse responseObject= new SignedUrlResponse();
+        responseObject.setSignedUrl(goodUrl);
 
-        Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(dto);
+        Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(responseObject);
 
         assertTrue(violations.isEmpty(), 
             () -> "Expected no constraint violations for valid URL, but found: " + violations);
@@ -67,10 +67,10 @@ public class DownloadServiceUrlTest {
             + "results_catsAreCool/"
             + "results_987.csv.gz";
 
-        SignedUrlResponse dto = new SignedUrlResponse();
-        dto.setSignedUrl(badUrl);
+        SignedUrlResponse responseObject= new SignedUrlResponse();
+        responseObject.setSignedUrl(badUrl);
 
-        Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(dto);
+        Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(responseObject);
 
         assertFalse(violations.isEmpty(),
             () -> "Expected at least one constraint violation for malformed URL, but found none.");
@@ -82,10 +82,10 @@ public class DownloadServiceUrlTest {
             + "results_987_654/"
             + "BadFile_987.csv.gz";
 
-        SignedUrlResponse dto = new SignedUrlResponse();
-        dto.setSignedUrl(badUrl);
+        SignedUrlResponse responseObject= new SignedUrlResponse();
+        responseObject.setSignedUrl(badUrl);
 
-        Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(dto);
+        Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(responseObject);
 
         assertFalse(violations.isEmpty(),
             () -> "Expected at least one constraint violation for malformed URL, but found none.");
