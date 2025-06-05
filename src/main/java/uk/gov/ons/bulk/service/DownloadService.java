@@ -125,9 +125,6 @@ public class DownloadService {
 				);
 		}
 
-		log.debug("gcsResultsBucket: " + gcsResultsBucket);
-		log.debug("gcsFullFilePath: " + gcsFullFilePath);
-
 		Resource gcsFile = resourceLoader.getResource(gcsFullFilePath);
 		return gcsFile.getInputStream();
 	}
