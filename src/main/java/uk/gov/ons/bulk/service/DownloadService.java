@@ -108,12 +108,11 @@ public class DownloadService {
 		String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
 		String gcsFullFilePath = String.format("gs://%s/%s", gcsResultsBucket, filename);
 
-		String gcsRegex = "" + 
-		  "^gs://results_"        // must begin with “gs://results_”
-			+ "([0-9]+)"            //   capture one or more digits (group 1)
-			+ "_([0-9]{12})/"       //   underscore + exactly twelve digits (group 2), then '/'
-			+ "results_\\1"         //   literal "results_" followed by the same digits as group 1
-			+ "\\.csv\\.gz$";       //   literal ".csv.gz" at end
+		String gcsRegex =  "^gs://results_"        // must begin with “gs://results_”
+			+ "([0-9]+)"     									       //   capture one or more digits (group 1)
+			+ "_([0-9]{12})/"   									   //   underscore + exactly twelve digits (group 2), then '/'
+			+ "results_\\1"     									   //   literal "results_" followed by the same digits as group 1
+			+ "\\.csv\\.gz$";   									   //   literal ".csv.gz" at end
 
 		Pattern pattern = Pattern.compile(gcsRegex);
 		Matcher matcher = pattern.matcher(gcsFullFilePath);

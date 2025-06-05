@@ -14,7 +14,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.core.io.Resource;
 
-public class DownloadServiceTest {
+public class DownloadServiceGcsTest {
 
     private DownloadService downloadService;
     private ResourceLoader mockResourceLoader;
@@ -31,7 +31,7 @@ public class DownloadServiceTest {
     }
 
     @Test
-    public void testDownloadServiceExpectedInputs() throws Exception {
+    public void testDownloadServiceGcsExpectedInputs() throws Exception {
         String jobId = "123456789012";
         String filename = "results_123456789012.csv.gz";
 
@@ -47,7 +47,7 @@ public class DownloadServiceTest {
     }
 
     @Test
-    public void testDownloadServiceFailingJobId() throws Exception {
+    public void testDownloadServiceGcsFailingJobId() throws Exception {
         String jobId = "CATS0R0COOL!"; // Invalid jobId
         String filename = "results_123456789012.csv.gz"; // Valid filename to isolate jobId as the issue
 
@@ -59,7 +59,7 @@ public class DownloadServiceTest {
     }
 
     @Test
-    public void testDownloadServiceFailingFileName() throws Exception {
+    public void testDownloadServiceGcsFailingFileName() throws Exception {
         String jobId = "123456789012"; // Valid jobId to isolate filename as the issue
         String filename = "results_CATS0R0COOL0.csv.gz"; // Invalid filename
 
