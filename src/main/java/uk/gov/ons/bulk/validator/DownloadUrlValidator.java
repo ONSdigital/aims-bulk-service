@@ -6,9 +6,6 @@ import java.util.regex.Pattern;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 public class DownloadUrlValidator implements ConstraintValidator<DownloadUrl, String> {
 
   private static final String UrlRegex =
