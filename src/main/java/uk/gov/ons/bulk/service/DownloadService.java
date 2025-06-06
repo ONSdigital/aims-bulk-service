@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,7 @@ import com.google.auth.oauth2.IdTokenProvider;
 
 import lombok.Data;
 import uk.gov.ons.bulk.exception.BulkAddressException;
+import uk.gov.ons.bulk.validator.DownloadUrl;
 
 @Service
 public class DownloadService {
@@ -95,12 +98,32 @@ public class DownloadService {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	@Schema(type="string", example="https://storage.googleapis.com/results_8_179270555351/results_42.csv.gz?...")
 	public static @Data class SignedUrlResponse {
+		@DownloadUrl
 		private String signedUrl;
 	}
 	
 	public InputStream getResultFile(String jobId, String filename) throws IOException {
 		String gcsResultsBucket = String.format("%s%s_%s", BIG_QUERY_TABLE_PREFIX, jobId, projectNumber);
-		Resource gcsFile = resourceLoader.getResource(String.format("gs://%s/%s", gcsResultsBucket, filename));
+		String gcsFullFilePath = String.format("gs://%s/%s", gcsResultsBucket, filename);
+
+		String gcsRegex =  "^gs://results_"        // must begin with “gs://results_”
+			+ "([0-9]+)"     									       //   capture one or more digits (group 1)
+			+ "_([0-9]{12})/"   									   //   underscore + exactly twelve digits (group 2), then '/'
+			+ "results_\\1"     									   //   literal "results_" followed by the same digits as group 1
+			+ "\\.csv\\.gz$";   									   //   literal ".csv.gz" at end
+
+		Pattern pattern = Pattern.compile(gcsRegex);
+		Matcher matcher = pattern.matcher(gcsFullFilePath);
+
+		if (!matcher.matches()) {
+				throw new IllegalArgumentException(
+					"must be a valid GCS download URL like so:\n" +
+					"gs://results_<digits>_<12digits>/results_<same digits>.csv.gz \n" +
+					" Actually provided: " + gcsFullFilePath
+				);
+		}
+
+		Resource gcsFile = resourceLoader.getResource(gcsFullFilePath);
 		return gcsFile.getInputStream();
 	}
 }
