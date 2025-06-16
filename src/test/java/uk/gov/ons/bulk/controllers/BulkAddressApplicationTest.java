@@ -506,9 +506,9 @@ public class BulkAddressApplicationTest {
 				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("epoch", "100")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("epoch_number must be one of 114, 112, 111")))
+				.andExpect(jsonPath("$.message", containsString("epoch_number must be one of 116, 114, 112")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch_number must be one of 114, 112, 111"))))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch_number must be one of 116, 114, 112"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
@@ -578,7 +578,7 @@ public class BulkAddressApplicationTest {
 			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
 		
 		String classError = "runBulkRequest.classificationfilter: classificationfilter may not contain a list and/or a wildcard";
-		String epochError = "runBulkRequest.epoch: epoch_number must be one of 114, 112, 111";
+		String epochError = "runBulkRequest.epoch: epoch_number must be one of 116, 114, 112";
 		String excludeenglandError = "runBulkRequest.excludeengland: excludeengland must be true or false";
 		String excludenorthernirelandError = "runBulkRequest.excludenorthernireland: excludenorthernireland must be true or false";
 		
