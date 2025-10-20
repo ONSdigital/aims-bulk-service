@@ -18,7 +18,7 @@ public @Data class BulkRequestParams {
 	private	String rangekm; // Limit results to those within this number of kilometers of point (decimal e.g. 0.1)	Optional
 	private	String lat; //	Latitude of point in decimal format (e.g. 50.705948).
 	private	String lon; //	Longitude of point in decimal format (e.g. -3.5091076).
-	private	String historical; // Include historical addresses Default: True
+	private	String historical; // Include historical addresses Default: False
 	private	String matchthreshold; // Minimum confidence score (percentage) for match to be included in results. Default: 5
 	private	String verbose; // Include the full address details in the response (including relatives, crossRefs, paf and nag). Default: False
 	private	String epoch; // Select a specific AddressBase Epoch to search.
