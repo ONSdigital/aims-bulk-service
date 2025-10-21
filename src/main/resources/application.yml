@@ -77,7 +77,7 @@ aims:
   min-records-per-job: 500
   default:
     threshold: 10
-    historical: true
+    historical: false
     limit: 1
 
 ids:

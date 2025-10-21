@@ -193,7 +193,7 @@ public class PayloadValidationTests {
         assertEquals("1", msg.getPayload().getAddressLimit());
         assertEquals("10", msg.getPayload().getQualityMatchThreshold());
         assertEquals("119", msg.getPayload().getEpoch());
-        assertEquals("true", msg.getPayload().getHistorical());
+        assertEquals("false", msg.getPayload().getHistorical());
         assertEquals(false, msg.isTest());
     }
     
