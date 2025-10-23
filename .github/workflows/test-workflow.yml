@@ -15,7 +15,7 @@ on:
 
 env:
   IMAGE_NAME: 'my-test-image'
-  PROJECT_ID: 'ons-ci-aims'
+  PROJECT_ID: '709138365636'
   AR_REPO_LOCATION: 'europe-west2'
   AR_URL: 'europe-west2-docker.pkg.dev/ons-ci-aims/temp-aims-github-actions'
   SERVICE_ACCOUNT: 'test-github-actions-sa@ons-ci-aims.iam.gserviceaccount.com'
