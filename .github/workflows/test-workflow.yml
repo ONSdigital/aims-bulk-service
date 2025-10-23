@@ -36,7 +36,6 @@ jobs:
         uses: 'google-github-actions/auth@v3'
         with:
           token_format: 'access_token'
-          project_id: ${{ env.PROJECT_ID }}
           service_account: ${{ env.SERVICE_ACCOUNT }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER}}
 
