@@ -19,7 +19,7 @@ env:
   AR_REPO_LOCATION: 'europe-west2'
   AR_URL: 'europe-west2-docker.pkg.dev/ons-ci-aims/temp-aims-github-actions'
   SERVICE_ACCOUNT: 'test-github-actions-sa@ons-ci-aims.iam.gserviceaccount.com'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/709138365636/locations/global/workloadIdentityPools/github-actions-test'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/709138365636/locations/global/workloadIdentityPools/github-actions-test/providers/github-actions-provider-test'
 
 jobs:
   build:
