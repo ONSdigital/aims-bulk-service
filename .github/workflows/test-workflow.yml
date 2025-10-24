@@ -19,6 +19,7 @@ env:
   AR_REPO_LOCATION: 'europe-west2'
   AR_URL: 'europe-west2-docker.pkg.dev/ons-ci-aims/temp-aims-github-actions'
   WORKLOAD_IDENTITY_PROVIDER: 'projects/709138365636/locations/global/workloadIdentityPools/github-actions-test/providers/github-actions-provider-test'
+  SERVICE_ACCOUNT: 'test-github-actions-sa@ons-ci-aims.iam.gserviceaccount.com'
 
 jobs:
   build:
@@ -37,6 +38,7 @@ jobs:
           token_format: 'access_token'
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
 
       - name: Read value from file
         id: read_file
