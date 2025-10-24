@@ -62,6 +62,15 @@ jobs:
       - run: echo "The release-candidate version was ${{ steps.setup-gradle.outputs.gradle-version }}"
       - run: ./gradlew test -PexcludeTests=**/PubSubComponentTest*
 
+      - name: Build Docker image
+        run: |
+          docker build -t "${{ env.AR_URL }}/${{ env.AR_URL }}:${{ env.VALUE }}" .
+          docker build -t "${{ env.AR_URL }}/${{ env.AR_URL }}:latest" .
+
+      - name: Push Docker image
+        run: |
+          docker push "${{ env.AR_URL }}/${{ env.AR_URL }}:${{ env.VALUE }}" --all-tags
+
 
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
     # If your project does not have the Gradle Wrapper configured, you can use the following configuration to run Gradle with a specified version.
