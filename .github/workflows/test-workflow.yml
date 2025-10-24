@@ -69,7 +69,7 @@ jobs:
 
       - name: Push Docker image
         run: |
-          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://${{ env.VALUE }}-docker.pkg.dev
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://${{ env.AR_REPO_LOCATION }}-docker.pkg.dev
           docker push "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}" --all-tags
 
 
