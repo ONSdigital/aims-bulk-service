@@ -64,12 +64,12 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t "${{ env.AR_URL }}/${{ env.AR_URL }}:${{ env.VALUE }}" .
-          docker build -t "${{ env.AR_URL }}/${{ env.AR_URL }}:latest" .
+          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.VALUE }}" .
+          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest" .
 
       - name: Push Docker image
         run: |
-          docker push "${{ env.AR_URL }}/${{ env.AR_URL }}:${{ env.VALUE }}" --all-tags
+          docker push "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}" --all-tags
 
 
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
