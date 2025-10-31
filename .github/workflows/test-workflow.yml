@@ -28,6 +28,8 @@ jobs:
   authenticate-to-gcp:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5.0.0
       - name: Google Auth
         id: auth
         uses: 'google-github-actions/auth@v3'
