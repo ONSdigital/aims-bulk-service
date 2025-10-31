@@ -25,10 +25,22 @@ permissions:
   id-token: write
 
 jobs:
-  authenticate-to-gcp:
+#  authenticate-to-gcp:
+#    runs-on: ubuntu-latest
+#    outputs:
+#      access_token: ${{ steps.auth.outputs.access_token }}
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v5.0.0
+#
+#      - name: Google Auth
+#        id: auth
+#        uses: 'google-github-actions/auth@v3'
+#        with:
+#          project_id: ${{ env.PROJECT_ID }}
+#          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+  build-and-test:
     runs-on: ubuntu-latest
-    outputs:
-      access_token: ${{ steps.auth.outputs.access_token }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5.0.0
@@ -39,11 +51,6 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5.0.0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5.0.0
@@ -55,31 +62,31 @@ jobs:
         uses: gradle/actions/setup-gradle@v5.0.0
         with:
           gradle-version: wrapper
-      - run: ./gradlew build --exclude-task test
-  test:
-    runs-on: ubuntu-latest
-    needs: [ authenticate-to-gcp, build ]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5.0.0
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5.0.0
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5.0.0
-        with:
-          gradle-version: wrapper
-      - env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ needs.authenticate-to-gcp.outputs.access_token }}
-        run: ./gradlew test -PexcludeTests=**/PubSubComponentTest*
+      - run: ./gradlew build -PexcludeTests=**/PubSubComponentTest*
+#  test:
+#    runs-on: ubuntu-latest
+#    needs: [ authenticate-to-gcp, build ]
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v5.0.0
+#
+#      - name: Set up JDK 21
+#        uses: actions/setup-java@v5.0.0
+#        with:
+#          java-version: '21'
+#          distribution: 'temurin'
+#
+#      - name: Setup Gradle
+#        uses: gradle/actions/setup-gradle@v5.0.0
+#        with:
+#          gradle-version: wrapper
+#      - env:
+#          GOOGLE_APPLICATION_CREDENTIALS: ${{ needs.authenticate-to-gcp.outputs.access_token }}
+#        run: ./gradlew test -PexcludeTests=**/PubSubComponentTest*
 
   build-image-push-to-artifact-registry:
     runs-on: ubuntu-latest
-    needs: [ authenticate-to-gcp, test ]
+    needs: build-and-test
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5.0.0
@@ -91,12 +98,12 @@ jobs:
       #      - name: Checkout repository
       #        uses: actions/checkout@v5.0.0
 
-      #      - name: Google Auth
-      #        id: auth
-      #        uses: 'google-github-actions/auth@v3'
-      #        with:
-      #          project_id: ${{ env.PROJECT_ID }}
-      #          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v3'
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
 
       - name: Read value from file
         id: read_file
