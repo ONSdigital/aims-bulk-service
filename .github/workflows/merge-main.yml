@@ -2,16 +2,14 @@ name: Java CI with Gradle and Docker
 
 on:
   push:
-    branches: [ "github-action-test-workflow" ]
-  pull_request:
-    branches: [ "github-action-test-workflow" ]
+    branches: [ 'main' ]
 
 env:
-  IMAGE_NAME: 'my-test-image'
+  IMAGE_NAME: 'address-index-bulk-api'
   PROJECT_ID: 'ons-ci-aims'
   AR_REPO_LOCATION: 'europe-west2'
-  AR_URL: 'europe-west2-docker.pkg.dev/ons-ci-aims/temp-aims-github-actions'
-  WORKLOAD_IDENTITY_PROVIDER: 'projects/709138365636/locations/global/workloadIdentityPools/github-actions-test/providers/github-actions-provider-test'
+  AR_URL: 'europe-west2-docker.pkg.dev/ons-ci-aims/aims-bulk-api-repository'
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/709138365636/locations/global/workloadIdentityPools/github-actions-aims-pool/providers/aims-bulk-api-provider'
 
 permissions:
   contents: read
@@ -46,8 +44,8 @@ jobs:
       - name: Read version from file
         id: read_file
         run: |
-          VALUE=$(cat version.txt)
-          echo "VALUE=$VALUE" >> $GITHUB_ENV
+          VERSION=$(cat version.txt)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Configure Docker
         run: |
@@ -55,7 +53,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.VALUE }}" .
+          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" .
           docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest" .
 
       - name: Push Docker image
