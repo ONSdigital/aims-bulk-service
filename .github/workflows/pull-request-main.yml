@@ -16,7 +16,7 @@ permissions:
   id-token: write
 
 jobs:
-  build-test-push-image:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
