@@ -1,20 +1,16 @@
 name: Java CI with Gradle and Docker
-
 on:
   push:
     branches: [ 'main' ]
-
 env:
   IMAGE_NAME: 'address-index-bulk-api'
   PROJECT_ID: 'ons-ci-aims'
   AR_REPO_LOCATION: 'europe-west2'
   AR_URL: 'europe-west2-docker.pkg.dev/ons-ci-aims/aims-bulk-api-repository'
   WORKLOAD_IDENTITY_PROVIDER: 'projects/709138365636/locations/global/workloadIdentityPools/github-actions-aims-pool/providers/aims-bulk-api-provider'
-
 permissions:
   contents: read
   id-token: write
-
 jobs:
   build-test-push-image:
     runs-on: ubuntu-latest
@@ -53,8 +49,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" .
-          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest" .
+          docker build -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" -t "${{ env.AR_URL }}/${{ env.IMAGE_NAME }}:latest" .
 
       - name: Push Docker image
         run: |
@@ -64,7 +59,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v5.0.0
       - name: Set up JDK 21

@@ -1,9 +1,7 @@
 name: Enforce Version Bump
-
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
