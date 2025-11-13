@@ -18,7 +18,9 @@ jobs:
         run: |
           git fetch origin ${{ github.base_ref }}
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          echo "changed=$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "changed<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Print changed files
         run: |
