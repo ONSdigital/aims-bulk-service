@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -49,23 +50,15 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Stream;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /*
  * .andDo(MockMvcResultHandlers.print()) helps to debug individual tests
@@ -219,7 +212,7 @@ public class BulkAddressApplicationTest {
 		BulkInfo bulkInfo = new BulkInfo("bob", "in-progress", 107, 45, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
         bulkInfo.setJobid(14);
         bulkInfo.setStartdate(now);
-		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
+		List<BulkInfo> bulkInfos = List.of(bulkInfo);
 
         when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfos);
 
@@ -242,7 +235,7 @@ public class BulkAddressApplicationTest {
         bulkInfo.setJobid(14);
         bulkInfo.setStartdate(now);
         bulkInfo.setEnddate(now.plusHours(2));
-		List<BulkInfo> bulkInfos = Arrays.asList(bulkInfo);
+		List<BulkInfo> bulkInfos = List.of(bulkInfo);
 
         when(bulkStatusRepository.queryJob(Mockito.any(Long.class))).thenReturn(bulkInfos);
 
@@ -622,7 +615,7 @@ public class BulkAddressApplicationTest {
     	String filename = String.format("results_%s.csv.gz", 1);
 		BulkInfo bulkInfo = new BulkInfo("mrrobot","results-exported", 2, 2, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
         bulkInfo.setStartdate(now);
-        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        List<BulkInfo> bulkInfos = new ArrayList<>();
     	bulkInfos.add(bulkInfo);
         
         when(downloadService.getSignedUrl("1", filename)).thenReturn("https://alink");
@@ -641,7 +634,7 @@ public class BulkAddressApplicationTest {
     	String filename = String.format("results_%s.csv.gz", 1);
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
         bulkInfo.setStartdate(now);
-        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        List<BulkInfo> bulkInfos = new ArrayList<>();
     	bulkInfos.add(bulkInfo);
         
         when(downloadService.getSignedUrl("1", filename)).thenThrow(new IOException("An IO Exception"));
@@ -659,7 +652,7 @@ public class BulkAddressApplicationTest {
     	String filename = String.format("results_%s.csv.gz", 1);
 		BulkInfo bulkInfo = new BulkInfo("mrrobot","results-exported", 2, 2, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
         bulkInfo.setStartdate(now);
-        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        List<BulkInfo> bulkInfos = new ArrayList<>();
     	bulkInfos.add(bulkInfo);
         
         when(downloadService.getSignedUrl("1", filename)).thenThrow(new BulkAddressException("Signed URL is empty"));
@@ -674,7 +667,7 @@ public class BulkAddressApplicationTest {
 	@Test
     public void runBulkResultRequestNonExistent() throws Exception {
     	
-    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	List<BulkInfo> bulkInfos = new ArrayList<>();
         when(bulkStatusService.queryJob(99L)).thenReturn(bulkInfos);
         
 		mockMvc.perform(MockMvcRequestBuilders.get("/bulk-result/99")
@@ -688,7 +681,7 @@ public class BulkAddressApplicationTest {
 
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "processing-finished", 2, 2, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
         bulkInfo.setStartdate(now);
-        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        List<BulkInfo> bulkInfos = new ArrayList<>();
     	bulkInfos.add(bulkInfo);
         
         when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
@@ -722,7 +715,7 @@ public class BulkAddressApplicationTest {
         bulkInfo2.setJobid(newKey2);
         bulkInfo1.setStartdate(now);
         bulkInfo2.setStartdate(now);
-        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        List<BulkInfo> bulkInfos = new ArrayList<>();
     	bulkInfos.add(bulkInfo1);
     	bulkInfos.add(bulkInfo2);
     	        
@@ -769,7 +762,7 @@ public class BulkAddressApplicationTest {
         idsBulkInfo2.setJobid(newKey2);
         idsBulkInfo1.setStartdate(now);
         idsBulkInfo2.setStartdate(now);
-        List<IdsBulkInfo> idsBulkInfos = new ArrayList<IdsBulkInfo>();
+        List<IdsBulkInfo> idsBulkInfos = new ArrayList<>();
     	idsBulkInfos.add(idsBulkInfo1);
     	idsBulkInfos.add(idsBulkInfo2);
         
@@ -806,7 +799,7 @@ public class BulkAddressApplicationTest {
 		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "in-progress", 107, 45, false);
         idsBulkInfo.setJobid(22);
         idsBulkInfo.setStartdate(now);
-		List<IdsBulkInfo> idsBulkInfos = Arrays.asList(idsBulkInfo);
+		List<IdsBulkInfo> idsBulkInfos = List.of(idsBulkInfo);
 
         when(bulkStatusRepository.getIdsJob(Mockito.any(String.class))).thenReturn(idsBulkInfos);
 
@@ -831,7 +824,7 @@ public class BulkAddressApplicationTest {
         idsBulkInfo.setJobid(77);
         idsBulkInfo.setStartdate(now);
         idsBulkInfo.setEnddate(now.plusHours(2));
-		List<IdsBulkInfo> bulkInfos = Arrays.asList(idsBulkInfo);
+		List<IdsBulkInfo> bulkInfos = List.of(idsBulkInfo);
 
         when(bulkStatusRepository.getIdsJob(Mockito.any(String.class))).thenReturn(bulkInfos);
 
@@ -857,7 +850,7 @@ public class BulkAddressApplicationTest {
 		idsBulkInfo.setJobid(77);
 		idsBulkInfo.setStartdate(now);
 		idsBulkInfo.setEnddate(now.plusHours(2));
-		List<IdsBulkInfo> bulkInfos = Arrays.asList(idsBulkInfo);
+		List<IdsBulkInfo> bulkInfos = List.of(idsBulkInfo);
 
 		when(bulkStatusRepository.getIdsJob(Mockito.any(String.class))).thenReturn(bulkInfos);
 
@@ -929,7 +922,7 @@ public class BulkAddressApplicationTest {
     	String filename = "results_1.csv.gz";
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
         bulkInfo.setStartdate(now);
-        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        List<BulkInfo> bulkInfos = new ArrayList<>();
     	bulkInfos.add(bulkInfo);
     	Path expectedPath = Paths.get("src/test/resources/results_1.csv.gz");
         
@@ -954,7 +947,7 @@ public class BulkAddressApplicationTest {
     	String filename = String.format("results_%s.csv.gz", 1);
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "results-exported", 2, 2, "Dataset 1", "Topic 1", "{'header_export': 'true'}");
         bulkInfo.setStartdate(now);
-        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        List<BulkInfo> bulkInfos = new ArrayList<>();
     	bulkInfos.add(bulkInfo);
         
         when(downloadService.getResultFile("1", filename)).thenThrow(new IOException("An IO Exception"));
@@ -974,7 +967,7 @@ public class BulkAddressApplicationTest {
 	@Test
     public void runResultRequestNonExistent() throws Exception {
     	
-    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	List<BulkInfo> bulkInfos = new ArrayList<>();
         when(bulkStatusService.queryJob(99L)).thenReturn(bulkInfos);
         
 		MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders.get("/results?jobid=99&userid=mrrobot")
@@ -993,7 +986,7 @@ public class BulkAddressApplicationTest {
 
 		BulkInfo bulkInfo = new BulkInfo("mrrobot", "processing-finished", 2, 2, "dataset 3", "topic 1", "{export_header_row: False}");
         bulkInfo.setStartdate(now);
-        List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+        List<BulkInfo> bulkInfos = new ArrayList<>();
     	bulkInfos.add(bulkInfo);
         
         when(bulkStatusService.queryJob(1L)).thenReturn(bulkInfos);
@@ -1013,7 +1006,7 @@ public class BulkAddressApplicationTest {
     @MethodSource("bulkRequestObject")
     public void runBulkRequestNoCapacity(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
     	
-    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	List<BulkInfo> bulkInfos = new ArrayList<>();
     	for (long i = 1; i < 11; i++) {
     		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 100000, 10000, "dataset 3", "topic 1", "{export_header_row: False}");
     		bulkInfo.setJobid(i);
@@ -1033,7 +1026,7 @@ public class BulkAddressApplicationTest {
     @MethodSource("bulkRequestObject")
     public void runBulkRequestMaxJobsButCapacity(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
     	
-    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	List<BulkInfo> bulkInfos = new ArrayList<>();
     	for (long i = 1; i < 11; i++) {
     		BulkInfo bulkInfo = new BulkInfo("mrrobot","in-progress", 4, 2, "dataset 3", "topic 1", "{export_header_row: False}");
     		bulkInfo.setJobid(i);
@@ -1073,7 +1066,7 @@ public class BulkAddressApplicationTest {
     @MethodSource("bulkRequestObject")
     public void runBulkRequestMaxJobsNoCapacity(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
     	
-    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	List<BulkInfo> bulkInfos = new ArrayList<>();
     	for (long i = 1; i < 10; i++) {
     		BulkInfo bulkInfo = new BulkInfo("mrrobot", "in-progress", 5, 2, "dataset 3", "topic 1", "{export_header_row: False}");
     		bulkInfo.setJobid(i);
@@ -1096,7 +1089,7 @@ public class BulkAddressApplicationTest {
     @MethodSource("bulkRequestObject")
     public void runBulkRequestMaxJobsButCapacityEdgeCase(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
     	
-    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	List<BulkInfo> bulkInfos = new ArrayList<>();
     	for (long i = 1; i < 10; i++) {
     		BulkInfo bulkInfo = new BulkInfo("mrrobot","in-progress", 5, 2, "dataset 3", "topic 1", "{export_header_row: False}");
     		bulkInfo.setJobid(i);
@@ -1136,7 +1129,7 @@ public class BulkAddressApplicationTest {
     @MethodSource("bulkRequestObject")
     public void runBulkRequestAvailableJobsNoCapacity(@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
     	
-    	List<BulkInfo> bulkInfos = new ArrayList<BulkInfo>();
+    	List<BulkInfo> bulkInfos = new ArrayList<>();
     	for (long i = 1; i < 5; i++) {
     		BulkInfo bulkInfo = new BulkInfo("mrrobot","in-progress", 250000, 10000, "dataset 3", "topic 1", "{export_header_row: False}");
     		bulkInfo.setJobid(i);

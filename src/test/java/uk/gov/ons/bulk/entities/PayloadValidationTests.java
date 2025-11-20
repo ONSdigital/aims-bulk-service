@@ -1,33 +1,25 @@
 package uk.gov.ons.bulk.entities;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import uk.gov.ons.bulk.CustomLocalValidatorFactoryBean;
+import uk.gov.ons.bulk.validator.EpochValidator;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import jakarta.validation.ConstraintValidator;
-import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import uk.gov.ons.bulk.CustomLocalValidatorFactoryBean;
-import uk.gov.ons.bulk.validator.EpochValidator;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
@@ -37,16 +29,12 @@ import uk.gov.ons.bulk.validator.EpochValidator;
 public class PayloadValidationTests {
 	
 	private static Validator validator;
-	private static EpochValidator epochValidator;
-	private static ObjectMapper objectMapper;
+    private static ObjectMapper objectMapper;
 	private static ValidatorFactory factory;	
-	
-    @Value("${aims.epochs}")
-    private String epochs;
-	
+
 	@BeforeAll
     public void setup() {
-		epochValidator = new EpochValidator();
+        EpochValidator epochValidator = new EpochValidator();
 		List<ConstraintValidator<?,?>> customConstraintValidators =
 	            Collections.singletonList(epochValidator);
 		factory = 
@@ -68,11 +56,9 @@ public class PayloadValidationTests {
 
         List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
-		assertTrue(validationErrorMessages.isEmpty());
+		Assertions.assertTrue(validationErrorMessages.isEmpty());
     }
 	
     @Test
@@ -83,13 +69,11 @@ public class PayloadValidationTests {
 
         List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
         String expectedMsg =  "epoch_number must be one of 119, 118, 117";
         assertEquals(1, validationErrorMessages.size());
-        assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
     }
 
     @Test
@@ -100,13 +84,11 @@ public class PayloadValidationTests {
 		
 		List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
         String expectedMsg =  "address_limit should be an integer between 1 and 100 (1 is default)";
         assertEquals(1, validationErrorMessages.size());
-        assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
     }
     
     @Test
@@ -117,13 +99,11 @@ public class PayloadValidationTests {
 
     	List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
         String expectedMsg =  "address_limit should be an integer between 1 and 100 (1 is default)";
         assertEquals(1, validationErrorMessages.size());
-        assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
     }
 
     @Test
@@ -134,13 +114,11 @@ public class PayloadValidationTests {
 
 		List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
         String expectedMsg =  "quality_match_threshold should be decimal number between 0 and 100 (10 is default)";
         assertEquals(1, validationErrorMessages.size());
-        assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
     }
     
     @Test
@@ -151,13 +129,11 @@ public class PayloadValidationTests {
 
 		List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
         String expectedMsg =  "quality_match_threshold should be decimal number between 0 and 100 (10 is default)";
         assertEquals(1, validationErrorMessages.size());
-        assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
     }
 
     @Test
@@ -168,13 +144,11 @@ public class PayloadValidationTests {
 
 		List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
         String expectedMsg = "historical_flag must be true or false";
         assertEquals(1, validationErrorMessages.size());
-        assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
     }
 	
     @Test
@@ -185,16 +159,14 @@ public class PayloadValidationTests {
         
 		List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
-		assertTrue(validationErrorMessages.isEmpty());
+		Assertions.assertTrue(validationErrorMessages.isEmpty());
         assertEquals("1", msg.getPayload().getAddressLimit());
         assertEquals("10", msg.getPayload().getQualityMatchThreshold());
         assertEquals("119", msg.getPayload().getEpoch());
         assertEquals("false", msg.getPayload().getHistorical());
-        assertEquals(false, msg.isTest());
+        assertFalse(msg.isTest());
     }
     
 	@Test
@@ -205,13 +177,11 @@ public class PayloadValidationTests {
 
         List<String> validationErrorMessages = new ArrayList<>();
         
-        validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+        validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
         String expectedMsg =  "ids_job_id must be supplied";
         assertEquals(1, validationErrorMessages.size());
-        assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
     }
     
     @Test
@@ -222,12 +192,10 @@ public class PayloadValidationTests {
         
 		List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 
-		assertTrue(validationErrorMessages.isEmpty());
-        assertEquals(true, msg.isTest());
+		Assertions.assertTrue(validationErrorMessages.isEmpty());
+        Assertions.assertTrue(msg.isTest());
     }
     
     @Test
@@ -237,13 +205,11 @@ public class PayloadValidationTests {
         
 		List<String> validationErrorMessages = new ArrayList<>();
 		
-		validator.validate(msg).forEach(violation -> {
-			validationErrorMessages.add(violation.getMessage());
-		});
+		validator.validate(msg).forEach(violation -> validationErrorMessages.add(violation.getMessage()));
 		
 		String expectedMsg = "payload cannot be empty";
 
 		assertEquals(1, validationErrorMessages.size());
-        assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
     }
 }
