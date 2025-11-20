@@ -35,7 +35,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5.0.0
         with:
           gradle-version: wrapper
-      - run: ./gradlew build -PexcludeTests=**/PubSubComponentTest*
+      - run: ./gradlew build
 
       - name: Read version from file
         id: read_file

@@ -73,7 +73,7 @@ public class DownloadServiceUrlTest {
         Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(responseObject);
 
         assertFalse(violations.isEmpty(),
-            () -> "Expected at least one constraint violation for malformed URL, but found none.");
+                "Expected at least one constraint violation for malformed URL, but found none.");
     }
 
     @Test
@@ -88,7 +88,7 @@ public class DownloadServiceUrlTest {
         Set<ConstraintViolation<SignedUrlResponse>> violations = validator.validate(responseObject);
 
         assertFalse(violations.isEmpty(),
-            () -> "Expected at least one constraint violation for malformed URL, but found none.");
+                "Expected at least one constraint violation for malformed URL, but found none.");
     }
 
 }

@@ -27,7 +27,7 @@ import uk.gov.ons.bulk.entities.NewIdsJobMessage;
 @SpringBootTest()
 @ExtendWith(SpringExtension.class)
 @TestInstance(Lifecycle.PER_CLASS)
-@ActiveProfiles({"test", "test-integration"})
+@ActiveProfiles("test")
 class PubSubComponentTest {
 
 	@Autowired
@@ -43,7 +43,7 @@ class PubSubComponentTest {
 		template.publish("table-pulled-test", Files.readString(Path.of("src/test/resources/message-remove-table.json")));
 
 		List<AcknowledgeablePubsubMessage> messages = template.pull("aims-remove-table-test", 1, false);
-		DownloadCompleteMessage actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), DownloadCompleteMessage.class);
+		DownloadCompleteMessage actualMessage = objectMapper.readValue(messages.getFirst().getPubsubMessage().getData().toByteArray(), DownloadCompleteMessage.class);
 
 		assertEquals(expectedMsg, actualMessage);
 	}
@@ -58,7 +58,7 @@ class PubSubComponentTest {
 		template.publish("table-available-test", Files.readString(Path.of("src/test/resources/message-new-ids-job.json")));
 
 		List<AcknowledgeablePubsubMessage> messages = template.pull("ids-table-available-test", 1, false);
-		NewIdsJobMessage actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), NewIdsJobMessage.class);
+		NewIdsJobMessage actualMessage = objectMapper.readValue(messages.getFirst().getPubsubMessage().getData().toByteArray(), NewIdsJobMessage.class);
 
 		assertEquals(expectedMsg, actualMessage);
 	}
@@ -73,7 +73,7 @@ class PubSubComponentTest {
 		template.publish("table-available-test", Files.readString(Path.of("src/test/resources/message-new-ids-default-job.json")));
 
 		List<AcknowledgeablePubsubMessage> messages = template.pull("ids-table-available-test", 1, false);
-		NewIdsJobMessage actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), NewIdsJobMessage.class);
+		NewIdsJobMessage actualMessage = objectMapper.readValue(messages.getFirst().getPubsubMessage().getData().toByteArray(), NewIdsJobMessage.class);
 
 		assertEquals(expectedMsg, actualMessage);
 	}
@@ -88,7 +88,7 @@ class PubSubComponentTest {
 		template.publish("aims-ids-error", Files.readString(Path.of("src/test/resources/message-error.json")));
 
 		List<AcknowledgeablePubsubMessage> messages = template.pull("aims-errors", 1, false);
-		IdsErrorMessage actualMessage = objectMapper.readValue(messages.get(0).getPubsubMessage().getData().toByteArray(), IdsErrorMessage.class);
+		IdsErrorMessage actualMessage = objectMapper.readValue(messages.getFirst().getPubsubMessage().getData().toByteArray(), IdsErrorMessage.class);
 
 		assertEquals(expectedMsg, actualMessage);
 	}
