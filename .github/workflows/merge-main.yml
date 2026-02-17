@@ -36,7 +36,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v5.0.0
         with:
           gradle-version: wrapper
-      - run: ./gradlew build -x test
+          api-version: ${{ env.DOCKER_MIN_API_VERSION }}
+      - run: ./gradlew build
 
       - name: Read version from file
         id: read_file
