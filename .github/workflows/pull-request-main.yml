@@ -36,4 +36,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v5.0.0
         with:
           gradle-version: wrapper
-      - run: ./gradlew build
+      - run: |
+          echo api.version=1.44 >> ~/.docker-java.properties
+          ./gradlew build
