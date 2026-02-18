@@ -118,7 +118,6 @@ public class BulkAddressApplicationTest {
     
     @BeforeAll
     public void setUp() throws Exception {
-		System.setProperty("api.version", "1.44");
         // load up cached responses
         InputStream is = getClass().getClassLoader().getResourceAsStream(queryReponseRef);
         now = LocalDateTime.now();
