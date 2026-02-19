@@ -118,7 +118,6 @@ public class BulkAddressApplicationTest {
     
     @BeforeAll
     public void setUp() throws Exception {
-
         // load up cached responses
         InputStream is = getClass().getClassLoader().getResourceAsStream(queryReponseRef);
         now = LocalDateTime.now();
