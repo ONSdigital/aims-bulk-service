@@ -73,7 +73,10 @@ public class PayloadValidationTests {
 
         String expectedMsg =  "epoch_number must be one of 121, 120, 119";
         assertEquals(1, validationErrorMessages.size());
-        Assertions.assertTrue(validationErrorMessages.contains(expectedMsg));
+        Assertions.assertTrue(
+        validationErrorMessages.contains(expectedMsg),
+            () -> "Actual messages: " + validationErrorMessages
+        );
     }
 
     @Test
