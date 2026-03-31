@@ -6,9 +6,6 @@ spring:
       project-id: YOUR-GCP-PROJECT-ID-HERE
       bigquery:
         dataset-name: bulk_status
-      sql:
-        database-name: bulk-status-db
-        instance-connection-name: YOUR-GCP-PROJECT-ID-HERE:europe-west2:bulk-status-instance
   codec:
     max-in-memory-size: 10MB
   flyway:
@@ -31,8 +28,8 @@ spring:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
   datasource:
-    username: YOUR-DATABASE-USER
-    password: YOUR-DATABASE-PASSWORD
+    url: jdbc:mysql://127.0.0.1:3306/bulk-status-db?useIamAuth=true
+    username: YOUR-SA
 springdoc:
   writer-with-default-pretty-printer: true
   api-docs:
