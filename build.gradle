@@ -32,7 +32,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.springframework.boot:spring-boot-starter-web' 
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'com.mysql:mysql-connector-j'
+	implementation 'com.mysql:mysql-connector-j:9.6.0'
+	implementation 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.28.2'
 
 	implementation 'com.google.cloud:spring-cloud-gcp-dependencies:5.9.0'
 	implementation 'com.google.cloud:spring-cloud-gcp-starter-bigquery'
