@@ -34,6 +34,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'com.mysql:mysql-connector-j:9.6.0'
 	implementation 'com.google.cloud.sql:mysql-socket-factory-connector-j-8:1.28.2'
+	// Force the jdbc-socket-factory-core to match the mysql-socket-factory-connector-j-8 version
+	implementation 'com.google.cloud.sql:jdbc-socket-factory-core:1.28.2'
 
 	implementation 'com.google.cloud:spring-cloud-gcp-dependencies:5.9.0'
 	implementation('com.google.cloud:spring-cloud-gcp-starter-bigquery') {
