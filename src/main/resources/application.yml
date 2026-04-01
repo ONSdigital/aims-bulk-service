@@ -6,6 +6,8 @@ spring:
       project-id: YOUR-GCP-PROJECT-ID-HERE
       bigquery:
         dataset-name: bulk_status
+      sql:
+        enabled: false
   autoconfigure:
     exclude:
       - com.google.cloud.spring.autoconfigure.sql.CloudSqlJdbcAutoConfiguration
