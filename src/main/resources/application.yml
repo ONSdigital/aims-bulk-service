@@ -9,7 +9,6 @@ spring:
   autoconfigure:
     exclude:
       - com.google.cloud.spring.autoconfigure.sql.CloudSqlJdbcAutoConfiguration
-      - com.google.cloud.spring.autoconfigure.sql.CloudSqlEnvironmentPostProcessor
   codec:
     max-in-memory-size: 10MB
   flyway:
