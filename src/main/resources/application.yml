@@ -30,7 +30,7 @@ spring:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
   datasource:
-    url: YOUR_URL
+    url: YOUR-URL
     username: YOUR-SA
 springdoc:
   writer-with-default-pretty-printer: true
