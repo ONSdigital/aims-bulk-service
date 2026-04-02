@@ -8,12 +8,6 @@ spring:
         dataset-name: bulk_status
       sql:
         enabled: false
-#  autoconfigure:
-#    exclude:
-#      - com.google.cloud.spring.autoconfigure.sql.CloudSqlJdbcAutoConfiguration
-#      - com.google.cloud.spring.autoconfigure.cloudsql.CloudSqlJdbcAutoConfiguration
-#      - com.google.cloud.spring.autoconfigure.cloudsql.CloudSqlJdbcInfoProviderAutoConfiguration
-#      - com.google.cloud.spring.autoconfigure.cloudsql.CloudSqlJdbcPropertiesAutoConfiguration
   codec:
     max-in-memory-size: 10MB
   flyway:
@@ -36,7 +30,7 @@ spring:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
   datasource:
-    url: YOUR_URL
+    url: YOUR-URL
     username: YOUR-SA
 springdoc:
   writer-with-default-pretty-printer: true
