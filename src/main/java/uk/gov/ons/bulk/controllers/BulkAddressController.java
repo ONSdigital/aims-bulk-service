@@ -136,7 +136,7 @@ public class BulkAddressController {
 			@Parameter(description = "Maximum number of results per input address")
 			@RequestParam(required = false, defaultValue = "1") @Min(1) @Max(100) String limitperaddress,
 			@Parameter(description = "Classification code single value, list or pattern to filter results")
-			@RequestParam(required = false) @Pattern(regexp = "^[^*,]+$", message = "{class.val.message}") String classificationfilter,
+			@Pattern( regexp = "^(?:(?:residential|commercial|educational|workplace)|[A-Za-z0-9]+\\*|[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*)$", message = "{class.val.message}") String classificationfilter,
 			@Parameter(description = "Include historical records true or false")
 			@RequestParam(required = false, defaultValue = "false") @Pattern(regexp = "^(true|false)$", message = "{historical.val.message}") String historical,
 			@Parameter(description = "Minimum confidence score for results to be accepted")
