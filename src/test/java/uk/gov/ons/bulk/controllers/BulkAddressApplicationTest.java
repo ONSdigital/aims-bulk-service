@@ -413,6 +413,124 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.errors", hasItem(containsString("classificationfilter may not contain a list and/or a wildcard"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestValidBulkRequestParameterCorrectClassification(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "*")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestValidBulkRequestParameterCorrectClassificationBlank(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestValidBulkRequestParameterCorrectClassificationList(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "R, C")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestValidBulkRequestParameterCorrectClassificationResidential(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "residential")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestValidBulkRequestParameterCorrectClassificationCommercial(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "commercial")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestValidBulkRequestParameterCorrectClassificationEducational(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "educational")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestValidBulkRequestParameterCorrectClassificationWorkplace(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "workplace")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestValidBulkRequestParameterCorrectClassificationPrefixWildcard(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "R*")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestInvalidBulkRequestParameterWrongClassificationListTrailingComma(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "R, C,")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", containsString("classificationfilter may not contain a list and/or a wildcard")))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("classificationfilter may not contain a list and/or a wildcard"))))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
+
+	@ParameterizedTest
+	@MethodSource("bulkRequestObject")
+	public void bulkPostRequestInvalidBulkRequestParameterWrongClassificationListWithWildcard(
+			@RequestBody BulkRequestContainer bulkRequestContainer) throws Exception {
+
+		mockMvc.perform(MockMvcRequestBuilders.post("/bulk")
+				.content(new ObjectMapper().writeValueAsString(bulkRequestContainer)).param("classificationfilter", "R, C, *")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", containsString("classificationfilter may not contain a list and/or a wildcard")))
+				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("classificationfilter may not contain a list and/or a wildcard"))))
+				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
+	}
 	
 	@ParameterizedTest
 	@MethodSource("bulkRequestObject")
