@@ -1,8 +1,19 @@
 spring:
+  autoconfigure:
+    exclude:
+      - com.google.cloud.spring.autoconfigure.bigquery.GcpBigQueryAutoConfiguration
+      - com.google.cloud.spring.autoconfigure.storage.GcpStorageAutoConfiguration
   cloud:
     gcp:
       project-id: ${embedded.google.pubsub.project-id}
-      pubsub.emulatorHost: ${embedded.google.pubsub.host}:${embedded.google.pubsub.port}
+      credentials:
+        enabled: false
+      bigquery:
+        enabled: false
+      storage:
+        enabled: false
+      pubsub:
+        emulator-host: ${embedded.google.pubsub.host}:${embedded.google.pubsub.port}
       sql:
         enabled: false
   datasource:
@@ -11,3 +22,9 @@ aims:
   epochs: 107|108|109
   max-records-per-job: 5
   min-records-per-job: 2
+  pubsub:
+    error-topic: aims-ids-error
+ids:
+  pubsub:
+    subscription-new-ids-job: ids-table-available-test
+    subscription-download-complete: aims-remove-table-test

@@ -12,7 +12,9 @@ group = 'uk.gov.ons'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	sourceCompatibility = '21'
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 repositories {
@@ -77,7 +79,7 @@ dependencies {
 }
 
 configurations.mockitoAgent {
-    transitive = false
+	transitive = false
 }
 
 dependencyManagement {
@@ -89,10 +91,14 @@ dependencyManagement {
 
 test {
 	useJUnitPlatform()
-	
-	doFirst { 
-        jvmArgs("-javaagent:${configurations.mockitoAgent.singleFile}")
-    }
+
+	javaLauncher = javaToolchains.launcherFor {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+
+	doFirst {
+		jvmArgs("-javaagent:${configurations.mockitoAgent.singleFile}")
+	}
 
 	OperatingSystem os = DefaultNativePlatform.currentOperatingSystem;
 
