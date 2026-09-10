@@ -618,7 +618,7 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
 				.andExpect(jsonPath("$.message", containsString("epoch_number must be one of 124, 123, 121")))
 				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch_number must be one of 124, 121"))))
+				.andExpect(jsonPath("$.errors", hasItem(containsString("epoch_number must be one of 124, 123, 121"))))
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 	
