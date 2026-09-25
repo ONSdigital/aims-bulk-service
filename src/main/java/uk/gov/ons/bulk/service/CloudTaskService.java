@@ -16,7 +16,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
-import uk.gov.ons.bulk.entities.IdsRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -119,48 +118,6 @@ public class CloudTaskService {
                 response.disconnect();
             }
         }
-    }
-
-    @Async
-    public void createIdsTasks(long jobId, String idsJobId, List<IdsRequest> addresses, long totalAddresses,
-                               BulkRequestParams bulkRequestParams, String user, String topic, String dataset, String uiMetadata) throws IOException {
-
-        List<Integer> reportAddresses = reportAddresses(addresses.size());
-        reportAddresses.add(addresses.size());
-        init();
-        ExponentialBackOff backoff = createExponentialBackOff();
-
-        for (int i = 0; i < addresses.size(); i++) {
-
-            if (reportAddresses.contains(i + 1)) {
-                log.debug("Reporting: {}", i + 1);
-            }
-
-            BulkJobRequest bjr = new BulkJobRequest(String.valueOf(jobId), idsJobId, user, topic, dataset, uiMetadata, addresses.get(i).getId(),
-                    addresses.get(i).getAddress(), String.valueOf(i + 1), String.valueOf(totalAddresses),
-                    String.valueOf(reportAddresses.contains(i + 1)), bulkRequestParams);
-
-            HttpRequest request = createHttpRequest(bjr, backoff);
-            HttpResponse response = request.setConnectTimeout(60000).execute();
-
-            try {
-                log.debug("Response Status Code: {}", response.getStatusCode());
-                log.debug("Response Status Message: {}", response.getStatusMessage());
-
-                if (log.isDebugEnabled()) {
-                    try (InputStream is = response.getContent()) {
-                        log.debug("Response Object: {}", new String(is.readAllBytes(), StandardCharsets.UTF_8));
-                    }
-
-                    if (response.getRequest().getContent() instanceof JsonHttpContent) {
-                        log.debug("Request Content: {}", ((JsonHttpContent) response.getRequest().getContent()).getData());
-                    }
-                }
-            } finally {
-                response.disconnect();
-            }
-        }
-
     }
 
     private ExponentialBackOff createExponentialBackOff() {

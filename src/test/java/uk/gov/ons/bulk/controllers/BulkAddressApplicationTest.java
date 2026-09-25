@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkRequest;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
-import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.repository.BulkStatusRepository;
 import uk.gov.ons.bulk.service.BulkStatusService;
@@ -144,12 +143,7 @@ public class BulkAddressApplicationTest {
         return Stream.of(
                 Arguments.of("14"));
     }
-    
-    private static Stream<Arguments> addIdsJobIds() {
-        return Stream.of(
-                Arguments.of("ids-job-xyz"));
-    }
-    
+
     private static Stream<BulkRequestContainer> bulkRequestObject() {
     	
 		BulkRequest address1 = new BulkRequest();
@@ -853,146 +847,6 @@ public class BulkAddressApplicationTest {
 				.andExpect(jsonPath("$.jobs[1].totalrecs", Is.is(10)))
 				.andExpect(jsonPath("$.jobs[1].recssofar", Is.is(10)))
 				.andExpect(jsonPath("$.jobs[1].startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-
-	@Test
-	public void idsJobsRequestWrongStatus() throws Exception {
-
-		mockMvc.perform(MockMvcRequestBuilders.get("/ids/jobs?status=xyz&userid=mrrobot")
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted, failed or blank")))
-				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("status: status must be in-progress, processing-finished, results-ready, results-deleted, failed or blank"))))
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-	
-	@Test
-	public void idsJobsRequest() throws Exception {
-    	
-		long newKey1 = 99;
-		long newKey2 = 88;
-		IdsBulkInfo idsBulkInfo1 = new IdsBulkInfo("ids-job-xyz", "mrrobot", "processing-finished", 2, 2, false);
-		IdsBulkInfo idsBulkInfo2 = new IdsBulkInfo("ids-job-xyzz", "mrrobot", "processing-finished", 5, 5, true);
-        idsBulkInfo1.setJobid(newKey1);
-        idsBulkInfo2.setJobid(newKey2);
-        idsBulkInfo1.setStartdate(now);
-        idsBulkInfo2.setStartdate(now);
-        List<IdsBulkInfo> idsBulkInfos = new ArrayList<>();
-    	idsBulkInfos.add(idsBulkInfo1);
-    	idsBulkInfos.add(idsBulkInfo2);
-        
-        when(bulkStatusService.getIdsJobs("mrrobot", "processing-finished")).thenReturn(idsBulkInfos);
-
-		mockMvc.perform(MockMvcRequestBuilders.get("/ids/jobs?status=processing-finished&userid=mrrobot")
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
-				.andDo(MockMvcResultHandlers.print())
-				.andExpect(jsonPath("$.jobs").isArray()).andExpect(jsonPath("$.jobs", hasSize(2)))
-				.andExpect(jsonPath("$.jobs[0].jobid", Is.is(99)))
-				.andExpect(jsonPath("$.jobs[0].idsjobid", Is.is("ids-job-xyz")))
-				.andExpect(jsonPath("$.jobs[0].userid", Is.is("mrrobot")))
-				.andExpect(jsonPath("$.jobs[0].status", Is.is("processing-finished")))
-				.andExpect(jsonPath("$.jobs[0].totalrecs", Is.is(2)))
-				.andExpect(jsonPath("$.jobs[0].recssofar", Is.is(2)))
-				.andExpect(jsonPath("$.jobs[0].startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(jsonPath("$.jobs[0].test", Is.is(false)))
-				.andExpect(jsonPath("$.jobs[1].jobid", Is.is(88)))
-				.andExpect(jsonPath("$.jobs[1].idsjobid", Is.is("ids-job-xyzz")))
-				.andExpect(jsonPath("$.jobs[1].userid", Is.is("mrrobot")))
-				.andExpect(jsonPath("$.jobs[1].status", Is.is("processing-finished")))
-				.andExpect(jsonPath("$.jobs[1].totalrecs", Is.is(5)))
-				.andExpect(jsonPath("$.jobs[1].recssofar", Is.is(5)))
-				.andExpect(jsonPath("$.jobs[1].startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(jsonPath("$.jobs[1].test", Is.is(true)))
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-	
-	@ParameterizedTest
-	@MethodSource("addIdsJobIds")
-	public void testGetIdsBulkRequestProgressInProgress(@PathVariable(required = true, name = "idsjobid") String idsjobid)
-			throws Exception {
-
-		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "in-progress", 107, 45, false);
-        idsBulkInfo.setJobid(22);
-        idsBulkInfo.setStartdate(now);
-		List<IdsBulkInfo> idsBulkInfos = List.of(idsBulkInfo);
-
-        when(bulkStatusRepository.getIdsJob(Mockito.any(String.class))).thenReturn(idsBulkInfos);
-
-		mockMvc.perform(MockMvcRequestBuilders.get("/ids/bulk-progress/" + idsjobid)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.jobid", Is.is(22)))
-				.andExpect(jsonPath("$.idsjobid", Is.is("ids-job-xyz")))
-				.andExpect(jsonPath("$.userid", Is.is("bob")))
-				.andExpect(jsonPath("$.status", Is.is("in-progress")))
-				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
-				.andExpect(jsonPath("$.recssofar", Is.is(45)))
-				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(jsonPath("$.test", Is.is(false)))
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-	
-	@ParameterizedTest
-	@MethodSource("addIdsJobIds")
-	public void testGetIdsBulkRequestProgressFinished(@PathVariable(required = true, name = "idsjobid") String idsjobid)
-			throws Exception {
-
-		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "finished", 107, 107, true);
-        idsBulkInfo.setJobid(77);
-        idsBulkInfo.setStartdate(now);
-        idsBulkInfo.setEnddate(now.plusHours(2));
-		List<IdsBulkInfo> bulkInfos = List.of(idsBulkInfo);
-
-        when(bulkStatusRepository.getIdsJob(Mockito.any(String.class))).thenReturn(bulkInfos);
-
-		mockMvc.perform(MockMvcRequestBuilders.get("/ids/bulk-progress/" + idsjobid)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.jobid", Is.is(77)))
-				.andExpect(jsonPath("$.idsjobid", Is.is("ids-job-xyz")))
-				.andExpect(jsonPath("$.userid", Is.is("bob")))
-				.andExpect(jsonPath("$.status", Is.is("finished")))
-				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
-				.andExpect(jsonPath("$.recssofar", Is.is(107)))
-				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(jsonPath("$.enddate", Is.is(now.plusHours(2).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(jsonPath("$.test", Is.is(true)))
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-
-	@ParameterizedTest
-	@MethodSource("addIdsJobIds")
-	public void testGetIdsBulkRequestProgressFailed(@PathVariable(required = true, name = "idsjobid") String idsjobid)
-			throws Exception {
-
-		IdsBulkInfo idsBulkInfo = new IdsBulkInfo(idsjobid, "bob", "failed", 107, 107, true);
-		idsBulkInfo.setJobid(77);
-		idsBulkInfo.setStartdate(now);
-		idsBulkInfo.setEnddate(now.plusHours(2));
-		List<IdsBulkInfo> bulkInfos = List.of(idsBulkInfo);
-
-		when(bulkStatusRepository.getIdsJob(Mockito.any(String.class))).thenReturn(bulkInfos);
-
-		mockMvc.perform(MockMvcRequestBuilders.get("/ids/bulk-progress/" + idsjobid)).andExpect(status().isOk())
-				.andExpect(jsonPath("$.jobid", Is.is(77)))
-				.andExpect(jsonPath("$.idsjobid", Is.is("ids-job-xyz")))
-				.andExpect(jsonPath("$.userid", Is.is("bob")))
-				.andExpect(jsonPath("$.status", Is.is("failed")))
-				.andExpect(jsonPath("$.totalrecs", Is.is(107)))
-				.andExpect(jsonPath("$.recssofar", Is.is(107)))
-				.andExpect(jsonPath("$.startdate", Is.is(now.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(jsonPath("$.enddate", Is.is(now.plusHours(2).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
-				.andExpect(jsonPath("$.test", Is.is(true)))
-				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
-	}
-	
-	@Test
-	public void idsBulkProgressNoIdsJobId() throws Exception {
-		
-		mockMvc.perform(MockMvcRequestBuilders.get("/ids/bulk-progress/ ")
-				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status", Is.is("BAD_REQUEST")))
-				.andExpect(jsonPath("$.message", containsString("idsjobid: idsjobid is mandatory")))
-				.andExpect(jsonPath("$.errors").isArray()).andExpect(jsonPath("$.errors", hasSize(1)))
-				.andExpect(jsonPath("$.errors", hasItem(containsString("idsjobid: idsjobid is mandatory"))))		
 				.andExpect(content().contentType(MediaType.APPLICATION_JSON));
 	}
 

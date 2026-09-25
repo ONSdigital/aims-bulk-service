@@ -50,7 +50,6 @@ import lombok.extern.slf4j.Slf4j;
 import uk.gov.ons.bulk.entities.BulkInfo;
 import uk.gov.ons.bulk.entities.BulkRequestContainer;
 import uk.gov.ons.bulk.entities.BulkRequestParams;
-import uk.gov.ons.bulk.entities.IdsBulkInfo;
 import uk.gov.ons.bulk.exception.BulkAddressException;
 import uk.gov.ons.bulk.service.BulkStatusService;
 import uk.gov.ons.bulk.service.CloudTaskService;
@@ -314,53 +313,6 @@ public class BulkAddressController {
 			return ResponseEntity.badRequest()
 					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
 		}
-	}
-	
-	@Operation(description="IDS version of progress endpoint", hidden = true)
-	@GetMapping(value = "/ids/bulk-progress/{idsjobid}", produces = "application/json")
-	public ResponseEntity<String> getIdsBulkRequestProgress(
-			@PathVariable(required = true, name = "idsjobid") @NotBlank(message = "{idsjobid.val.message}") String idsjobid) {
-
-		String output;
-
-		List<IdsBulkInfo> idsBulkInfos = bulkStatusService.getIdsJob(idsjobid);
-		if (idsBulkInfos.size() == 0) {
-			String response = String.format("IDS Job ID %s not found on the system", idsjobid);
-			log.info(response);
-			return ResponseEntity.badRequest()
-					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
-		}
-		IdsBulkInfo idsBulkInfo = idsBulkInfos.get(0);
-
-		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-				.setSerializationInclusion(Include.NON_NULL);
-
-		try {
-			output = objectMapper.writeValueAsString(idsBulkInfo);
-		} catch (JsonProcessingException e) {
-			String response = String.format("/ids/bulk-progress/%s error: %s", idsjobid, e.getMessage());
-			log.error(response);
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-					.body(new ObjectMapper().createObjectNode().put("error", response).toString());
-		}
-
-		return ResponseEntity.ok(output);
-	}
-	
-
-	@Operation(description="IDS version of jobs list", hidden = true)
-	@GetMapping(value = "/ids/jobs", produces = "application/json")
-	public ResponseEntity<String> getIdsBulkRequestProgress(
-			@RequestParam(required = false, defaultValue = "") String userid,
-			@RequestParam(required = false, defaultValue = "") @Pattern(regexp = "^(|in-progress|processing-finished|results-ready|results-deleted)$", message = "{status.ids.val.message}") String status) {
-
-		List<IdsBulkInfo> jobsList = bulkStatusService.getIdsJobs(userid, status);
-		ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-				.setSerializationInclusion(Include.NON_NULL);
-
-		return ResponseEntity.ok(objectMapper.createObjectNode().set("jobs", objectMapper.valueToTree(jobsList)).toString());
 	}
 	
 	@Operation(summary = "Return the results for a job as a compressed file")
